@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Royaka - Login/Register</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .message {
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Welcome to Royaka</h2>
+    <div id="login-form">
+        <div class="input-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" placeholder="Enter username">
+        </div>
+        <div class="input-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter password">
+        </div>
+        <button onclick="login()">Login</button>
+        <p class="message">Don't have an account? <a href="javascript:toggleForm('register')">Register</a></p>
+    </div>
+
+    <div id="register-form" style="display:none;">
+        <div class="input-group">
+            <label for="new-username">Username</label>
+            <input type="text" id="new-username" placeholder="Enter username">
+        </div>
+        <div class="input-group">
+            <label for="new-password">Password</label>
+            <input type="password" id="new-password" placeholder="Enter password">
+        </div>
+        <button onclick="register()">Register</button>
+        <p class="message">Already have an account? <a href="javascript:toggleForm('login')">Login</a></p>
+    </div>
+</div>
+
+<script>
+    function toggleForm(formType) {
+        if (formType === 'register') {
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('register-form').style.display = 'block';
+        } else {
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('register-form').style.display = 'none';
+        }
+    }
+
+    async function login() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        if (!username || !password) {
+            alert('Please fill in both fields.');
+            return;
+        }
+
+        const response = await fetch('/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert('Login successful');
+            // Handle successful login (e.g., redirect to another page)
+        } else {
+            alert('Login failed: ' + result.message);
+        }
+    }
+
+    async function register() {
+        const username = document.getElementById('new-username').value;
+        const password = document.getElementById('new-password').value;
+
+        if (!username || !password) {
+            alert('Please fill in both fields.');
+            return;
+        }
+
+        const response = await fetch('/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            alert('Registration successful');
+            // Redirect or show login form
+            toggleForm('login');
+        } else {
+            alert('Registration failed: ' + result.message);
+        }
+    }
+</script>
+
+</body>
+</html>
