@@ -1,0 +1,55 @@
+// internal/game/troop.go
+
+package player
+
+import (
+	"math/rand"
+	"time"
+)
+
+type Troop struct {
+	Name     string  `json:"name"`
+	HP       int     `json:"hp"`
+	ATK      int     `json:"atk"`
+	DEF      int     `json:"def"`
+	MANA     int     `json:"mana"`
+	EXP      int     `json:"exp"`
+	Special  string  `json:"special"`
+}
+
+func NewTroop(name string) *Troop {
+	switch name {
+	case "Pawn":
+		return &Troop{name, 50, 150, 100, 3, 5, ""}
+	case "Bishop":
+		return &Troop{name, 100, 200, 150, 4, 10, ""}
+	case "Rook":
+		return &Troop{name, 250, 200, 200, 5, 25, ""}
+	case "Knight":
+		return &Troop{name, 200, 300, 150, 5, 25, ""}
+	case "Prince":
+		return &Troop{name, 500, 400, 300, 6, 50, ""}
+	case "Queen":
+		return &Troop{name, 0, 0, 0, 5, 30, "Heal"}
+	default:
+		return &Troop{name, 100, 100, 100, 3, 5, ""}
+	}
+}
+
+func (t *Troop) IsCrit() bool {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Float64() < 0.1 // 10% base CRIT chance
+}
+
+func (t *Troop) DamageTo(target *Tower) int {
+	crit := t.IsCrit()
+	atk := t.ATK
+	if crit {
+		atk = int(float64(atk) * 1.2)
+	}
+	dmg := atk - target.DEF
+	if dmg < 0 {
+		return 0
+	}
+	return dmg
+}
