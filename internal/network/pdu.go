@@ -11,7 +11,7 @@ const (
 	MsgLogin    MessageType = "login"
 )
 
-type PDU struct {
+type Message struct {
 	Type MessageType   `json:"type"`
 	Data json.RawMessage `json:"data"`
 }
@@ -29,4 +29,5 @@ type LoginRequest struct {
 type Response struct {
 	Success bool   `json:"success"`
 	Message string `json:"message"`
+	Token   string `json:"token,omitempty"`
 }
