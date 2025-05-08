@@ -4,151 +4,251 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Royaka - Login/Register</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .container {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-        }
-        .input-group {
-            margin-bottom: 15px;
-        }
-        input[type="text"], input[type="password"] {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            margin-top: 5px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        button {
-            width: 100%;
-            padding: 10px;
-            font-size: 16px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .message {
-            text-align: center;
-            margin-top: 15px;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+    <!-- <div class="background">
+        <div class="shape"></div>
+        <div class="shape"></div>
+    </div> -->
 
-<div class="container">
-    <h2>Welcome to Royaka</h2>
-    <div id="login-form">
-        <div class="input-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" placeholder="Enter username">
+    <div class="container">
+        <div class="form-header">
+            <h2 class="logo">🏰 ROYAKA</h2>
+            <div class="tab-container">
+                <div id="login-tab" class="tab active" onclick="switchTab('login')">Login</div>
+                <div id="register-tab" class="tab" onclick="switchTab('register')">Register</div>
+            </div>
         </div>
-        <div class="input-group">
-            <label for="password">Password</label>
-            <input type="password" id="password" placeholder="Enter password">
+
+        <div id="login-form" class="form-content active">
+            <div class="welcome-text">
+                <h2>Welcome Back!</h2>
+                <p>Enter your credentials to access your account</p>
+            </div>
+
+            <div class="input-group">
+                <div class="input-icon">
+                    <i class="fas fa-user"></i>
+                </div>
+                <input type="text" id="username" placeholder="Username">
+            </div>
+
+            <div class="input-group">
+                <div class="input-icon">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <input type="password" id="password" placeholder="Password">
+            
+            </div>
+
+            <button onclick="login()" class="action-button">
+                <span>Login</span>
+                <i class="fas fa-arrow-right"></i>
+            </button>
+
         </div>
-        <button onclick="login()">Login</button>
-        <p class="message">Don't have an account? <a href="javascript:toggleForm('register')">Register</a></p>
+
+        <div id="register-form" class="form-content">
+            <div class="welcome-text">
+                <h2>Create Account</h2>
+                <p>Join the Royaka community today</p>
+            </div>
+
+            <div class="input-group">
+                <div class="input-icon">
+                    <i class="fas fa-user"></i>
+                </div>
+                <input type="text" id="new-username" placeholder="Choose a username">
+            </div>
+
+            <div class="input-group">
+                <div class="input-icon">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <input type="password" id="new-password" placeholder="Create password">
+                
+            </div>
+
+            <button onclick="register()" class="action-button">
+                <span>Create Account</span>
+            </button>
+        </div>
     </div>
 
-    <div id="register-form" style="display:none;">
-        <div class="input-group">
-            <label for="new-username">Username</label>
-            <input type="text" id="new-username" placeholder="Enter username">
+    <div id="notification" class="notification">
+        <div class="notification-icon">
+            <i class="fas fa-info-circle"></i>
         </div>
-        <div class="input-group">
-            <label for="new-password">Password</label>
-            <input type="password" id="new-password" placeholder="Enter password">
+        <div class="notification-content">
+            <p id="notification-message">Notification message here</p>
         </div>
-        <button onclick="register()">Register</button>
-        <p class="message">Already have an account? <a href="javascript:toggleForm('login')">Login</a></p>
     </div>
-</div>
 
-<script>
-    let socket;
+    <script>
+        let socket;
+        let currentForm = 'login';
 
-    window.onload = function () {
-        socket = new WebSocket("ws://localhost:8080/ws");
-
-        socket.onopen = function () {
-            console.log("WebSocket connected");
+        window.onload = function () {
+            connectWebSocket();
         };
 
-        socket.onmessage = function (event) {
-            const response = JSON.parse(event.data);
-            alert(response.message);
-            if (response.success) {
-                // Bạn có thể lưu token hoặc chuyển trang
-                console.log("Token:", response.token);
+        function connectWebSocket() {
+            socket = new WebSocket("ws://localhost:8080/ws");
+
+            socket.onopen = function () {
+                console.log("WebSocket connected");
+            };
+
+            socket.onmessage = function (event) {
+                const res = JSON.parse(event.data);
+                
+                if (res.type === "login_response") {
+                    if (res.success) {
+                        showNotification(res.message, 'success');
+                        localStorage.setItem("player", JSON.stringify({ 
+                            username: document.getElementById('username').value, 
+                            exp: 0, 
+                            level: 1 
+                        }));
+                        
+                        // Show loading animation before redirect
+                        document.querySelector('.action-button').innerHTML = '<div class="spinner"></div>';
+                        setTimeout(() => {
+                            window.location.href = "/home.html";
+                        }, 1000);
+                    } else {
+                        showNotification(res.message, 'error');
+                    }
+                } else if (res.type === "register_response") {
+                    if (res.success) {
+                        showNotification(res.message, 'success');
+                        setTimeout(() => {
+                            switchTab('login');
+                        }, 1500);
+                    } else {
+                        showNotification(res.message, 'error');
+                    }
+                } else if (res.message) {
+                    showNotification(res.message, 'info');
+                }
+            };
+
+            socket.onerror = function (err) {
+                console.error("WebSocket error:", err);
+                showNotification("Connection error. Please try again later.", 'error');
+            };
+
+            socket.onclose = function () {
+                console.warn("WebSocket closed. Attempting to reconnect...");
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+
+        function switchTab(form) {
+            currentForm = form;
+            
+            // Update tabs
+            document.getElementById('login-tab').classList.toggle('active', form === 'login');
+            document.getElementById('register-tab').classList.toggle('active', form === 'register');
+            
+            // Update forms
+            document.getElementById('login-form').classList.toggle('active', form === 'login');
+            document.getElementById('register-form').classList.toggle('active', form === 'register');
+            
+            // Clear inputs
+            document.querySelectorAll('input[type=text], input[type=password]').forEach(input => {
+                input.value = '';
+            });
+        }
+
+        function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!username || !password) {
+                showNotification('Please fill in both fields.', 'warning');
+                highlightEmptyFields('login');
+                return;
             }
-        };
 
-        socket.onerror = function (err) {
-            console.error("WebSocket error:", err);
-            alert("WebSocket connection error.");
-        };
+            const msg = {
+                type: "login",
+                data: JSON.stringify({ username, password })
+            };
 
-        socket.onclose = function () {
-            console.warn("WebSocket closed.");
-        };
-    };
-
-    function toggleForm(formType) {
-        document.getElementById('login-form').style.display = formType === 'login' ? 'block' : 'none';
-        document.getElementById('register-form').style.display = formType === 'register' ? 'block' : 'none';
-    }
-
-    function login() {
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value.trim();
-
-        if (!username || !password) {
-            alert('Please fill in both fields.');
-            return;
+            socket.send(JSON.stringify(msg));
         }
 
-        const msg = {
-            type: "login",
-            data: { username, password }
-        };
+        function register() {
+            const username = document.getElementById('new-username').value.trim();
+            const password = document.getElementById('new-password').value.trim();
 
-        socket.send(JSON.stringify(msg));
-    }
+            if (!username || !password) {
+                showNotification('Please fill in all fields.', 'warning');
+                highlightEmptyFields('register');
+                return;
+            }
 
-    function register() {
-        const username = document.getElementById('new-username').value.trim();
-        const password = document.getElementById('new-password').value.trim();
+            const msg = {
+                type: "register",
+                data: JSON.stringify({ username, password })
+            };
 
-        if (!username || !password) {
-            alert('Please fill in both fields.');
-            return;
+            socket.send(JSON.stringify(msg));
         }
 
-        const msg = {
-            type: "register",
-            data: { username, password }
-        };
+        function highlightEmptyFields(formType) {
+            const formId = formType === 'login' ? 'login-form' : 'register-form';
+            const inputs = document.querySelectorAll(`#${formId} input[type=text], #${formId} input[type=password]`);
+            
+            inputs.forEach(input => {
+                if (input.value.trim() === '') {
+                    input.classList.add('error');
+                    input.addEventListener('input', function() {
+                        this.classList.remove('error');
+                    }, { once: true });
+                }
+            });
+        }
 
-        socket.send(JSON.stringify(msg));
-    }
-</script>
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const messageElement = document.getElementById('notification-message');
+            const icon = notification.querySelector('.notification-icon i');
+            
+            // Reset classes
+            notification.className = 'notification';
+            
+            // Set type-specific classes and icons
+            notification.classList.add(type);
+            
+            switch(type) {
+                case 'success':
+                    icon.className = 'fas fa-check-circle';
+                    break;
+                case 'error':
+                    icon.className = 'fas fa-exclamation-circle';
+                    break;
+                case 'warning':
+                    icon.className = 'fas fa-exclamation-triangle';
+                    break;
+                default:
+                    icon.className = 'fas fa-info-circle';
+            }
+            
+            messageElement.textContent = message;
+            notification.classList.add('show');
+            
+            // Auto hide after delay
+            setTimeout(closeNotification, 4000);
+        }
 
+        function closeNotification() {
+            const notification = document.getElementById('notification');
+            notification.classList.remove('show');
+        }
+    </script>
 </body>
 </html>

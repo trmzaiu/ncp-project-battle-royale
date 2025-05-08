@@ -40,7 +40,7 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 			var req RegisterRequest
 			json.Unmarshal(pdu.Data, &req)
 			err := player.AddPlayer(player.Player{Username: req.Username, Password: req.Password})
-			resp := Response{Success: err == nil, Message: "Registered"}
+			resp := Response{Type: "register_response", Success: err == nil, Message: "Registered"}
 			if err != nil {
 				resp.Message = "Registration failed"
 			}
@@ -49,12 +49,13 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 		case MsgLogin:
 			var req LoginRequest
 			json.Unmarshal(pdu.Data, &req)
-			ok := player.FindPlayer(req.Username, req.Password)
-			resp := Response{Success: ok, Message: "Login successful"}
+			ok := player.FindPlayerByUsername(req.Username)
+			resp := Response{Type: "login_response", Success: ok, Message: "Login successful"}
 			if !ok {
 				resp.Message = "Invalid credentials"
 			}
 			conn.WriteJSON(resp)
 		}
+
 	}
 }

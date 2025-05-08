@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Royaka</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="header">
+    <h1 class="title">🏰 ROYAKA</h1>
+    <p class="subtitle">Begin your adventure in the mystical world of Eldoria</p>
+  </div>
+  
+  <div class="container">
+    <div class="card player-card">
+      <div class="avatar">
+        <span id="playerInitial">P</span>
+      </div>
+      <h2 class="player-name" id="playerName">Player</h2>
+      
+      <div class="stats-container">
+        <div class="stat-item">
+          <span class="stat-label">Level</span>
+          <span class="stat-value" id="level">1</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Experience</span>
+          <span class="stat-value" id="exp">0/100</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress" id="expProgress"></div>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Games Played</span>
+          <span class="stat-value" id="gamesPlayed">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Wins</span>
+          <span class="stat-value" id="wins">0</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card game-options">
+      <h3 class="section-title">Game Modes</h3>
+      
+      <div class="game-modes">
+        <div class="mode-card selected" data-mode="adventure">
+          <div class="mode-icon">⚔️</div>
+          <div class="mode-title">Adventure</div>
+          <div class="mode-desc">Classic dungeon exploration</div>
+        </div>
+        <div class="mode-card" data-mode="pvp">
+          <div class="mode-icon">👥</div>
+          <div class="mode-title">PvP</div>
+          <div class="mode-desc">Battle other players</div>
+        </div>
+      </div>
+      
+      <button class="btn btn-primary" id="startGameBtn">
+        <span>Start Game</span>
+      </button>
+      
+      <button class="btn btn-secondary" id="leaderboardBtn">
+        View Leaderboard
+      </button>
+      
+      <button class="btn btn-accent" id="settingsBtn">
+        Settings
+      </button>
+    </div>
+  </div>
+  
+  <div class="log-container">
+    <div class="log-entry">
+      <span class="timestamp">12:04:23</span>
+      <span class="type">SYSTEM</span>
+      <span class="message">Welcome to The Castle Ruins!</span>
+    </div>
+    <div id="log"></div>
+  </div>
+  
+  <div class="notification" id="notification">
+    Connecting to game server...
+  </div>
+
+  <script>
+    // Player data management
+    const defaultPlayer = {
+      username: "Player",
+      exp: 0,
+      level: 1,
+      maxExp: 100,
+      gamesPlayed: 0,
+      wins: 0
+    };
+    
+    let player = JSON.parse(localStorage.getItem("player") || JSON.stringify(defaultPlayer));
+    let selectedMode = "adventure";
+    
+    // Initialize player info
+    function updatePlayerUI() {
+      document.getElementById("playerName").innerText = player.username;
+      document.getElementById("playerInitial").innerText = player.username.charAt(0);
+      document.getElementById("level").innerText = player.level;
+      document.getElementById("exp").innerText = `${player.exp}/${player.maxExp}`;
+      document.getElementById("gamesPlayed").innerText = player.gamesPlayed || 0;
+      document.getElementById("wins").innerText = player.wins || 0;
+      
+      // Update progress bar
+      const progress = (player.exp / player.maxExp) * 100;
+      document.getElementById("expProgress").style.width = `${progress}%`;
+    }
+    
+    // Mode selection
+    document.querySelectorAll('.mode-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedMode = card.dataset.mode;
+      });
+    });
+    
+    // Notification system
+    function showNotification(message, duration = 3000) {
+      const notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.classList.add('show');
+      
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, duration);
+    }
+    
+    // Log system
+    function addLogEntry(type, message) {
+      const logContainer = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      
+      const now = new Date();
+      const timestamp = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+      
+      entry.innerHTML = `
+        <span class="timestamp">${timestamp}</span>
+        <span class="type">${type}</span>
+        <span class="message">${message}</span>
+      `;
+      
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+    
+    // WebSocket connection
+    let ws = null;
+    
+    function connectWebSocket() {
+      try {
+        ws = new WebSocket("ws://localhost:8080/ws");
+        
+        ws.onopen = () => {
+          addLogEntry("SYSTEM", "Connected to game server");
+          showNotification("Connected to game server");
+          document.getElementById("startGameBtn").disabled = false;
+        };
+        
+        ws.onmessage = (event) => {
+          const msg = JSON.parse(event.data);
+          addLogEntry(msg.type.toUpperCase(), msg.payload);
+          
+          if (msg.type === "match_found") {
+            showNotification("Match found! Redirecting...");
+            setTimeout(() => {
+              window.location.href = "/game.html";
+            }, 1500);
+          }
+        };
+        
+        ws.onclose = () => {
+          addLogEntry("SYSTEM", "Disconnected from server");
+          showNotification("Disconnected from server. Trying to reconnect...");
+          setTimeout(connectWebSocket, 3000);
+        };
+        
+        ws.onerror = () => {
+          addLogEntry("ERROR", "Connection error");
+          showNotification("Connection error");
+        };
+      } catch (e) {
+        addLogEntry("ERROR", "Failed to connect to server");
+        showNotification("Failed to connect to server. Retrying...");
+        setTimeout(connectWebSocket, 3000);
+      }
+    }
+    
+    // Start game button
+    document.getElementById("startGameBtn").addEventListener("click", function() {
+      const btn = this;
+      btn.disabled = true;
+      
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<div class="spinner"></div> Finding match...';
+      
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: "join_game",
+          payload: {
+            username: player.username,
+            mode: selectedMode
+          }
+        }));
+        
+        addLogEntry("SYSTEM", `Searching for ${selectedMode} match...`);
+      } else {
+        addLogEntry("ERROR", "Not connected to server");
+        showNotification("Not connected to server. Reconnecting...");
+        connectWebSocket();
+        
+        // Reset button after a delay
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+        }, 2000);
+      }
+    });
+    
+    // Leaderboard button
+    document.getElementById("leaderboardBtn").addEventListener("click", function() {
+      showNotification("Leaderboard coming soon!");
+    });
+    
+    // Settings button
+    document.getElementById("settingsBtn").addEventListener("click", function() {
+      showNotification("Settings coming soon!");
+    });
+    
+    // Initialize
+    updatePlayerUI();
+    connectWebSocket();
+  </script>
+</body>
+</html>

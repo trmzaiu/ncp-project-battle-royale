@@ -27,7 +27,8 @@ type LoginRequest struct {
 }
 
 type Response struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-	Token   string `json:"token,omitempty"`
+    Type    string `json:"type"`    // add this
+    Success bool   `json:"success"`
+    Message string `json:"message"`
+    Token string `json:"token,omitempty"`
 }
