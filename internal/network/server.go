@@ -49,7 +49,7 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 
 			log.Printf("RegisterRequest: %+v\n", req)
 
-			err := model.AddPlayer(*model.NewPlayer(req.Username, req.Password))
+			err := model.AddUser(*model.NewUser(req.Username, req.Password))
 			resp := Response{Type: "register_response", Success: err == nil, Message: "Registered successfully"}
 			if err != nil {
 				log.Println("Registration error:", err)
@@ -67,7 +67,7 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 
 			log.Printf("LoginRequest: %+v\n", req)
 
-			ok := model.FindPlayerByUsername(req.Username)
+			ok := model.FindUserByUsername(req.Username)
 			resp := Response{Type: "login_response", Success: ok, Message: "Login successful"}
 			if !ok {
 				resp.Message = "Invalid credentials"

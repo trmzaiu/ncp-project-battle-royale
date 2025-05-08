@@ -14,85 +14,85 @@ import (
 var (
 	ErrUserExists      = errors.New("user already exists")
 	ErrUserNotFound    = errors.New("user not found")
-	playersFile        = "assets/data/players.json"
-	playersStorageLock = &sync.Mutex{}
+	usersFile          = "assets/data/users.json"
+	usersStorageLock   = &sync.Mutex{}
 )
 
 // InitStorage ensures the data directory exists
 func InitStorage() error {
-	dir := filepath.Dir(playersFile)
+	dir := filepath.Dir(usersFile)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return err
 		}
 	}
 
-	if _, err := os.Stat(playersFile); os.IsNotExist(err) {
+	if _, err := os.Stat(usersFile); os.IsNotExist(err) {
 		// Create the file if it doesn't exist
-		return ioutil.WriteFile(playersFile, []byte("[]"), 0644)
+		return ioutil.WriteFile(usersFile, []byte("[]"), 0644)
 	}
 	return nil
 }
 
-// LoadPlayers loads all players from storage
-func LoadPlayers() ([]Player, error) {
-	playersStorageLock.Lock()
-	defer playersStorageLock.Unlock()
+// LoadUsers loads all users from storage
+func LoadUsers() ([]User, error) {
+	usersStorageLock.Lock()
+	defer usersStorageLock.Unlock()
 
 	if err := InitStorage(); err != nil {
 		return nil, err
 	}
 
-	file, err := os.Open(playersFile)
+	file, err := os.Open(usersFile)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	var players []Player
-	err = json.NewDecoder(file).Decode(&players)
-	return players, err
+	var users []User
+	err = json.NewDecoder(file).Decode(&users)
+	return users, err
 }
 
-// SavePlayers persists players to storage
-func SavePlayers(players []Player) error {
-	playersStorageLock.Lock()
-	defer playersStorageLock.Unlock()
+// SaveUsers persists users to storage
+func SaveUsers(users []User) error {
+	usersStorageLock.Lock()
+	defer usersStorageLock.Unlock()
 
-	data, err := json.MarshalIndent(players, "", "  ")
+	data, err := json.MarshalIndent(users, "", "  ")
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(playersFile, data, 0644)
+	return ioutil.WriteFile(usersFile, data, 0644)
 }
 
-// AddPlayer adds a new player if username is unique
-func AddPlayer(newPlayer Player) error {
-	players, err := LoadPlayers()
+// AddUser adds a new user if the username is unique
+func AddUser(newUser User) error {
+	users, err := LoadUsers()
 	if err != nil {
 		return err
 	}
 
-	// Check if username already exists
-	for _, p := range players {
-		if p.Username == newPlayer.Username {
+	// Check if the username already exists
+	for _, u := range users {
+		if u.Username == newUser.Username {
 			return ErrUserExists
 		}
 	}
 
-	players = append(players, newPlayer)
-	return SavePlayers(players)
+	users = append(users, newUser)
+	return SaveUsers(users)
 }
 
-// FindPlayerByUsername retrieves a player by username
-func FindPlayerByUsername(username string) (bool) {
-	players, err := LoadPlayers()
+// FindUserByUsername retrieves a user by username
+func FindUserByUsername(username string) bool {
+	users, err := LoadUsers()
 	if err != nil {
 		return false
 	}
 
-	for _, p := range players {
-		if p.Username == username {
+	for _, u := range users {
+		if u.Username == username {
 			return true
 		}
 	}

@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Royaka - Battle</title>
+  <style>
+    :root {
+      --primary-color: #5c6bc0;
+      --secondary-color: #8e24aa;
+      --accent-color: #ff7043;
+      --background-color: #1a1a2e;
+      --card-color: #252541;
+      --text-color: #e6e6e6;
+      --border-color: #3f3f5a;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: var(--background-color);
+      color: var(--text-color);
+    }
+    
+    .header {
+      text-align: center;
+      padding: 20px 0;
+      background-color: var(--card-color);
+      border-bottom: 2px solid var(--border-color);
+    }
+    
+    .title {
+      font-size: 2rem;
+      margin: 0;
+      color: var(--accent-color);
+    }
+    
+    .subtitle {
+      font-size: 1rem;
+      margin: 5px 0 0;
+      color: var(--text-color);
+      opacity: 0.7;
+    }
+    
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .battlefield {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    
+    .player-side {
+      flex: 1;
+      padding: 15px;
+      background-color: var(--card-color);
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin: 0 10px;
+    }
+    
+    .player-name {
+      font-weight: bold;
+      padding: 5px 10px;
+      background-color: var(--primary-color);
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+    
+    .opponent .player-name {
+      background-color: var(--secondary-color);
+    }
+    
+    .tower-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+    
+    .towers {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+    }
+    
+    .tower {
+      width: 120px;
+      height: 120px;
+      background-color: var(--border-color);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .tower.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .tower.king {
+      width: 150px;
+      height: 150px;
+      background-color: var(--accent-color);
+    }
+    
+    .tower-icon {
+      font-size: 2.5rem;
+      margin-bottom: 5px;
+    }
+    
+    .tower.king .tower-icon {
+      font-size: 3rem;
+    }
+    
+    .tower-name {
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+    
+    .tower-hp {
+      position: absolute;
+      bottom: 5px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 0.8rem;
+    }
+    
+    .hp-bar {
+      height: 8px;
+      width: 80%;
+      background-color: #444;
+      border-radius: 4px;
+      margin: 2px auto 0;
+      overflow: hidden;
+    }
+    
+    .hp-fill {
+      height: 100%;
+      background-color: #4caf50;
+      transition: width 0.3s ease;
+    }
+    
+    .controls {
+      padding: 15px;
+      background-color: var(--card-color);
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .troops-container {
+      margin-bottom: 20px;
+    }
+    
+    .troop-selection {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 10px;
+    }
+    
+    .troop {
+      width: 80px;
+      height: 100px;
+      background-color: var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .troop.selected {
+      border: 2px solid var(--accent-color);
+      transform: translateY(-5px);
+    }
+    
+    .troop-icon {
+      font-size: 2rem;
+      margin-bottom: 5px;
+    }
+    
+    .troop-name {
+      font-size: 0.8rem;
+      font-weight: bold;
+      text-align: center;
+    }
+    
+    .troop-stats {
+      font-size: 0.7rem;
+      margin-top: 5px;
+      text-align: center;
+      line-height: 1.3;
+    }
+    
+    .action-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .btn-attack {
+      background-color: #f44336;
+      flex: 1;
+      margin-right: 10px;
+    }
+    
+    .btn-attack:hover {
+      background-color: #d32f2f;
+    }
+    
+    .btn-attack:disabled {
+      background-color: #9e9e9e;
+      cursor: not-allowed;
+    }
+    
+    .btn-leave {
+      background-color: #607d8b;
+      flex: 0 0 120px;
+    }
+    
+    .btn-leave:hover {
+      background-color: #455a64;
+    }
+    
+    .game-log {
+      height: 200px;
+      background-color: var(--card-color);
+      border-radius: 8px;
+      margin-top: 20px;
+      padding: 10px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+    }
+    
+    .log-entry {
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.9rem;
+    }
+    
+    .log-entry .timestamp {
+      color: #78909c;
+      margin-right: 8px;
+    }
+    
+    .log-entry .system {
+      color: #64b5f6;
+    }
+    
+    .log-entry .attack {
+      color: #ff8a65;
+    }
+    
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: var(--primary-color);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 4px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+    
+    .notification.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .game-over-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+    
+    .game-over-modal.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .modal-content {
+      background-color: var(--card-color);
+      border-radius: 8px;
+      padding: 30px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+    }
+    
+    .modal-title {
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+      color: var(--accent-color);
+    }
+    
+    .modal-body {
+      margin-bottom: 25px;
+    }
+    
+    .exp-gain {
+      font-size: 1.2rem;
+      margin: 15px 0;
+      color: #4caf50;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      justify-content: center;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      padding: 12px 30px;
+    }
+    
+    .btn-primary:hover {
+      background-color: #3949ab;
+    }
+    
+    @media (max-width: 768px) {
+      .battlefield {
+        flex-direction: column;
+      }
+      
+      .player-side {
+        margin: 10px 0;
+      }
+      
+      .tower {
+        width: 90px;
+        height: 90px;
+      }
+      
+      .tower.king {
+        width: 120px;
+        height: 120px;
+      }
+      
+      .troop {
+        width: 60px;
+        height: 80px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1 class="title">🏰 ROYAKA</h1>
+    <p class="subtitle" id="gameSubtitle">Battle in progress</p>
+  </div>
+  
+  <div class="game-container">
+    <div class="battlefield">
+      <!-- Opponent Side -->
+      <div class="player-side opponent">
+        <div class="player-name" id="opponentName">Opponent</div>
+        
+        <div class="tower-container">
+          <!-- King Tower -->
+          <div class="tower king" id="opponent-king" data-target="king">
+            <div class="tower-icon">👑</div>
+            <div class="tower-name">King Tower</div>
+            <div class="tower-hp">
+              <span id="opponent-king-hp">2000</span>
+              <div class="hp-bar">
+                <div class="hp-fill" id="opponent-king-hp-fill" style="width: 100%"></div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Guard Towers -->
+          <div class="towers">
+            <div class="tower" id="opponent-guard1" data-target="guard1">
+              <div class="tower-icon">🛡️</div>
+              <div class="tower-name">Guard 1</div>
+              <div class="tower-hp">
+                <span id="opponent-guard1-hp">1000</span>
+                <div class="hp-bar">
+                  <div class="hp-fill" id="opponent-guard1-hp-fill" style="width: 100%"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="tower" id="opponent-guard2" data-target="guard2">
+              <div class="tower-icon">🛡️</div>
+              <div class="tower-name">Guard 2</div>
+              <div class="tower-hp">
+                <span id="opponent-guard2-hp">1000</span>
+                <div class="hp-bar">
+                  <div class="hp-fill" id="opponent-guard2-hp-fill" style="width: 100%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Player Side -->
+      <div class="player-side">
+        <div class="player-name" id="playerName">Player</div>
+        
+        <div class="tower-container">
+          <!-- Guard Towers -->
+          <div class="towers">
+            <div class="tower" id="player-guard1">
+              <div class="tower-icon">🛡️</div>
+              <div class="tower-name">Guard 1</div>
+              <div class="tower-hp">
+                <span id="player-guard1-hp">1000</span>
+                <div class="hp-bar">
+                  <div class="hp-fill" id="player-guard1-hp-fill" style="width: 100%"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="tower" id="player-guard2">
+              <div class="tower-icon">🛡️</div>
+              <div class="tower-name">Guard 2</div>
+              <div class="tower-hp">
+                <span id="player-guard2-hp">1000</span>
+                <div class="hp-bar">
+                  <div class="hp-fill" id="player-guard2-hp-fill" style="width: 100%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- King Tower -->
+          <div class="tower king" id="player-king">
+            <div class="tower-icon">👑</div>
+            <div class="tower-name">King Tower</div>
+            <div class="tower-hp">
+              <span id="player-king-hp">2000</span>
+              <div class="hp-bar">
+                <div class="hp-fill" id="player-king-hp-fill" style="width: 100%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="controls">
+      <div class="troops-container">
+        <h3>Select Troop</h3>
+        <div class="troop-selection" id="troopSelection">
+          <!-- Troops will be dynamically added here -->
+        </div>
+      </div>
+      
+      <div class="action-buttons">
+        <button id="attackBtn" class="btn btn-attack" disabled>Attack</button>
+        <button id="leaveBtn" class="btn btn-leave">Leave Battle</button>
+      </div>
+    </div>
+    
+    <div class="game-log" id="gameLog">
+      <!-- Log entries will be added here -->
+    </div>
+  </div>
+  
+  <div class="notification" id="notification">
+    Waiting for opponent...
+  </div>
+  
+  <div class="game-over-modal" id="gameOverModal">
+    <div class="modal-content">
+      <h2 class="modal-title" id="gameOverTitle">Victory!</h2>
+      <div class="modal-body" id="gameOverMessage">
+        You have defeated your opponent!
+      </div>
+      <div class="exp-gain" id="expGained">+30 EXP</div>
+      <div class="modal-buttons">
+        <button class="btn btn-primary" id="returnToMenuBtn">Return to Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Game state variables
+    let gameState = {
+      gameId: generateGameId(),
+      player: null,
+      opponent: null,
+      currentTurn: 1,
+      selectedTroop: null,
+      selectedTarget: null,
+      isMyTurn: true,
+      playerTowers: {
+        king: { hp: 2000, maxHp: 2000, destroyed: false },
+        guard1: { hp: 1000, maxHp: 1000, destroyed: false },
+        guard2: { hp: 1000, maxHp: 1000, destroyed: false }
+      },
+      opponentTowers: {
+        king: { hp: 2000, maxHp: 2000, destroyed: false },
+        guard1: { hp: 1000, maxHp: 1000, destroyed: false },
+        guard2: { hp: 1000, maxHp: 1000, destroyed: false }
+      },
+      gameOver: false
+    };
+    
+    // Define troops
+    const troops = [
+      {
+        id: 'knight',
+        name: 'Knight',
+        icon: '🗡️',
+        attack: 200,
+        hp: 800,
+        speed: 'Medium',
+        description: 'Balanced fighter with good attack and defense'
+      },
+      {
+        id: 'archer',
+        name: 'Archer',
+        icon: '🏹',
+        attack: 150,
+        hp: 500,
+        speed: 'Fast',
+        description: 'Ranged attacker with quick strikes'
+      },
+      {
+        id: 'giant',
+        name: 'Giant',
+        icon: '🪨',
+        attack: 300,
+        hp: 1200,
+        speed: 'Slow',
+        description: 'Heavy hitter with high health but slow'
+      },
+      {
+        id: 'wizard',
+        name: 'Wizard',
+        icon: '🧙',
+        attack: 250,
+        hp: 600,
+        speed: 'Medium',
+        description: 'Magic user with area damage'
+      }
+    ];
+
+    // Generate a random game ID
+    function generateGameId() {
+      return Math.random().toString(36).substring(2, 15);
+    }
+    
+    // Initialize the game
+    function initGame() {
+      // Set up player info (in a real app, this would come from authentication)
+      gameState.player = {
+        id: 'player1',
+        name: 'Player',
+        level: 5,
+        exp: 250
+      };
+      
+      // Create opponent (AI for this implementation)
+      gameState.opponent = {
+        id: 'ai_opponent',
+        name: 'AI Opponent',
+        level: gameState.player.level,
+        exp: 0
+      };
+      
+      // Update player names in UI
+      document.getElementById('playerName').textContent = gameState.player.name;
+      document.getElementById('opponentName').textContent = gameState.opponent.name;
+      
+      // Add troops to selection
+      populateTroops();
+      
+      // Add event listeners
+      addEventListeners();
+      
+      // Add initial log entry
+      addLogEntry('system', 'Battle started! Your turn.');
+      
+      // Update game subtitle
+      document.getElementById('gameSubtitle').textContent = `Battle #${gameState.gameId} - Turn ${gameState.currentTurn}`;
+      
+      // Show initial notification
+      showNotification('Your turn! Select a troop and target.');
+    }
+    
+    // Populate troop selection
+    function populateTroops() {
+      const troopSelection = document.getElementById('troopSelection');
+      troopSelection.innerHTML = '';
+      
+      troops.forEach(troop => {
+        const troopElement = document.createElement('div');
+        troopElement.className = 'troop';
+        troopElement.dataset.troopId = troop.id;
+        
+        troopElement.innerHTML = `
+          <div class="troop-icon">${troop.icon}</div>
+          <div class="troop-name">${troop.name}</div>
+          <div class="troop-stats">
+            ATK: ${troop.attack}<br>
+            HP: ${troop.hp}<br>
+            SPD: ${troop.speed}
+          </div>
+        `;
+        
+        troopSelection.appendChild(troopElement);
+      });
+    }
+    
+    // Add event listeners
+    function addEventListeners() {
+      // Troop selection
+      const troopElements = document.querySelectorAll('.troop');
+      troopElements.forEach(troop => {
+        troop.addEventListener('click', () => {
+          if (!gameState.isMyTurn || gameState.gameOver) return;
+          
+          // Remove selected class from all troops
+          document.querySelectorAll('.troop').forEach(t => t.classList.remove('selected'));
+          
+          // Add selected class to clicked troop
+          troop.classList.add('selected');
+          
+          // Set selected troop
+          const troopId = troop.dataset.troopId;
+          gameState.selectedTroop = troops.find(t => t.id === troopId);
+          
+          // Enable attack button if target is also selected
+          updateAttackButtonState();
+        });
+      });
+      
+      // Target selection (opponent towers)
+      const opponentTowers = document.querySelectorAll('.opponent .tower');
+      opponentTowers.forEach(tower => {
+        tower.addEventListener('click', () => {
+          if (!gameState.isMyTurn || gameState.gameOver) return;
+          
+          const targetId = tower.id.replace('opponent-', '');
+          const towerData = gameState.opponentTowers[targetId.replace('guard', 'guard$1')];
+          
+          // Don't allow targeting destroyed towers
+          if (towerData.destroyed) {
+            showNotification('Tower already destroyed!');
+            return;
+          }
+          
+          // If king is being targeted but guard towers are still up, prevent attack
+          if (targetId === 'king' && 
+             (!gameState.opponentTowers.guard1.destroyed || !gameState.opponentTowers.guard2.destroyed)) {
+            showNotification('Destroy guard towers first!');
+            return;
+          }
+          
+          // Remove highlight from all towers
+          document.querySelectorAll('.opponent .tower').forEach(t => {
+            t.style.border = 'none';
+          });
+          
+          // Highlight selected tower
+          tower.style.border = '2px solid red';
+          
+          // Set selected target
+          gameState.selectedTarget = targetId;
+          
+          // Enable attack button if troop is also selected
+          updateAttackButtonState();
+        });
+      });
+      
+      // Attack button
+      document.getElementById('attackBtn').addEventListener('click', () => {
+        if (!gameState.isMyTurn || gameState.gameOver) return;
+        
+        performPlayerAttack();
+      });
+      
+      // Leave battle button
+      document.getElementById('leaveBtn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to leave this battle? You will forfeit.')) {
+          // In a real app, you would navigate back to menu
+          window.location.reload();
+        }
+      });
+      
+      // Return to menu button (game over modal)
+      document.getElementById('returnToMenuBtn').addEventListener('click', () => {
+        // In a real app, you would navigate back to menu
+        window.location.reload();
+      });
+    }
+    
+    // Update attack button state
+    function updateAttackButtonState() {
+      const attackBtn = document.getElementById('attackBtn');
+      
+      if (gameState.selectedTroop && gameState.selectedTarget) {
+        attackBtn.disabled = false;
+      } else {
+        attackBtn.disabled = true;
+      }
+    }
+    
+    // Perform player attack
+    function performPlayerAttack() {
+      if (!gameState.selectedTroop || !gameState.selectedTarget) return;
+      
+      const troop = gameState.selectedTroop;
+      const target = gameState.selectedTarget;
+      const targetData = gameState.opponentTowers[target === 'guard1' || target === 'guard2' ? target : 'king'];
+      
+      // Calculate damage (with some randomness)
+      const baseDamage = troop.attack;
+      const damageMultiplier = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
+      const damage = Math.floor(baseDamage * damageMultiplier);
+      
+      // Apply damage
+      targetData.hp = Math.max(0, targetData.hp - damage);
+      
+      // Check if tower is destroyed
+      if (targetData.hp <= 0) {
+        targetData.destroyed = true;
+        document.getElementById(`opponent-${target}`).classList.add('disabled');
+      }
+      
+      // Update UI
+      updateTowerHP(`opponent-${target}`, targetData.hp, targetData.maxHp);
+      
+      // Add log entry
+      addLogEntry('attack', `${gameState.player.name}'s ${troop.name} ${troop.icon} attacks ${target === 'king' ? 'King Tower' : `Guard Tower ${target.replace('guard', '')}`} for ${damage} damage!`);
+      
+      // Check for game over
+      if (gameState.opponentTowers.king.destroyed) {
+        endGame(true);
+        return;
+      }
+      
+      // Reset selections
+      resetSelections();
+      
+      // Switch turns
+      switchTurn();
+    }
+    
+    // Perform opponent (AI) attack
+    function performOpponentAttack() {
+      // Delay for "thinking" effect
+      setTimeout(() => {
+        // Select random troop
+        const troopIndex = Math.floor(Math.random() * troops.length);
+        const troop = troops[troopIndex];
+        
+        // Select target based on strategy
+        let target;
+        
+        // If both guard towers are up, target one of them
+        if (!gameState.playerTowers.guard1.destroyed && !gameState.playerTowers.guard2.destroyed) {
+          target = Math.random() > 0.5 ? 'guard1' : 'guard2';
+        }
+        // If one guard tower is up, target it
+        else if (!gameState.playerTowers.guard1.destroyed) {
+          target = 'guard1';
+        }
+        else if (!gameState.playerTowers.guard2.destroyed) {
+          target = 'guard2';
+        }
+        // If both guard towers are down, target king
+        else {
+          target = 'king';
+        }
+        
+        const targetData = gameState.playerTowers[target];
+        
+        // Calculate damage (with some randomness)
+        const baseDamage = troop.attack;
+        const damageMultiplier = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
+        const damage = Math.floor(baseDamage * damageMultiplier);
+        
+        // Apply damage
+        targetData.hp = Math.max(0, targetData.hp - damage);
+        
+        // Check if tower is destroyed
+        if (targetData.hp <= 0) {
+          targetData.destroyed = true;
+          document.getElementById(`player-${target}`).classList.add('disabled');
+        }
+        
+        // Update UI
+        updateTowerHP(`player-${target}`, targetData.hp, targetData.maxHp);
+        
+        // Add log entry
+        addLogEntry('attack', `${gameState.opponent.name}'s ${troop.name} ${troop.icon} attacks ${target === 'king' ? 'King Tower' : `Guard Tower ${target.replace('guard', '')}`} for ${damage} damage!`);
+        
+        // Check for game over
+        if (gameState.playerTowers.king.destroyed) {
+          endGame(false);
+          return;
+        }
+        
+        // Switch turns after a short delay
+        setTimeout(() => {
+          switchTurn();
+        }, 1000);
+      }, 1500);
+    }
+    
+    // Switch turns
+    function switchTurn() {
+      gameState.currentTurn++;
+      gameState.isMyTurn = !gameState.isMyTurn;
+      
+      // Update UI
+      document.getElementById('gameSubtitle').textContent = `Battle #${gameState.gameId} - Turn ${gameState.currentTurn}`;
+      
+      if (gameState.isMyTurn) {
+        showNotification('Your turn! Select a troop and target.');
+        addLogEntry('system', 'Your turn.');
+      } else {
+        showNotification('Opponent\'s turn...');
+        addLogEntry('system', 'Opponent\'s turn.');
+        
+        // AI takes its turn
+        performOpponentAttack();
+      }
+    }
+    
+    // Update tower HP display
+    function updateTowerHP(towerId, currentHP, maxHP) {
+      const towerHPElement = document.getElementById(`${towerId}-hp`);
+      const towerHPFill = document.getElementById(`${towerId}-hp-fill`);
+      
+      towerHPElement.textContent = currentHP;
+      
+      const hpPercentage = Math.max(0, (currentHP / maxHP) * 100);
+      towerHPFill.style.width = `${hpPercentage}%`;
+      
+      // Change color based on HP percentage
+      if (hpPercentage > 50) {
+        towerHPFill.style.backgroundColor = '#4caf50'; // Green
+      } else if (hpPercentage > 25) {
+        towerHPFill.style.backgroundColor = '#ff9800'; // Orange
+      } else {
+        towerHPFill.style.backgroundColor = '#f44336'; // Red
+      }
+    }
+    
+    // Reset selections
+    function resetSelections() {
+      gameState.selectedTroop = null;
+      gameState.selectedTarget = null;
+      
+      // Remove selected class from all troops
+      document.querySelectorAll('.troop').forEach(t => t.classList.remove('selected'));
+      
+      // Remove highlight from all towers
+      document.querySelectorAll('.opponent .tower').forEach(t => {
+        t.style.border = 'none';
+      });
+      
+      // Disable attack button
+      document.getElementById('attackBtn').disabled = true;
+    }
+    
+    // Add log entry
+    function addLogEntry(type, message) {
+      const gameLog = document.getElementById('gameLog');
+      const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      
+      const logEntry = document.createElement('div');
+      logEntry.className = 'log-entry';
+      logEntry.innerHTML = `<span class="timestamp">[${timestamp}]</span> <span class="${type}">${message}</span>`;
+      
+      gameLog.appendChild(logEntry);
+      gameLog.scrollTop = gameLog.scrollHeight; // Auto-scroll to bottom
+    }
+    
+    // Show notification
+    function showNotification(message) {
+      const notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.classList.add('show');
+      
+      setTimeout(() => {
+        notification.classList.remove('show');
+      }, 3000);
+    }
+    
+    // Calculate critical hit
+    function calculateCriticalHit(baseDamage) {
+      const critChance = 0.15; // 15% chance for critical hit
+      const isCritical = Math.random() < critChance;
+      
+      if (isCritical) {
+        return {
+          damage: Math.floor(baseDamage * 1.5),
+          isCritical: true
+        };
+      }
+      
+      return {
+        damage: baseDamage,
+        isCritical: false
+      };
+    }
+    
+    // Initialize game when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      initGame();
+    });
