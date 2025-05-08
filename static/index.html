@@ -82,67 +82,71 @@
 </div>
 
 <script>
+    let socket;
+
+    window.onload = function () {
+        socket = new WebSocket("ws://localhost:8080/ws");
+
+        socket.onopen = function () {
+            console.log("WebSocket connected");
+        };
+
+        socket.onmessage = function (event) {
+            const response = JSON.parse(event.data);
+            alert(response.message);
+            if (response.success) {
+                // Bạn có thể lưu token hoặc chuyển trang
+                console.log("Token:", response.token);
+            }
+        };
+
+        socket.onerror = function (err) {
+            console.error("WebSocket error:", err);
+            alert("WebSocket connection error.");
+        };
+
+        socket.onclose = function () {
+            console.warn("WebSocket closed.");
+        };
+    };
+
     function toggleForm(formType) {
-        if (formType === 'register') {
-            document.getElementById('login-form').style.display = 'none';
-            document.getElementById('register-form').style.display = 'block';
-        } else {
-            document.getElementById('login-form').style.display = 'block';
-            document.getElementById('register-form').style.display = 'none';
-        }
+        document.getElementById('login-form').style.display = formType === 'login' ? 'block' : 'none';
+        document.getElementById('register-form').style.display = formType === 'register' ? 'block' : 'none';
     }
 
-    async function login() {
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
+    function login() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
 
         if (!username || !password) {
             alert('Please fill in both fields.');
             return;
         }
 
-        const response = await fetch('/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ username, password }),
-        });
+        const msg = {
+            type: "login",
+            data: { username, password }
+        };
 
-        const result = await response.json();
-        if (result.success) {
-            alert('Login successful');
-            // Handle successful login (e.g., redirect to another page)
-        } else {
-            alert('Login failed: ' + result.message);
-        }
+        socket.send(JSON.stringify(msg));
     }
 
-    async function register() {
-        const username = document.getElementById('new-username').value;
-        const password = document.getElementById('new-password').value;
+    function register() {
+        const username = document.getElementById('new-username').value.trim();
+        const password = document.getElementById('new-password').value.trim();
 
         if (!username || !password) {
             alert('Please fill in both fields.');
             return;
         }
 
-        const response = await fetch('/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ username, password }),
-        });
+        const msg = {
+            type: "register",
+            data: { username, password }
+        };
 
-        const result = await response.json();
-        if (result.success) {
-            alert('Registration successful');
-            // Redirect or show login form
-            toggleForm('login');
-        } else {
-            alert('Registration failed: ' + result.message);
-        }
+        socket.send(JSON.stringify(msg));
     }
 </script>
 
