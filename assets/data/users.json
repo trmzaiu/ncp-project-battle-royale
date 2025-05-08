@@ -1,22 +1,12 @@
 [
   {
+    "id": "20250508233831abcdefgh",
     "username": "tramy",
-    "password": "123456",
+    "password": "$2a$10$yPumXB7n4oF4Pd6XlH0/9.WIR7V4MRIW4LyVLG7DZzI/AdKz.kwhi",
+    "createdAt": "2025-05-08T23:38:31.6110692+07:00",
+    "lastLogin": "2025-05-08T23:38:31.6110692+07:00",
+    "isActive": true,
     "exp": 0,
-    "level": 0,
-    "mana": 0,
-    "towers": null,
-    "troops": null,
-    "active": false
-  },
-  {
-    "username": "giang",
-    "password": "123456",
-    "exp": 0,
-    "level": 0,
-    "mana": 0,
-    "towers": null,
-    "troops": null,
-    "active": false
+    "level": 1
   }
 ]

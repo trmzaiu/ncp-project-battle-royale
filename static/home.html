@@ -103,7 +103,7 @@
             box-shadow: 0 0 20px rgba(74, 58, 255, 0.4);
         }
         
-        .player-name {
+        .user-name {
             font-size: 1.8rem;
             margin-bottom: 15px;
             font-weight: 600;
@@ -342,7 +342,7 @@
         <div class="avatar">
             <span id="playerInitial">P</span>
         </div>
-        <h2 class="player-name" id="playerName">Player</h2>
+        <h2 class="user-name" id="userName">User</h2>
         
         <div class="stats-container">
             <div class="stat-item">
@@ -411,9 +411,9 @@
     </div>
 
     <script>
-        // Player data management
+        // User data management
         const defaultPlayer = {
-        username: "Player",
+        username: "User",
         exp: 0,
         level: 1,
         maxExp: 100,
@@ -421,12 +421,12 @@
         wins: 0
         };
         
-        let player = JSON.parse(localStorage.getItem("player") || JSON.stringify(defaultPlayer));
+        let user = JSON.parse(localStorage.getItem("user") || JSON.stringify(defaultPlayer));
         let selectedMode = "adventure";
         
         // Initialize player info
         function updatePlayerUI() {
-        document.getElementById("playerName").innerText = player.username;
+        document.getElementById("userName").innerText = player.username;
         document.getElementById("playerInitial").innerText = player.username.charAt(0);
         document.getElementById("level").innerText = player.level;
         document.getElementById("exp").innerText = `${player.exp}/${player.maxExp}`;

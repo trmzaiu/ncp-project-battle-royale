@@ -3,19 +3,27 @@
 package model
 
 type Player struct {
-
 	Username string            `json:"username"`
 	Mana     int               `json:"mana"`
 	Towers   map[string]*Tower `json:"towers"`
 	Troops   []*Troop          `json:"troops"`
 	Active   bool              `json:"active"` // Is currently in a game
+	Stats    *PlayerStats      `json:"stats"`  // Game statistics
+}
+
+type PlayerStats struct {
+	GamesPlayed    int `json:"gamesPlayed"`
+	Wins           int `json:"wins"`
+	Losses         int `json:"losses"`
+	TowersDestroyed int `json:"towersDestroyed"`
+	TroopsDeployed  int `json:"troopsDeployed"`
 }
 
 func NewPlayer(username string) *Player {
 	return &Player{
 		Username: username,
 
-		Mana:     5,
+		Mana: 5,
 		Towers: map[string]*Tower{
 			"king":   NewTower("King Tower"),
 			"guard1": NewTower("Guard Tower"),
@@ -23,6 +31,13 @@ func NewPlayer(username string) *Player {
 		},
 		Troops: make([]*Troop, 0),
 		Active: false,
+		Stats: &PlayerStats{
+			GamesPlayed:    0,
+			Wins:           0,
+			Losses:         0,
+			TowersDestroyed: 0,
+			TroopsDeployed:  0,
+		},
 	}
 }
 

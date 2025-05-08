@@ -85,16 +85,16 @@ func AddUser(newUser User) error {
 }
 
 // FindUserByUsername retrieves a user by username
-func FindUserByUsername(username string) bool {
-	users, err := LoadUsers()
-	if err != nil {
-		return false
-	}
+func FindUserByUsername(username string) (User, bool) {
+    users, err := LoadUsers()
+    if err != nil {
+        return User{}, false
+    }
 
-	for _, u := range users {
-		if u.Username == username {
-			return true
-		}
-	}
-	return false
+    for _, u := range users {
+        if u.Username == username {
+            return u, true
+        }
+    }
+    return User{}, false
 }
