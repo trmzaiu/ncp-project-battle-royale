@@ -4,15 +4,8 @@ package network
 
 import "encoding/json"
 
-type MessageType string
-
-const (
-	MsgRegister MessageType = "register"
-	MsgLogin    MessageType = "login"
-)
-
 type Message struct {
-	Type MessageType   `json:"type"`
+	Type string          `json:"type"`
 	Data json.RawMessage `json:"data"`
 }
 
@@ -27,8 +20,7 @@ type LoginRequest struct {
 }
 
 type Response struct {
-    Type    string `json:"type"`    // add this
-    Success bool   `json:"success"`
-    Message string `json:"message"`
-    Token string `json:"token,omitempty"`
+	Type    string `json:"type"`
+	Success bool   `json:"success"`
+	Message string `json:"message"`
 }

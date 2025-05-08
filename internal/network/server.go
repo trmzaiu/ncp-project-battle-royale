@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"royaka/internal/player"
+	"royaka/internal/model"
 
 	"github.com/gorilla/websocket"
 )
@@ -29,33 +29,54 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		log.Printf("Received raw message: %s\n", string(msg))
+
 		var pdu Message
 		if err := json.Unmarshal(msg, &pdu); err != nil {
 			log.Println("PDU decode error:", err)
+			conn.WriteJSON(Response{Type: "error", Success: false, Message: "Invalid message format"})
 			continue
 		}
 
 		switch pdu.Type {
-		case MsgRegister:
+		case "register":
 			var req RegisterRequest
-			json.Unmarshal(pdu.Data, &req)
-			err := player.AddPlayer(player.Player{Username: req.Username, Password: req.Password})
-			resp := Response{Type: "register_response", Success: err == nil, Message: "Registered"}
+			if err := json.Unmarshal(pdu.Data, &req); err != nil {
+				log.Println("RegisterRequest decode error:", err)
+				conn.WriteJSON(Response{Type: "register_response", Success: false, Message: "Invalid register data"})
+				continue
+			}
+
+			log.Printf("RegisterRequest: %+v\n", req)
+
+			err := model.AddPlayer(*model.NewPlayer(req.Username, req.Password))
+			resp := Response{Type: "register_response", Success: err == nil, Message: "Registered successfully"}
 			if err != nil {
-				resp.Message = "Registration failed"
+				log.Println("Registration error:", err)
+				resp.Message = "Registration failed: " + err.Error()
 			}
 			conn.WriteJSON(resp)
 
-		case MsgLogin:
+		case "login":
 			var req LoginRequest
-			json.Unmarshal(pdu.Data, &req)
-			ok := player.FindPlayerByUsername(req.Username)
+			if err := json.Unmarshal(pdu.Data, &req); err != nil {
+				log.Println("LoginRequest decode error:", err)
+				conn.WriteJSON(Response{Type: "login_response", Success: false, Message: "Invalid login data"})
+				continue
+			}
+
+			log.Printf("LoginRequest: %+v\n", req)
+
+			ok := model.FindPlayerByUsername(req.Username)
 			resp := Response{Type: "login_response", Success: ok, Message: "Login successful"}
 			if !ok {
 				resp.Message = "Invalid credentials"
 			}
 			conn.WriteJSON(resp)
-		}
 
+		default:
+			log.Printf("Unknown message type: %s\n", pdu.Type)
+			conn.WriteJSON(Response{Type: "error", Success: false, Message: "Unknown message type"})
+		}
 	}
 }

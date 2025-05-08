@@ -1,44 +1,52 @@
 :root {
-    --primary: #4a3aff;
-    --primary-dark: #3a2aff;
-    --secondary: #ff6b6b;
-    --dark: #2d3142;
-    --light: #f7f9fc;
-    --accent: #ffd166;
-  }
+  --primary: #5667ff;
+  --primary-dark: #4050e6;
+  --primary-light: #7a89ff;
+  --secondary: #ff8a65;
+  --success: #4caf50;
+  --error: #f44336;
+  --warning: #ff9800;
+  --info: #2196f3;
+  --dark: #303952;
+  --light: #f5f6fa;
+  --gray: #7f8fa6;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --border-radius: 12px;
+  --transition: all 0.3s ease;
+}
   
-  * {
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
+}
   
-  body {
+body {
     background: linear-gradient(135deg, #2d3142 0%, #1a1b26 100%);
-    color: var(--light);
+    color: var(--primary);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 20px;
-  }
+}
   
-  .container {
+.container {
     width: 100%;
     max-width: 900px;
     display: grid;
     grid-template-columns: 1fr 2fr;
     gap: 24px;
     margin-top: 30px;
-  }
+}
   
-  @media (max-width: 768px) {
+@media (max-width: 768px) {
     .container {
       grid-template-columns: 1fr;
     }
-  }
+}
   
   .header {
     text-align: center;
@@ -120,7 +128,7 @@
   
   .stat-value {
     font-weight: 600;
-    color: var(--light);
+    color: var(--primary-light);
   }
   
   .progress-bar {
@@ -323,42 +331,6 @@
     transform: translateX(-50%) translateY(-10px);
 }
 
-:root {
-    --primary: #5667ff;
-    --primary-dark: #4050e6;
-    --primary-light: #7a89ff;
-    --secondary: #ff8a65;
-    --success: #4caf50;
-    --error: #f44336;
-    --warning: #ff9800;
-    --info: #2196f3;
-    --dark: #303952;
-    --light: #f5f6fa;
-    --gray: #7f8fa6;
-    --shadow: rgba(0, 0, 0, 0.1);
-    --border-radius: 12px;
-    --transition: all 0.3s ease;
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', 'Roboto', sans-serif;
-}
-
-body {
-    background-color: var(--light);
-    color: var(--dark);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    padding: 20px;
-    position: relative;
-    overflow-x: hidden;
-}
-
 .background {
     position: absolute;
     width: 100%;
@@ -427,11 +399,6 @@ body {
     position: relative;
     transition: var(--transition);
     transform: translateZ(0);
-}
-
-.container:hover {
-    box-shadow: 0 12px 50px rgba(0, 0, 0, 0.18);
-    transform: translateY(-5px);
 }
 
 .form-header {

@@ -1,10 +1,22 @@
 [
   {
     "username": "tramy",
-    "password": "123456"
+    "password": "123456",
+    "exp": 0,
+    "level": 0,
+    "mana": 0,
+    "towers": null,
+    "troops": null,
+    "active": false
   },
   {
     "username": "giang",
-    "password": "123456"
+    "password": "123456",
+    "exp": 0,
+    "level": 0,
+    "mana": 0,
+    "towers": null,
+    "troops": null,
+    "active": false
   }
 ]

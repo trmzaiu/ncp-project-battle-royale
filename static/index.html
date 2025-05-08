@@ -175,7 +175,10 @@
 
             const msg = {
                 type: "login",
-                data: JSON.stringify({ username, password })
+                data: {
+                    username: username,
+                    password: password
+                }
             };
 
             socket.send(JSON.stringify(msg));
@@ -193,7 +196,10 @@
 
             const msg = {
                 type: "register",
-                data: JSON.stringify({ username, password })
+                data: {
+                    username: username,
+                    password: password
+                }
             };
 
             socket.send(JSON.stringify(msg));

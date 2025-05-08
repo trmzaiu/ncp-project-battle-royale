@@ -1,10 +1,6 @@
-// internal/player/player.go
+// internal/model/player.go
 
-package player
-
-import (
-
-)
+package model
 
 type Player struct {
 	Username string                 `json:"username"`
@@ -12,8 +8,8 @@ type Player struct {
 	EXP      int                    `json:"exp"`
 	Level    int                    `json:"level"`
 	Mana     int                    `json:"mana"`
-	Towers   map[string]*Tower `json:"towers"`
-	Troops   []*Troop          `json:"troops"`
+	Towers   map[string]*Tower 		`json:"towers"`
+	Troops   []*Troop          		`json:"troops"`
 	Active   bool                   `json:"active"`
 }
 
@@ -50,4 +46,14 @@ func (p *Player) ManaRegen() {
 	if p.Mana < 10 {
 		p.Mana++
 	}
+}
+
+func (p *Player) Reset() {
+	// Reset tower HP to their default values
+	p.Towers["king"].HP = 2000   // King Tower has 2000 HP
+	p.Towers["guard1"].HP = 1000 // Guard Towers have 1000 HP
+	p.Towers["guard2"].HP = 1000
+	p.Mana = 5
+	p.EXP = 0
+	p.Level = 1
 }

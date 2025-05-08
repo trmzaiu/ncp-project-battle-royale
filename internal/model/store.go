@@ -1,4 +1,6 @@
-package player
+// internal/model/store.go
+
+package model
 
 import (
 	"encoding/json"

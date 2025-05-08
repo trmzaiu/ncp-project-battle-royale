@@ -1,13 +1,13 @@
-// internal/player/tower.go
+// internal/model/tower.go
 
-package player
+package model
 
 type Tower struct {
 	Type  string  `json:"type"`
 	HP    int     `json:"hp"`
 	ATK   int     `json:"atk"`
 	DEF   int     `json:"def"`
-	CRIT  float64 `json:"crit"` // percentage 0.05 = 5%
+	CRIT  float64 `json:"crit"` 
 	EXP   int     `json:"exp"`
 }
 
@@ -24,5 +24,23 @@ func (t *Tower) TakeDamage(amount int) {
 	t.HP -= amount
 	if t.HP < 0 {
 		t.HP = 0
+	}
+}
+
+func AttackTower(troop *Troop, target *Tower) int {
+	dmg := troop.DamageTo(target)
+	target.TakeDamage(dmg)
+	return dmg
+}
+
+func HealLowestTower(towers map[string]*Tower) {
+	var lowest *Tower
+	for _, t := range towers {
+		if t.HP > 0 && (lowest == nil || t.HP < lowest.HP) {
+			lowest = t
+		}
+	}
+	if lowest != nil {
+		lowest.HP += 300
 	}
 }
