@@ -354,15 +354,15 @@
                     <span class="stat-value" id="exp">0/100</span>
                 </div>
                 <div class="progress-bar">
-                    <div class="progress" id="expProgress"></div>
+                <div class="progress" id="expProgress"></div>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Games Played</span>
-                    <span class="stat-value" id="gamesPlayed">0</span>
+                <span class="stat-label">Games Played</span>
+                <span class="stat-value" id="gamesPlayed">0</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Wins</span>
-                    <span class="stat-value" id="wins">0</span>
+                <span class="stat-label">Wins</span>
+                <span class="stat-value" id="wins">0</span>
                 </div>
             </div>
         </div>
@@ -412,18 +412,21 @@
 
     <script>
         // User data management
-        const defaultUser = {
-            username: "User",
-            exp: 0,
-            level: 1,
-        }
+        const defaultPlayer = {
+        username: "User",
+        exp: 0,
+        level: 1,
+        maxExp: 100,
+        gamesPlayed: 0,
+        wins: 0
+        };
         
-        let user = JSON.parse(localStorage.getItem("user") || JSON.stringify(defaultUser));
+        let user = JSON.parse(localStorage.getItem("user") || JSON.stringify(defaultPlayer));
         let selectedMode = "adventure";
         
         // Initialize player info
         function updatePlayerUI() {
-        document.getElementById("username").innerText = user.username;
+        document.getElementById("userName").innerText = player.username;
         document.getElementById("playerInitial").innerText = player.username.charAt(0);
         document.getElementById("level").innerText = player.level;
         document.getElementById("exp").innerText = `${player.exp}/${player.maxExp}`;

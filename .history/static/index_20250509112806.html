@@ -106,7 +106,7 @@
             backdrop-filter: blur(10px);
             border-radius: var(--border-radius);
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
-            width: 40%;
+            width: 50%;
             overflow: hidden;
             position: relative;
             transition: var(--transition);
@@ -469,9 +469,6 @@
                 if (res.type === "login_response") {
                     if (res.success) {
                         showNotification(res.message, 'success');
-                        localStorage.setItem("user", JSON.stringify({ 
-                            username: document.getElementById('username').value,
-                        }));
                         
                         // Show loading animation before redirect
                         document.querySelector('.action-button').innerHTML = '<div class="spinner"></div>';

@@ -469,8 +469,9 @@
                 if (res.type === "login_response") {
                     if (res.success) {
                         showNotification(res.message, 'success');
-                        localStorage.setItem("user", JSON.stringify({ 
-                            username: document.getElementById('username').value,
+                        localStorage.setItem("player", JSON.stringify({ 
+                            username: document.getElementById('username').value, 
+                           
                         }));
                         
                         // Show loading animation before redirect

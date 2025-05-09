@@ -417,13 +417,14 @@
             exp: 0,
             level: 1,
         }
+
         
         let user = JSON.parse(localStorage.getItem("user") || JSON.stringify(defaultUser));
         let selectedMode = "adventure";
         
         // Initialize player info
         function updatePlayerUI() {
-        document.getElementById("username").innerText = user.username;
+        document.getElementById("userName").innerText = player.username;
         document.getElementById("playerInitial").innerText = player.username.charAt(0);
         document.getElementById("level").innerText = player.level;
         document.getElementById("exp").innerText = `${player.exp}/${player.maxExp}`;

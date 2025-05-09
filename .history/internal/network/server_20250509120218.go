@@ -36,8 +36,9 @@ var sessionFilePath = "assets/data/sessions.json"
 func ReadSession() (Session, error) {
 	var session Session
 
+	sessionID := uuid.New().String()[:8]
 	if _, err := os.Stat(sessionFilePath); os.IsNotExist(err) {
-		session = Session{Authenticated: false, Username: "", SessionID: ""}
+		session = Session{Authenticated: false, Username: "", SessionID: sessionID}
 		err := WriteSession(session)
 		if err != nil {
 			return session, err
@@ -169,8 +170,6 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 				err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(req.Password))
 				if err == nil {
 					// Save session data to file
-					sessionID := uuid.New().String()[:8]
-					session.SessionID = sessionID
 					session.Authenticated = true
 					session.Username = req.Username
 					err := WriteSession(session)

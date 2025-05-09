@@ -11,7 +11,6 @@ import (
 
 	"royaka/internal/model"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -26,18 +25,17 @@ var upgrader = websocket.Upgrader{
 type Session struct {
 	Authenticated bool   `json:"authenticated"`
 	Username      string `json:"username"`
-	SessionID     string `json:"session_id"`
 }
 
 // File to store session data
-var sessionFilePath = "assets/data/sessions.json"
+var sessionFilePath = "assets/data//sessions.json"
 
 // ReadSession reads the session data from the file
 func ReadSession() (Session, error) {
 	var session Session
 
 	if _, err := os.Stat(sessionFilePath); os.IsNotExist(err) {
-		session = Session{Authenticated: false, Username: "", SessionID: ""}
+		session = Session{Authenticated: false, Username: ""}
 		err := WriteSession(session)
 		if err != nil {
 			return session, err
@@ -57,14 +55,14 @@ func ReadSession() (Session, error) {
 		return session, err
 	}
 	if fileStats.Size() == 0 {
-		session = Session{Authenticated: false, Username: "", SessionID: ""}
+		session = Session{Authenticated: false, Username: ""}
 		return session, nil
 	}
 
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&session)
 	if err == io.EOF {
-		session = Session{Authenticated: false, Username: "", SessionID: ""}
+		session = Session{Authenticated: false, Username: ""}
 		return session, nil
 	} else if err != nil {
 		return session, err
@@ -136,6 +134,20 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
+			// Check if the username already exists in the database
+			existingUser, err := model.FindUserByUsername(req.Username)
+			if err != nil {
+				log.Println("Error checking existing username:", err)
+				conn.WriteJSON(Response{Type: "register_response", Success: false, Message: "Error checking username"})
+				continue
+			}
+
+			if existingUser != nil {
+				// Username is already taken
+				conn.WriteJSON(Response{Type: "register_response", Success: false, Message: "Username is already taken"})
+				continue
+			}
+
 			// Hash the password before storing
 			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 			if err != nil {
@@ -169,8 +181,6 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 				err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(req.Password))
 				if err == nil {
 					// Save session data to file
-					sessionID := uuid.New().String()[:8]
-					session.SessionID = sessionID
 					session.Authenticated = true
 					session.Username = req.Username
 					err := WriteSession(session)

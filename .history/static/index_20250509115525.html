@@ -470,7 +470,8 @@
                     if (res.success) {
                         showNotification(res.message, 'success');
                         localStorage.setItem("user", JSON.stringify({ 
-                            username: document.getElementById('username').value,
+                            username: document.getElementById('username').value, 
+    
                         }));
                         
                         // Show loading animation before redirect

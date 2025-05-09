@@ -11,7 +11,6 @@ import (
 
 	"royaka/internal/model"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -169,8 +168,6 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 				err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(req.Password))
 				if err == nil {
 					// Save session data to file
-					sessionID := uuid.New().String()[:8]
-					session.SessionID = sessionID
 					session.Authenticated = true
 					session.Username = req.Username
 					err := WriteSession(session)
