@@ -95,6 +95,14 @@ func FindSessionByID(sessionID string) (Session, error) {
 }
 
 func HandleWS(w http.ResponseWriter, r *http.Request) {
+	// Get session
+	session, err := ReadSessions()
+	if err != nil {
+		log.Println("Session error:", err)
+		http.Error(w, "Session error", http.StatusInternalServerError)
+		return
+	}
+
 	// Upgrade HTTP request to WebSocket
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -165,13 +173,10 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 				if err == nil {
 					// Save session data to file
 					sessionID := uuid.New().String()[:8]
-					session := Session{
-						Authenticated: true,
-						SessionID:     sessionID,
-						Username:      req.Username,
-					}
+					session.SessionID = sessionID
+					session.Authenticated = true
+					session.Username = req.Username
 					err := WriteSession(session)
-
 					if err != nil {
 						log.Println("Error writing session:", err)
 						conn.WriteJSON(Response{Type: "login_response", Success: false, Message: "Error saving session"})

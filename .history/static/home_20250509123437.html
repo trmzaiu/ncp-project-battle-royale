@@ -430,10 +430,10 @@
             document.getElementById("level").innerText = user.level;
             document.getElementById("exp").innerText = `${user.exp}/${user.maxExp}`;
             document.getElementById("gamesPlayed").innerText = user.gamesPlayed || 0;
-            document.getElementById("wins").innerText = user.wins || 0;
+            document.getElementById("wins").innerText = player.wins || 0;
             
             // Update progress bar
-            const progress = (user.exp / user.maxExp) * 100;
+            const progress = (player.exp / player.maxExp) * 100;
             document.getElementById("expProgress").style.width = `${progress}%`;
         }
         

@@ -4,7 +4,7 @@ package network
 
 import (
 	"encoding/json"
-	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -33,68 +33,73 @@ type Session struct {
 var sessionFilePath = "assets/data/sessions.json"
 
 // ReadSession reads the session data from the file
-func ReadSessions() ([]Session, error) {
+func ReadSession() (Session, error) {
+	var session Session
+
+	if _, err := os.Stat(sessionFilePath); os.IsNotExist(err) {
+		session = Session{Authenticated: false, Username: "", SessionID: ""}
+		err := WriteSession(session)
+		if err != nil {
+			return session, err
+		}
+		log.Println("Session file created with default session.")
+		return session, nil
+	}
+
 	file, err := os.Open(sessionFilePath)
 	if err != nil {
-		return nil, err
+		return session, err
 	}
 	defer file.Close()
 
-	var sessions []Session
-	err = json.NewDecoder(file).Decode(&sessions)
+	fileStats, err := file.Stat()
 	if err != nil {
-		return nil, err
+		return session, err
 	}
-	return sessions, nil
+	if fileStats.Size() == 0 {
+		session = Session{Authenticated: false, Username: "", SessionID: ""}
+		return session, nil
+	}
+
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&session)
+	if err == io.EOF {
+		session = Session{Authenticated: false, Username: "", SessionID: ""}
+		return session, nil
+	} else if err != nil {
+		return session, err
+	}
+
+	return session, nil
 }
 
 // WriteSession writes the session data to the file
-func WriteSession(newSession Session) error {
-	sessions, err := ReadSessions()
-	if err != nil {
-		sessions = []Session{}
-	}
-
-	updated := false
-	for i, s := range sessions {
-		if s.Username == newSession.Username {
-			sessions[i] = newSession
-			updated = true
-			break
-		}
-	}
-	if !updated {
-		sessions = append(sessions, newSession)
-	}
-
-	data, err := json.MarshalIndent(sessions, "", "  ")
+func WriteSession(session Session) error {
+	file, err := os.Create(sessionFilePath)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(sessionFilePath, data, 0644)
-}
-
-func FindSessionByID(sessionID string) (Session, error) {
-	file, err := os.Open(sessionFilePath)
-	if err != nil {
-		return Session{}, err
-	}
 	defer file.Close()
 
-	var session Session
-	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&session)
-	if err != nil {
-		return Session{}, err
-	}
-
-	if session.SessionID == sessionID {
-		return session, nil
-	}
-	return Session{}, fmt.Errorf("session not found")
+	encoder := json.NewEncoder(file)
+	return encoder.Encode(session)
 }
 
 func HandleWS(w http.ResponseWriter, r *http.Request) {
+	// Get session
+	session, err := ReadSession()
+	if err != nil {
+		log.Println("Session error:", err)
+		http.Error(w, "Session error", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if user is authenticated
+	if !session.Authenticated {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	// Upgrade HTTP request to WebSocket
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -165,13 +170,10 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 				if err == nil {
 					// Save session data to file
 					sessionID := uuid.New().String()[:8]
-					session := Session{
-						Authenticated: true,
-						SessionID:     sessionID,
-						Username:      req.Username,
-					}
+					session.SessionID = sessionID
+					session.Authenticated = true
+					session.Username = req.Username
 					err := WriteSession(session)
-
 					if err != nil {
 						log.Println("Error writing session:", err)
 						conn.WriteJSON(Response{Type: "login_response", Success: false, Message: "Error saving session"})
@@ -187,34 +189,6 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 			conn.WriteJSON(resp)
-
-		case "get_user":
-			var req struct {
-				SessionID string `json:"session_id"`
-			}
-			if err := json.Unmarshal(pdu.Data, &req); err != nil {
-				conn.WriteJSON(Response{Type: "get_user_response", Success: false, Message: "Invalid session ID"})
-				continue
-			}
-
-			session, err := FindSessionByID(req.SessionID)
-			if err != nil {
-				conn.WriteJSON(Response{Type: "get_user_response", Success: false, Message: "Session not found"})
-				continue
-			}
-
-			user, ok := model.FindUserByUsername(session.Username)
-			if !ok {
-				conn.WriteJSON(Response{Type: "get_user_response", Success: false, Message: "User not found"})
-				continue
-			}
-
-			// Return user data
-			conn.WriteJSON(Response{
-				Type:    "get_user_response",
-				Success: true,
-				Data:    user,
-			})
 
 		default:
 			log.Printf("Unknown message type: %s\n", pdu.Type)

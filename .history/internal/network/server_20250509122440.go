@@ -95,6 +95,7 @@ func FindSessionByID(sessionID string) (Session, error) {
 }
 
 func HandleWS(w http.ResponseWriter, r *http.Request) {
+
 	// Upgrade HTTP request to WebSocket
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

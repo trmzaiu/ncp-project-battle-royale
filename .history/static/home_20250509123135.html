@@ -426,14 +426,14 @@
         // Initialize player info
         function updatePlayerUI() {
             document.getElementById("username").innerText = user.username;
-            document.getElementById("playerInitial").innerText = user.username.charAt(0);
-            document.getElementById("level").innerText = user.level;
-            document.getElementById("exp").innerText = `${user.exp}/${user.maxExp}`;
-            document.getElementById("gamesPlayed").innerText = user.gamesPlayed || 0;
-            document.getElementById("wins").innerText = user.wins || 0;
+            document.getElementById("playerInitial").innerText = player.username.charAt(0);
+            document.getElementById("level").innerText = player.level;
+            document.getElementById("exp").innerText = `${player.exp}/${player.maxExp}`;
+            document.getElementById("gamesPlayed").innerText = player.gamesPlayed || 0;
+            document.getElementById("wins").innerText = player.wins || 0;
             
             // Update progress bar
-            const progress = (user.exp / user.maxExp) * 100;
+            const progress = (player.exp / player.maxExp) * 100;
             document.getElementById("expProgress").style.width = `${progress}%`;
         }
         

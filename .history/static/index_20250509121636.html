@@ -471,9 +471,9 @@
                         showNotification(res.message, 'success');
                         const sessionId = res.data.session_id;
                         if (sessionId) {
-                            localStorage.setItem("session_id", sessionId);
-                            console.log("Session ID saved:", sessionId);
-                        }
+            localStorage.setItem("session_id", sessionId);
+            console.log("Session ID saved:", sessionId);
+        }
                         
                         // Show loading animation before redirect
                         document.querySelector('.action-button').innerHTML = '<div class="spinner"></div>';

@@ -1,1 +1,7 @@
-{"authenticated":true,"username":"tramy"}
+[
+  {
+    "authenticated": true,
+    "username": "tramy",
+    "session_id": "888f940a"
+  }
+]

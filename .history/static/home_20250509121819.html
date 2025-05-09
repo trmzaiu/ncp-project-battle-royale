@@ -419,31 +419,38 @@
         }
 
         const sessionId = localStorage.getItem("session_id");
+
+if (sessionId) {
+    socket.send(JSON.stringify({
+        type: "get_user",
+        data: JSON.stringify({ session_id: sessionId })
+    }));
+}
         
         let user = JSON.parse(localStorage.getItem("user") || JSON.stringify(defaultUser));
         let selectedMode = "adventure";
         
         // Initialize player info
         function updatePlayerUI() {
-            document.getElementById("username").innerText = user.username;
-            document.getElementById("playerInitial").innerText = user.username.charAt(0);
-            document.getElementById("level").innerText = user.level;
-            document.getElementById("exp").innerText = `${user.exp}/${user.maxExp}`;
-            document.getElementById("gamesPlayed").innerText = user.gamesPlayed || 0;
-            document.getElementById("wins").innerText = user.wins || 0;
-            
-            // Update progress bar
-            const progress = (user.exp / user.maxExp) * 100;
-            document.getElementById("expProgress").style.width = `${progress}%`;
+        document.getElementById("username").innerText = user.username;
+        document.getElementById("playerInitial").innerText = player.username.charAt(0);
+        document.getElementById("level").innerText = player.level;
+        document.getElementById("exp").innerText = `${player.exp}/${player.maxExp}`;
+        document.getElementById("gamesPlayed").innerText = player.gamesPlayed || 0;
+        document.getElementById("wins").innerText = player.wins || 0;
+        
+        // Update progress bar
+        const progress = (player.exp / player.maxExp) * 100;
+        document.getElementById("expProgress").style.width = `${progress}%`;
         }
         
         // Mode selection
         document.querySelectorAll('.mode-card').forEach(card => {
-            card.addEventListener('click', () => {
-                document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
-                card.classList.add('selected');
-                selectedMode = card.dataset.mode;
-            });
+        card.addEventListener('click', () => {
+            document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            selectedMode = card.dataset.mode;
+        });
         });
         
         // Notification system
@@ -480,100 +487,92 @@
         let ws = null;
         
         function connectWebSocket() {
-            try {
-                ws = new WebSocket("ws://localhost:8080/ws");
-                
-                ws.onopen = () => {
-                    addLogEntry("SYSTEM", "Connected to game server");
-                    showNotification("Connected to game server");
-                    document.getElementById("startGameBtn").disabled = false;
-                };
-                
-                ws.onmessage = (event) => {
-                    const msg = JSON.parse(event.data);
-                    addLogEntry(msg.type.toUpperCase(), msg.payload);
-
-                    if (msg.type === "get_user_response") {
-                        const userData = msg.data;
-                        localStorage.setItem("user", JSON.stringify(userData));
-                        user = userData;
-                        updatePlayerUI();
-                    }
-
-                    
-                    if (msg.type === "match_found") {
-                        showNotification("Match found! Redirecting...");
-                        setTimeout(() => {
-                        window.location.href = "/game.html";
-                        }, 1500);
-                    }
-                };
-                
-                ws.onclose = () => {
-                addLogEntry("SYSTEM", "Disconnected from server");
-                showNotification("Disconnected from server. Trying to reconnect...");
-                setTimeout(connectWebSocket, 3000);
-                };
-                
-                ws.onerror = () => {
-                addLogEntry("ERROR", "Connection error");
-                showNotification("Connection error");
-                };
-            } catch (e) {
-                addLogEntry("ERROR", "Failed to connect to server");
-                showNotification("Failed to connect to server. Retrying...");
-                setTimeout(connectWebSocket, 3000);
+        try {
+            ws = new WebSocket("ws://localhost:8080/ws");
+            
+            ws.onopen = () => {
+            addLogEntry("SYSTEM", "Connected to game server");
+            showNotification("Connected to game server");
+            document.getElementById("startGameBtn").disabled = false;
+            };
+            
+            ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            addLogEntry(msg.type.toUpperCase(), msg.payload);
+            
+            if (msg.type === "match_found") {
+                showNotification("Match found! Redirecting...");
+                setTimeout(() => {
+                window.location.href = "/game.html";
+                }, 1500);
             }
+            };
+            
+            ws.onclose = () => {
+            addLogEntry("SYSTEM", "Disconnected from server");
+            showNotification("Disconnected from server. Trying to reconnect...");
+            setTimeout(connectWebSocket, 3000);
+            };
+            
+            ws.onerror = () => {
+            addLogEntry("ERROR", "Connection error");
+            showNotification("Connection error");
+            };
+        } catch (e) {
+            addLogEntry("ERROR", "Failed to connect to server");
+            showNotification("Failed to connect to server. Retrying...");
+            setTimeout(connectWebSocket, 3000);
+        }
         }
         
         // Start game button
         document.getElementById("startGameBtn").addEventListener("click", function() {
-            const btn = this;
-            btn.disabled = true;
-            
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<div class="spinner"></div> Finding match...';
-            
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                type: "join_game",
-                payload: {
-                    username: player.username,
-                    mode: selectedMode
-                }
-                }));
-                
-                addLogEntry("SYSTEM", `Searching for ${selectedMode} match...`);
-            } else {
-                addLogEntry("ERROR", "Not connected to server");
-                showNotification("Not connected to server. Reconnecting...");
-                connectWebSocket();
-                
-                // Reset button after a delay
-                setTimeout(() => {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-                }, 2000);
+        const btn = this;
+        btn.disabled = true;
+        
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<div class="spinner"></div> Finding match...';
+        
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+            type: "join_game",
+            payload: {
+                username: player.username,
+                mode: selectedMode
             }
+            }));
+            
+            addLogEntry("SYSTEM", `Searching for ${selectedMode} match...`);
+        } else {
+            addLogEntry("ERROR", "Not connected to server");
+            showNotification("Not connected to server. Reconnecting...");
+            connectWebSocket();
+            
+            // Reset button after a delay
+            setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            }, 2000);
+        }
         });
         
         // Leaderboard button
         document.getElementById("leaderboardBtn").addEventListener("click", function() {
-            showNotification("Leaderboard coming soon!");
+        showNotification("Leaderboard coming soon!");
         });
         
         // Settings button
         document.getElementById("settingsBtn").addEventListener("click", function() {
-            showNotification("Settings coming soon!");
+        showNotification("Settings coming soon!");
         });
 
         function getCurrentTime() {
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            return `${hours}:${minutes}:${seconds}`;
-        }
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
+    }
 
         document.getElementById('timestamp').textContent = getCurrentTime();
         

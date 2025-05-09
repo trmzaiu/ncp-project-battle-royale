@@ -23,5 +23,5 @@ type Response struct {
 	Type    string 		`json:"type"`
 	Success bool   		`json:"success"`
 	Message string 		`json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Data    interface{}    `json:"data,omitempty"`
 }
