@@ -6,11 +6,11 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"royaka/internal/model"
 
-	"github.com/google/uuid"
+	"royaka/internal/game"
+	"royaka/internal/utils"
+
 	"github.com/gorilla/websocket"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var upgrader = websocket.Upgrader{
@@ -20,8 +20,7 @@ var upgrader = websocket.Upgrader{
 }
 
 // HandleWS handles WebSocket connections and messages
-func HandleWS(w http.ResponseWriter, r *http.Request) {
-	// Upgrade HTTP request to WebSocket
+func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("Upgrade error: %v", err)
@@ -34,129 +33,27 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
 			log.Printf("Error reading message: %v", err)
-			conn.Close()
 			return
 		}
 
-		log.Printf("Received raw message: %s\n", string(msg))
-
-		var pdu Message
+		var pdu utils.Message
 		if err := json.Unmarshal(msg, &pdu); err != nil {
-			log.Println("PDU decode error:", err)
-			conn.WriteJSON(Response{Type: "error", Success: false, Message: "Invalid message format"})
+			conn.WriteJSON(utils.Response{Type: "error", Success: false, Message: "Invalid message format"})
 			continue
 		}
 
-		// Handle different message types
 		switch pdu.Type {
 		case "register":
-			var req RegisterRequest
-			if err := json.Unmarshal(pdu.Data, &req); err != nil {
-				log.Println("RegisterRequest decode error:", err)
-				conn.WriteJSON(Response{Type: "register_response", Success: false, Message: "Invalid register data"})
-				continue
-			}
-
-			// Hash the password before storing
-			hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-			if err != nil {
-				log.Println("Password hashing error:", err)
-				conn.WriteJSON(Response{Type: "register_response", Success: false, Message: "Error hashing password"})
-				continue
-			}
-
-			// Add user to the database
-			err = model.AddUser(*model.NewUser(req.Username, string(hashedPassword)))
-			resp := Response{Type: "register_response", Success: err == nil, Message: "Registered successfully"}
-			if err != nil {
-				log.Println("Registration error:", err)
-				resp.Message = "Registration failed: " + err.Error()
-			}
-			conn.WriteJSON(resp)
-
+			handleRegister(conn, pdu.Data)
 		case "login":
-			var req LoginRequest
-			if err := json.Unmarshal(pdu.Data, &req); err != nil {
-				log.Println("LoginRequest decode error:", err)
-				conn.WriteJSON(Response{Type: "login_response", Success: false, Message: "Invalid login data"})
-				continue
-			}
-
-			// Find user and check password
-			u, ok := model.FindUserByUsername(req.Username)
-			resp := Response{Type: "login_response", Success: false, Message: "Invalid credentials"}
-			if ok {
-				// Compare the hashed password
-				err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(req.Password))
-				if err == nil {
-					// Create a new session for the user
-					sessionID := uuid.New().String()[:8]
-					session := Session{
-						SessionID:     sessionID,
-						Username:      req.Username,
-						Authenticated: true,
-					}
-
-					sessions, err := ReadSessions()
-					if err != nil {
-						log.Println("Error reading sessions:", err)
-						conn.WriteJSON(Response{Type: "login_response", Success: false, Message: "Error reading sessions"})
-						continue
-					}
-
-					sessions = append(sessions, session)
-
-					err = WriteSession(sessions)
-					if err != nil {
-						log.Println("Error writing session:", err)
-						conn.WriteJSON(Response{Type: "login_response", Success: false, Message: "Error saving session"})
-						continue
-					}
-
-					resp.Success = true
-					resp.Message = "Login successful"
-					resp.Data = map[string]string{"session_id": sessionID}
-					conn.WriteJSON(resp)
-
-				} else {
-					resp.Message = "Invalid credentials"
-				}
-			}
-			conn.WriteJSON(resp)
-
+			handleLogin(conn, pdu.Data)
 		case "get_user":
-			var req struct {
-				SessionID string `json:"session_id"`
-			}
-
-			if err := json.Unmarshal(pdu.Data, &req); err != nil {
-				conn.WriteJSON(Response{Type: "get_user_response", Success: false, Message: "Invalid session ID"})
-				continue
-			}
-
-			session, err := FindSessionByID(req.SessionID)
-			if err != nil {
-				conn.WriteJSON(Response{Type: "get_user_response", Success: false, Message: "Session not found"})
-				continue
-			}
-
-			user, ok := model.FindUserByUsername(session.Username)
-			if !ok {
-				conn.WriteJSON(Response{Type: "get_user_response", Success: false, Message: "User not found"})
-				continue
-			}
-
-			// Return user data
-			conn.WriteJSON(Response{
-				Type:    "get_user_response",
-				Success: true,
-				Data:    user,
-			})
-
+			handleGetUser(conn, pdu.Data)
+		case "start_game":
+			game.HandleStartGame(conn, pdu.Data)
 		default:
-			log.Printf("Unknown message type: %s\n", pdu.Type)
-			conn.WriteJSON(Response{Type: "error", Success: false, Message: "Unknown message type"})
-			conn.Close() // Close the WebSocket after an unknown message type
+			conn.WriteJSON(utils.Response{Type: "error", Success: false, Message: "Unknown message type"})
+			conn.Close()
 			return
 		}
 	}

@@ -5,14 +5,16 @@ package model
 import "time"
 
 type User struct {
-	ID        string    `json:"id"`
-	Username  string    `json:"username"`
-	Password  string    `json:"password"` // This should be hashed in production
-	CreatedAt time.Time `json:"createdAt"`
-	LastLogin time.Time `json:"lastLogin"`
-	IsActive  bool      `json:"isActive"`
-	EXP      int        `json:"exp"`
-	Level    int        `json:"level"`
+    ID          string    `json:"id"`
+    Username    string    `json:"username"`
+    Password    string    `json:"password"` // This should be hashed in production
+    CreatedAt   time.Time `json:"createdAt"`
+    LastLogin   time.Time `json:"lastLogin"`
+    IsActive    bool      `json:"isActive"`
+    EXP         int       `json:"exp"`
+    Level       int       `json:"level"`
+    GamesPlayed int       `json:"gamesPlayed"` // Track number of games played
+    GamesWon    int       `json:"gamesWon"`    // Track number of games won
 }
 
 func NewUser(username, password string) *User {
@@ -25,6 +27,8 @@ func NewUser(username, password string) *User {
 		IsActive:  true,
 		EXP:       0,
 		Level:     1,
+		GamesPlayed: 0,
+		GamesWon:    0,
 	}
 }
 

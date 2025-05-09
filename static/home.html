@@ -342,7 +342,7 @@
             <div class="avatar">
                 <span id="userInitial"></span>
             </div>
-            <h2 class="user-name" id="username"></h2>
+            <h2 class="user-name" id="username">User</h2>
             
             <div class="stats-container">
                 <div class="stat-item">
@@ -454,6 +454,7 @@
         
         // WebSocket connection
         let socket = null;
+        let user = null;
         
         function connectWebSocket() {
             socket = new WebSocket("ws://localhost:8080/ws");
@@ -484,22 +485,24 @@
 
                 if (msg.type === "get_user_response") {
                     if (msg.success) {
-                        const user = msg.data;
+                        user = msg.data;
                         console.log("User data received:", user);
                         
                         // Display user data on the page
                         document.getElementById("username").innerText = user.username;
-                        document.getElementById("userInitial").innerText = user.username.charAt(0);
+                        document.getElementById("userInitial").innerText = user.username.charAt(0).toUpperCase();
                         document.getElementById("level").innerText = user.level || "N/A";
                         document.getElementById("exp").innerText = `${user.exp || 0}/${user.maxExp || 0}`;
                         document.getElementById("gamesPlayed").innerText = user.gamesPlayed || 0;
-                        document.getElementById("wins").innerText = user.wins || 0;
+                        document.getElementById("wins").innerText = user.gamesWon || 0;
 
                         // Update the progress bar
                         if (user.exp && user.maxExp) {
                             const progress = (user.exp / user.maxExp) * 100;
                             document.getElementById("expProgress").style.width = `${progress}%`;
                         }
+
+                        addLogEntry("SYSTEM", "Fetched user data successfully!");
                     } else {
                         addLogEntry("ERROR", msg.message || "Failed to fetch user data");
                         showNotification(msg.message || "Failed to fetch user data. Please log in again.");
@@ -508,8 +511,25 @@
                     addLogEntry(msg.type.toUpperCase(), msg.message || JSON.stringify(msg.data));
                 }
 
+                if (msg.type === "start_game") {
+                    socket.send(JSON.stringify({
+                        type: "start_game", 
+                        data: { username: user.username }
+                    }));
+                    addLogEntry("SYSTEM", "Game started! Redirecting...");
+                    showNotification("Game started! Redirecting...");
+                    setTimeout(() => {
+                        window.location.href = "/game.html";
+                    }, 1500);
+                }
+
                 
                 if (msg.type === "match_found") {
+                    socket.send(JSON.stringify({
+                        type: "start_game", 
+                        data: { username: user.username }
+                    }));
+
                     showNotification("Match found! Redirecting...");
                     setTimeout(() => {
                     window.location.href = "/game.html";
@@ -537,13 +557,13 @@
             const originalText = btn.innerHTML;
             btn.innerHTML = '<div class="spinner"></div> Finding match...';
             
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                type: "join_game",
-                payload: {
-                    username: player.username,
-                    mode: selectedMode
-                }
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: "join_game",
+                    payload: {
+                        username: player.username,
+                        mode: selectedMode
+                    }
                 }));
                 
                 addLogEntry("SYSTEM", `Searching for ${selectedMode} match...`);
@@ -554,8 +574,8 @@
                 
                 // Reset button after a delay
                 setTimeout(() => {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
                 }, 2000);
             }
         });

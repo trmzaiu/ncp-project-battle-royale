@@ -17,7 +17,7 @@ func main() {
 	http.Handle("/", fs)
 
 	// WebSocket endpoint
-	http.HandleFunc("/ws", network.HandleWS)
+	http.HandleFunc("/ws", network.HandleWebSocket)
 
 	log.Println("Server running at http://localhost" + cfg.ServerPort)
 	log.Fatal(http.ListenAndServe(cfg.ServerPort, nil))

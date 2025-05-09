@@ -123,9 +123,7 @@ func FindSessionByID(sessionID string) (Session, error) {
 	}
 
 	// Debug log the session lookup
-	log.Printf("Looking for session with ID: %s", sessionID)
 	for _, s := range sessions {
-		log.Printf("Checking session ID: %s", s.SessionID)
 		if s.SessionID == sessionID {
 			return s, nil
 		}

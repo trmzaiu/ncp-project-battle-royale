@@ -1,6 +1,6 @@
-// internal/network/pdu.go
+// internal/utils/pdu.go
 
-package network
+package utils
 
 import "encoding/json"
 
