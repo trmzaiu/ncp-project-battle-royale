@@ -11,15 +11,21 @@ type Player struct {
 }
 
 func NewPlayer(username string) *Player {
+	troops, err := getRandomTroops(3)
+	if err != nil {
+		troops = []*Troop{}
+	}
+
 	return &Player{
 		Username: username,
+
 		Mana: 5,
 		Towers: map[string]*Tower{
 			"king":   NewTower("King Tower"),
 			"guard1": NewTower("Guard Tower"),
 			"guard2": NewTower("Guard Tower"),
 		},
-		Troops: make([]*Troop, 0),
+		Troops: troops,
 		Active: false,
 	}
 }

@@ -98,6 +98,8 @@ func startMatch(p1, p2 *model.Player) {
 		Message: "Match found!",
 		Data:    matchInfo,
 	})
+
+	NewGame(p1, p2, "simple")
 }
 
 func generateRoomID() string {

@@ -5,26 +5,34 @@ package game
 import (
 	"royaka/internal/model"
 	"royaka/internal/utils"
+	"time"
 )
 
 type Game struct {
 	Player1 *model.Player
 	Player2 *model.Player
-	Turn    int // 1 or 2
+	Turn    int // 1 or 2, only used in Simple Mode
 	Started bool
+	StartAt time.Time
+	Mode    string // "simple" or "enhanced"
 }
 
 // NewGame initializes a new game with two players.
-func NewGame(p1, p2 *model.Player) *Game {
+func NewGame(p1, p2 *model.Player, mode string) *Game {
 	return &Game{
 		Player1: p1,
 		Player2: p2,
 		Turn:    1,
 		Started: true,
+		StartAt: time.Now(),
+		Mode:    mode,
 	}
 }
 
 func (g *Game) CurrentPlayer() *model.Player {
+	if g.Mode == "enhanced" {
+		return nil // Not turn-based
+	}
 	if g.Turn == 1 {
 		return g.Player1
 	}
@@ -32,6 +40,9 @@ func (g *Game) CurrentPlayer() *model.Player {
 }
 
 func (g *Game) Opponent() *model.Player {
+	if g.Mode == "enhanced" {
+		return nil // Not turn-based
+	}
 	if g.Turn == 1 {
 		return g.Player2
 	}
@@ -40,12 +51,10 @@ func (g *Game) Opponent() *model.Player {
 
 // AttackTroop simulates an attack on a tower by a troop.
 func (g *Game) AttackTroop(troop model.Troop, target *model.Tower, critEnabled bool) (damage int, isDestroyed bool) {
-	crit := false
 	atk := troop.ATK
 
 	if critEnabled {
-		crit = utils.IsCriticalHit(int(troop.CRIT))
-		if crit {
+		if utils.IsCriticalHit(int(troop.CRIT)) {
 			atk = int(float64(atk) * 1.2)
 		}
 	}
@@ -54,17 +63,20 @@ func (g *Game) AttackTroop(troop model.Troop, target *model.Tower, critEnabled b
 	if rawDmg < 0 {
 		rawDmg = 0
 	}
-
 	target.HP -= rawDmg
-	if target.HP <= 0 {
+	if target.HP < 0 {
 		target.HP = 0
 	}
 
 	return rawDmg, target.HP == 0
 }
 
-// Play a turn
-func (g *Game) PlayTurn(troop model.Troop, towerType string, critEnabled bool) (result string) {
+// PlayTurn - handles one attack turn (Simple Mode only)
+func (g *Game) PlayTurn(troop model.Troop, towerType string, critEnabled bool) string {
+	if g.Mode != "simple" {
+		return "PlayTurn only valid in Simple Mode"
+	}
+
 	opponent := g.Opponent()
 	var target *model.Tower
 
@@ -86,8 +98,7 @@ func (g *Game) PlayTurn(troop model.Troop, towerType string, critEnabled bool) (
 	}
 
 	damage, destroyed := g.AttackTroop(troop, target, critEnabled)
-
-	result = troop.Name + " dealt " + utils.Itoa(damage) + " damage to " + towerType
+	result := troop.Name + " dealt " + utils.Itoa(damage) + " damage to " + towerType
 	if destroyed {
 		result += " and destroyed it!"
 	}
@@ -96,7 +107,7 @@ func (g *Game) PlayTurn(troop model.Troop, towerType string, critEnabled bool) (
 	return result
 }
 
-// Check winner
+// CheckWinner returns result string if winner is found
 func (g *Game) CheckWinner() string {
 	if g.Player1.Towers["king"].HP <= 0 {
 		return g.Player2.Username + " wins!"
@@ -107,10 +118,38 @@ func (g *Game) CheckWinner() string {
 	return ""
 }
 
+// GetWinnerAfterTime returns the winner based on number of towers left (Enhanced Mode)
+func (g *Game) GetWinnerAfterTime() string {
+	if g.Mode != "enhanced" {
+		return ""
+	}
+	p1Towers := g.countRemainingTowers(g.Player1)
+	p2Towers := g.countRemainingTowers(g.Player2)
+
+	if p1Towers > p2Towers {
+		return g.Player1.Username + " wins!"
+	} else if p2Towers > p1Towers {
+		return g.Player2.Username + " wins!"
+	} else {
+		return "Draw"
+	}
+}
+
+func (g *Game) countRemainingTowers(p *model.Player) int {
+	total := 0
+	for _, t := range p.Towers {
+		if t.HP > 0 {
+			total++
+		}
+	}
+	return total
+}
+
 // Reset game state
 func (g *Game) Reset() {
 	g.Player1.Reset()
 	g.Player2.Reset()
 	g.Turn = 1
 	g.Started = false
+	g.StartAt = time.Time{}
 }

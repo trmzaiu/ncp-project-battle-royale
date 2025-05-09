@@ -522,7 +522,6 @@
                         window.location.href = "/game.html";
                     }, 1500);
                 }
-
                 
                 if (msg.type === "match_found") {
                     socket.send(JSON.stringify({
@@ -559,10 +558,9 @@
             
             if (socket && socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify({
-                    type: "join_game",
-                    payload: {
+                    type: "start_game",
+                    data: {
                         username: player.username,
-                        mode: selectedMode
                     }
                 }));
                 

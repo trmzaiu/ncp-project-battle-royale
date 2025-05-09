@@ -3,7 +3,9 @@
 package model
 
 import (
+	"encoding/json"
 	"math/rand"
+	"os"
 	"time"
 )
 
@@ -53,4 +55,42 @@ func (t *Troop) DamageTo(target *Tower) int {
 		return 0
 	}
 	return dmg
+}
+
+func loadTroop() ([]Troop, error) {
+	file, err := os.Open("assets/data/troops.json")
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var templates []Troop
+	if err := json.NewDecoder(file).Decode(&templates); err != nil {
+		return nil, err
+	}
+	return templates, nil
+}
+
+func getRandomTroops(n int) ([]*Troop, error) {
+	templates, err := loadTroop()
+	if err != nil {
+		return nil, err
+	}
+
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(templates), func(i, j int) {
+		templates[i], templates[j] = templates[j], templates[i]
+	})
+
+	selected := make([]*Troop, 0, n)
+	for i := 0; i < n && i < len(templates); i++ {
+		t := templates[i]
+		selected = append(selected, &Troop{
+			Name: t.Name,
+			ATK:  t.ATK,
+			DEF:  t.DEF,
+			CRIT: t.CRIT,
+		})
+	}
+	return selected, nil
 }

@@ -49,14 +49,16 @@ func randomString(length int) string {
 	return string(result)
 }
 
-func (u *User) GainEXP(amount int) {
+func (u *User) AddExp(amount int) {
 	u.EXP += amount
-	for u.EXP >= u.requiredEXP() {
-		u.Level++
-		u.EXP -= u.requiredEXP()
-	}
-}
 
-func (u *User) requiredEXP() int {
-	return 100 + (u.Level-1)*10
+	for {
+		maxExp := GetMaxExp(u.Level)
+		if u.EXP >= maxExp {
+			u.EXP -= maxExp
+			u.Level++
+		} else {
+			break
+		}
+	}
 }
