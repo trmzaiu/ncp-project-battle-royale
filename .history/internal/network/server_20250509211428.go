@@ -4,14 +4,80 @@ package network
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
+	"os"
+
 	"royaka/internal/model"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// Session store
+type Session struct {
+	SessionID     string `json:"session_id"`
+	Username      string `json:"username"`
+	Authenticated bool   `json:"authenticated"`
+}
+
+// File to store session data
+var sessionFilePath = "assets/data/sessions.json"
+
+// ReadSession reads the session data from the file
+func ReadSession() (Session, error) {
+	var session Session
+
+	if _, err := os.Stat(sessionFilePath); os.IsNotExist(err) {
+		session = Session{Authenticated: false, Username: "", SessionID: ""}
+		err := WriteSession(session)
+		if err != nil {
+			return session, err
+		}
+		log.Println("Session file created with default session.")
+		return session, nil
+	}
+
+	file, err := os.Open(sessionFilePath)
+	if err != nil {
+		return session, err
+	}
+	defer file.Close()
+
+	fileStats, err := file.Stat()
+	if err != nil {
+		return session, err
+	}
+	if fileStats.Size() == 0 {
+		session = Session{Authenticated: false, Username: "", SessionID: ""}
+		return session, nil
+	}
+
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&session)
+	if err == io.EOF {
+		session = Session{Authenticated: false, Username: "", SessionID: ""}
+		return session, nil
+	} else if err != nil {
+		return session, err
+	}
+
+	return session, nil
+}
+
+// WriteSession writes the session data to the file
+func WriteSession(session Session) error {
+	file, err := os.Create(sessionFilePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	return encoder.Encode(session)
+}
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -91,32 +157,20 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 				if err == nil {
 					// Create a new session for the user
 					sessionID := uuid.New().String()[:8]
+
+					// Start a new session
 					session := Session{
 						SessionID:     sessionID,
 						Username:      req.Username,
 						Authenticated: true,
 					}
 
-					sessions, err := ReadSessions()
-					if err != nil {
-						log.Println("Error reading sessions:", err)
-						conn.WriteJSON(Response{Type: "login_response", Success: false, Message: "Error reading sessions"})
-						continue
-					}
-
-					sessions = append(sessions, session)
-
-					err = WriteSession(sessions)
+					err := WriteSession(session)
 					if err != nil {
 						log.Println("Error writing session:", err)
 						conn.WriteJSON(Response{Type: "login_response", Success: false, Message: "Error saving session"})
 						continue
 					}
-
-					resp.Success = true
-					resp.Message = "Login successful"
-					resp.Data = map[string]string{"session_id": sessionID}
-					conn.WriteJSON(resp)
 
 				} else {
 					resp.Message = "Invalid credentials"
@@ -134,9 +188,10 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			session, err := FindSessionByID(req.SessionID)
+			// Find the session using the session ID
+			session, err := LoadSession(req.SessionID)
 			if err != nil {
-				conn.WriteJSON(Response{Type: "get_user_response", Success: false, Message: "Session not found"})
+				conn.WriteJSON(Response{Type: "get_user_response", Success: false, Message: "Session error"})
 				continue
 			}
 

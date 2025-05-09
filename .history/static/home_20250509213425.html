@@ -465,7 +465,7 @@
                 const sessionId = localStorage.getItem("session_id");
                 console.log("Session ID:", sessionId)
 
-                if (sessionId !== null) {
+                if (sessionId) {
                     // Send get_user request to fetch user data
                     socket.send(JSON.stringify({
                         type: "get_user", 

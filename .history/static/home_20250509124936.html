@@ -340,9 +340,9 @@
     <div class="container">
         <div class="card player-card">
             <div class="avatar">
-                <span id="userInitial"></span>
+                <span id="playerInitial">P</span>
             </div>
-            <h2 class="user-name" id="username"></h2>
+            <h2 class="user-name" id="userName">User</h2>
             
             <div class="stats-container">
                 <div class="stat-item">
@@ -411,7 +411,30 @@
     </div>
 
     <script>
+        // User data management
+        const defaultUser = {
+            username: "User",
+            exp: 0,
+            level: 1,
+        }
+
+        
+        let user = JSON.parse(localStorage.getItem("user") || JSON.stringify(defaultUser));
         let selectedMode = "adventure";
+        
+        // Initialize player info
+        function updatePlayerUI() {
+            document.getElementById("username").innerText = user.username;
+            document.getElementById("playerInitial").innerText = user.username.charAt(0);
+            document.getElementById("level").innerText = user.level;
+            document.getElementById("exp").innerText = `${user.exp}/${user.maxExp}`;
+            document.getElementById("gamesPlayed").innerText = user.gamesPlayed || 0;
+            document.getElementById("wins").innerText = user.wins || 0;
+            
+            // Update progress bar
+            const progress = (user.exp / user.maxExp) * 100;
+            document.getElementById("expProgress").style.width = `${progress}%`;
+        }
         
         // Mode selection
         document.querySelectorAll('.mode-card').forEach(card => {
@@ -435,98 +458,70 @@
         
         // Log system
         function addLogEntry(type, message) {
-            const logContainer = document.getElementById('log');
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            
-            const now = new Date();
-            const timestamp = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-            
-            entry.innerHTML = `
-                <span class="timestamp">${timestamp}</span>
-                <span class="type">${type}</span>
-                <span class="message">${message}</span>
-            `;
-            
-            logContainer.appendChild(entry);
-            logContainer.scrollTop = logContainer.scrollHeight;
+        const logContainer = document.getElementById('log');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry';
+        
+        const now = new Date();
+        const timestamp = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+        
+        entry.innerHTML = `
+            <span class="timestamp">${timestamp}</span>
+            <span class="type">${type}</span>
+            <span class="message">${message}</span>
+        `;
+        
+        logContainer.appendChild(entry);
+        logContainer.scrollTop = logContainer.scrollHeight;
         }
         
         // WebSocket connection
-        let socket = null;
+        let ws = null;
         
         function connectWebSocket() {
-            socket = new WebSocket("ws://localhost:8080/ws");
+            try {
+                ws = new WebSocket("ws://localhost:8080/ws");
                 
-            socket.onopen = () => {
-                addLogEntry("SYSTEM", "Connected to game server");
-                showNotification("Connected to game server");
-                document.getElementById("startGameBtn").disabled = false;
-                const sessionId = localStorage.getItem("session_id");
-                console.log("Session ID:", sessionId)
+                ws.onopen = () => {
+                    addLogEntry("SYSTEM", "Connected to game server");
+                    showNotification("Connected to game server");
+                    document.getElementById("startGameBtn").disabled = false;
+                };
+                
+                ws.onmessage = (event) => {
+                    const msg = JSON.parse(event.data);
+                    addLogEntry(msg.type.toUpperCase(), msg.payload);
 
-                if (sessionId !== null) {
-                    // Send get_user request to fetch user data
-                    socket.send(JSON.stringify({
-                        type: "get_user", 
-                        data: { session_id: sessionId }
-                    }));
-                    addLogEntry("SYSTEM", "Fetching user data...");
-                } else {
-                    addLogEntry("ERROR", "Session ID not found");
-                    showNotification("Session ID not found. Please log in again.");
-                }
-            };
-            
-            socket.onmessage = (event) => {
-                const msg = JSON.parse(event.data);
-                console.log("Received message:", msg);
-
-                if (msg.type === "get_user_response") {
-                    if (msg.success) {
-                        const user = msg.data;
-                        console.log("User data received:", user);
-                        
-                        // Display user data on the page
-                        document.getElementById("username").innerText = user.username;
-                        document.getElementById("userInitial").innerText = user.username.charAt(0);
-                        document.getElementById("level").innerText = user.level || "N/A";
-                        document.getElementById("exp").innerText = `${user.exp || 0}/${user.maxExp || 0}`;
-                        document.getElementById("gamesPlayed").innerText = user.gamesPlayed || 0;
-                        document.getElementById("wins").innerText = user.wins || 0;
-
-                        // Update the progress bar
-                        if (user.exp && user.maxExp) {
-                            const progress = (user.exp / user.maxExp) * 100;
-                            document.getElementById("expProgress").style.width = `${progress}%`;
-                        }
-                    } else {
-                        addLogEntry("ERROR", msg.message || "Failed to fetch user data");
-                        showNotification(msg.message || "Failed to fetch user data. Please log in again.");
+                    if (msg.type === "get_user_response") {
+                    
+                        user = userData;
+                        updatePlayerUI();
                     }
-                } else {
-                    addLogEntry(msg.type.toUpperCase(), msg.message || JSON.stringify(msg.data));
-                }
 
+                    
+                    if (msg.type === "match_found") {
+                        showNotification("Match found! Redirecting...");
+                        setTimeout(() => {
+                        window.location.href = "/game.html";
+                        }, 1500);
+                    }
+                };
                 
-                if (msg.type === "match_found") {
-                    showNotification("Match found! Redirecting...");
-                    setTimeout(() => {
-                    window.location.href = "/game.html";
-                    }, 1500);
-                }
-            };
-            
-            socket.onclose = () => {
+                ws.onclose = () => {
                 addLogEntry("SYSTEM", "Disconnected from server");
                 showNotification("Disconnected from server. Trying to reconnect...");
                 setTimeout(connectWebSocket, 3000);
-            };
-            
-            socket.onerror = () => {
+                };
+                
+                ws.onerror = () => {
                 addLogEntry("ERROR", "Connection error");
                 showNotification("Connection error");
-            };
+                };
+            } catch (e) {
+                addLogEntry("ERROR", "Failed to connect to server");
+                showNotification("Failed to connect to server. Retrying...");
+                setTimeout(connectWebSocket, 3000);
+            }
         }
         
         // Start game button
@@ -581,6 +576,7 @@
         document.getElementById('timestamp').textContent = getCurrentTime();
         
         // Initialize
+        updatePlayerUI();
         connectWebSocket();
     </script>
 </body>

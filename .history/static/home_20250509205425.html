@@ -463,9 +463,8 @@
                 showNotification("Connected to game server");
                 document.getElementById("startGameBtn").disabled = false;
                 const sessionId = localStorage.getItem("session_id");
-                console.log("Session ID:", sessionId)
 
-                if (sessionId !== null) {
+                if (sessionId) {
                     // Send get_user request to fetch user data
                     socket.send(JSON.stringify({
                         type: "get_user", 
@@ -504,8 +503,6 @@
                         addLogEntry("ERROR", msg.message || "Failed to fetch user data");
                         showNotification(msg.message || "Failed to fetch user data. Please log in again.");
                     }
-                } else {
-                    addLogEntry(msg.type.toUpperCase(), msg.message || JSON.stringify(msg.data));
                 }
 
                 

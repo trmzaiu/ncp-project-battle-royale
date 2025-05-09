@@ -91,6 +91,8 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 				if err == nil {
 					// Create a new session for the user
 					sessionID := uuid.New().String()[:8]
+
+					// Start a new session
 					session := Session{
 						SessionID:     sessionID,
 						Username:      req.Username,

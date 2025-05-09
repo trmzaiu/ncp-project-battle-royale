@@ -91,11 +91,11 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 				if err == nil {
 					// Create a new session for the user
 					sessionID := uuid.New().String()[:8]
-					session := Session{
-						SessionID:     sessionID,
-						Username:      req.Username,
-						Authenticated: true,
-					}
+    session := Session{
+        SessionID:     sessionID,
+        Username:      req.Username,
+        Authenticated: true,
+    }
 
 					sessions, err := ReadSessions()
 					if err != nil {

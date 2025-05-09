@@ -4,14 +4,89 @@ package network
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+
 	"royaka/internal/model"
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// Session store
+type Session struct {
+	SessionID     string `json:"session_id"`
+	Username      string `json:"username"`
+	Authenticated bool   `json:"authenticated"`
+}
+
+// File to store session data
+var sessionFilePath = "assets/data/sessions.json"
+
+// ReadSession reads the session data from the file
+func ReadSessions() ([]Session, error) {
+	file, err := os.Open(sessionFilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var sessions []Session
+	err = json.NewDecoder(file).Decode(&sessions)
+	if err != nil {
+		return nil, err
+	}
+	return sessions, nil
+}
+
+// WriteSession writes the session data to the file
+func WriteSession(newSession Session) error {
+	sessions, err := ReadSessions()
+	if err != nil {
+		sessions = []Session{}
+	}
+
+	updated := false
+	for i, s := range sessions {
+		if s.Username == newSession.Username {
+			sessions[i] = newSession
+			updated = true
+			break
+		}
+	}
+	if !updated {
+		sessions = append(sessions, newSession)
+	}
+
+	data, err := json.MarshalIndent(sessions, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(sessionFilePath, data, 0644)
+}
+
+func FindSessionByID(sessionID string) (Session, error) {
+	file, err := os.Open(sessionFilePath)
+	if err != nil {
+		return Session{}, err
+	}
+	defer file.Close()
+
+	var session Session
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&session)
+	if err != nil {
+		return Session{}, err
+	}
+
+	if session.SessionID == sessionID {
+		return session, nil
+	}
+	return Session{}, fmt.Errorf("session not found")
+}
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
@@ -91,22 +166,15 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 				if err == nil {
 					// Create a new session for the user
 					sessionID := uuid.New().String()[:8]
+
+					// Start a new session
 					session := Session{
 						SessionID:     sessionID,
 						Username:      req.Username,
 						Authenticated: true,
 					}
 
-					sessions, err := ReadSessions()
-					if err != nil {
-						log.Println("Error reading sessions:", err)
-						conn.WriteJSON(Response{Type: "login_response", Success: false, Message: "Error reading sessions"})
-						continue
-					}
-
-					sessions = append(sessions, session)
-
-					err = WriteSession(sessions)
+					err := WriteSession(session)
 					if err != nil {
 						log.Println("Error writing session:", err)
 						conn.WriteJSON(Response{Type: "login_response", Success: false, Message: "Error saving session"})
@@ -115,8 +183,6 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 
 					resp.Success = true
 					resp.Message = "Login successful"
-					resp.Data = map[string]string{"session_id": sessionID}
-					conn.WriteJSON(resp)
 
 				} else {
 					resp.Message = "Invalid credentials"

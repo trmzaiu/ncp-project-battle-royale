@@ -4,19 +4,34 @@ package network
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+
 	"royaka/internal/model"
 
 	"github.com/google/uuid"
+	"github.com/gorilla/sessions"
 	"github.com/gorilla/websocket"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// Session store
+var store = sessions.NewCookieStore([]byte("royaka-secret"))
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
+}
+
+// ReadSession retrieves the session associated with the request.
+func ReadSession(r *http.Request) (*sessions.Session, error) {
+	session, err := store.Get(r, "session-name")
+	if err != nil {
+		return nil, err
+	}
+	return session, nil
 }
 
 // HandleWS handles WebSocket connections and messages
@@ -91,33 +106,25 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 				if err == nil {
 					// Create a new session for the user
 					sessionID := uuid.New().String()[:8]
-					session := Session{
-						SessionID:     sessionID,
-						Username:      req.Username,
-						Authenticated: true,
-					}
 
-					sessions, err := ReadSessions()
+					// Start a new session
+					session, err := store.Get(r, "session-name")
 					if err != nil {
-						log.Println("Error reading sessions:", err)
-						conn.WriteJSON(Response{Type: "login_response", Success: false, Message: "Error reading sessions"})
+						log.Println("Error getting session:", err)
+						conn.WriteJSON(Response{Type: "login_response", Success: false, Message: "Error creating session"})
 						continue
 					}
 
-					sessions = append(sessions, session)
-
-					err = WriteSession(sessions)
-					if err != nil {
-						log.Println("Error writing session:", err)
-						conn.WriteJSON(Response{Type: "login_response", Success: false, Message: "Error saving session"})
-						continue
-					}
+					// Store session data in the session
+					session.Values["authenticated"] = true
+					session.Values["username"] = req.Username
+					session.Values["session_id"] = sessionID
+					session.Save(r, w)
 
 					resp.Success = true
 					resp.Message = "Login successful"
 					resp.Data = map[string]string{"session_id": sessionID}
 					conn.WriteJSON(resp)
-
 				} else {
 					resp.Message = "Invalid credentials"
 				}
@@ -134,13 +141,21 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			session, err := FindSessionByID(req.SessionID)
-			if err != nil {
-				conn.WriteJSON(Response{Type: "get_user_response", Success: false, Message: "Session not found"})
+			// Find the session using the session ID
+	session, err := store.Get(r, "session-name")
+	if err != nil {
+		conn.WriteJSON(Response{Type: "get_user_response", Success: false, Message: "Session error"})
+		continue
+	}
+
+			if session.Values["session_id"] != req.SessionID {
+				conn.WriteJSON(Response{Type: "get_user_response", Success: false, Message: "Invalid session"})
 				continue
 			}
 
-			user, ok := model.FindUserByUsername(session.Username)
+			fmt.Println("Session ID in server session:", session.Values["session_id"])
+
+			user, ok := model.FindUserByUsername(session.Values["username"].(string))
 			if !ok {
 				conn.WriteJSON(Response{Type: "get_user_response", Success: false, Message: "User not found"})
 				continue

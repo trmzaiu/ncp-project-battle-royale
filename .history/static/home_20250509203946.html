@@ -463,9 +463,8 @@
                 showNotification("Connected to game server");
                 document.getElementById("startGameBtn").disabled = false;
                 const sessionId = localStorage.getItem("session_id");
-                console.log("Session ID:", sessionId)
 
-                if (sessionId !== null) {
+                if (sessionId) {
                     // Send get_user request to fetch user data
                     socket.send(JSON.stringify({
                         type: "get_user", 
@@ -480,32 +479,22 @@
             
             socket.onmessage = (event) => {
                 const msg = JSON.parse(event.data);
-                console.log("Received message:", msg);
+                addLogEntry(msg.type.toUpperCase(), msg.payload);
 
                 if (msg.type === "get_user_response") {
-                    if (msg.success) {
-                        const user = msg.data;
-                        console.log("User data received:", user);
-                        
-                        // Display user data on the page
-                        document.getElementById("username").innerText = user.username;
-                        document.getElementById("userInitial").innerText = user.username.charAt(0);
-                        document.getElementById("level").innerText = user.level || "N/A";
-                        document.getElementById("exp").innerText = `${user.exp || 0}/${user.maxExp || 0}`;
-                        document.getElementById("gamesPlayed").innerText = user.gamesPlayed || 0;
-                        document.getElementById("wins").innerText = user.wins || 0;
-
-                        // Update the progress bar
-                        if (user.exp && user.maxExp) {
-                            const progress = (user.exp / user.maxExp) * 100;
-                            document.getElementById("expProgress").style.width = `${progress}%`;
-                        }
-                    } else {
-                        addLogEntry("ERROR", msg.message || "Failed to fetch user data");
-                        showNotification(msg.message || "Failed to fetch user data. Please log in again.");
-                    }
-                } else {
-                    addLogEntry(msg.type.toUpperCase(), msg.message || JSON.stringify(msg.data));
+                    const user = msg.data;
+                    
+                    console.log(user);
+                    document.getElementById("username").innerText = user.username;
+                    document.getElementById("userInitial").innerText = user.username.charAt(0);
+                    document.getElementById("level").innerText = user.level;
+                    document.getElementById("exp").innerText = `${user.exp}/${user.maxExp}`;
+                    document.getElementById("gamesPlayed").innerText = user.gamesPlayed || 0;
+                    document.getElementById("wins").innerText = user.wins || 0;
+                    
+                    // Update progress bar
+                    const progress = (user.exp / user.maxExp) * 100;
+                    document.getElementById("expProgress").style.width = `${progress}%`;
                 }
 
                 

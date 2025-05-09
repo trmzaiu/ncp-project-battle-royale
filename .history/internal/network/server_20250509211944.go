@@ -91,22 +91,15 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 				if err == nil {
 					// Create a new session for the user
 					sessionID := uuid.New().String()[:8]
+
+					// Start a new session
 					session := Session{
 						SessionID:     sessionID,
 						Username:      req.Username,
 						Authenticated: true,
 					}
 
-					sessions, err := ReadSessions()
-					if err != nil {
-						log.Println("Error reading sessions:", err)
-						conn.WriteJSON(Response{Type: "login_response", Success: false, Message: "Error reading sessions"})
-						continue
-					}
-
-					sessions = append(sessions, session)
-
-					err = WriteSession(sessions)
+					err := WriteSession(session)
 					if err != nil {
 						log.Println("Error writing session:", err)
 						conn.WriteJSON(Response{Type: "login_response", Success: false, Message: "Error saving session"})
@@ -115,8 +108,6 @@ func HandleWS(w http.ResponseWriter, r *http.Request) {
 
 					resp.Success = true
 					resp.Message = "Login successful"
-					resp.Data = map[string]string{"session_id": sessionID}
-					conn.WriteJSON(resp)
 
 				} else {
 					resp.Message = "Invalid credentials"
