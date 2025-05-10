@@ -9,29 +9,36 @@ import (
 )
 
 type Game struct {
-	Player1 *model.Player
-	Player2 *model.Player
-	Turn    int // 1 or 2, only used in Simple Mode
-	Started bool
-	StartAt time.Time
-	Mode    string // "simple" or "enhanced"
+	Player1   *model.Player
+	Player2   *model.Player
+	Turn      int // For simple mode (1 or 2)
+	Started   bool
+	Enhanced  bool
+	StartTime time.Time
+	MaxTime   time.Duration // For enhanced mode
 }
 
 // NewGame initializes a new game with two players.
-func NewGame(p1, p2 *model.Player, mode string) *Game {
-	return &Game{
-		Player1: p1,
-		Player2: p2,
-		Turn:    1,
-		Started: true,
-		StartAt: time.Now(),
-		Mode:    mode,
+func NewGame(p1, p2 *model.Player, enhanced bool) *Game {
+	game := &Game{
+		Player1:  p1,
+		Player2:  p2,
+		Turn:     1,
+		Started:  true,
+		Enhanced: enhanced,
 	}
+
+	if enhanced {
+		game.StartTime = time.Now()
+		game.MaxTime = 3 * time.Minute
+	}
+
+	return game
 }
 
 func (g *Game) CurrentPlayer() *model.Player {
-	if g.Mode == "enhanced" {
-		return nil // Not turn-based
+	if g.Enhanced {
+		return nil // No turn-based play in enhanced mode
 	}
 	if g.Turn == 1 {
 		return g.Player1
@@ -39,117 +46,166 @@ func (g *Game) CurrentPlayer() *model.Player {
 	return g.Player2
 }
 
-func (g *Game) Opponent() *model.Player {
-	if g.Mode == "enhanced" {
-		return nil // Not turn-based
-	}
-	if g.Turn == 1 {
+func (g *Game) Opponent(p *model.Player) *model.Player {
+	if g.Player1.User.Username == p.User.Username {
 		return g.Player2
 	}
 	return g.Player1
 }
 
-// AttackTroop simulates an attack on a tower by a troop.
-func (g *Game) AttackTroop(troop model.Troop, target *model.Tower, critEnabled bool) (damage int, isDestroyed bool) {
-	atk := troop.ATK
-
-	if critEnabled {
-		if utils.IsCriticalHit(int(troop.CRIT)) {
-			atk = int(float64(atk) * 1.2)
-		}
-	}
-
-	rawDmg := atk - target.DEF
-	if rawDmg < 0 {
-		rawDmg = 0
-	}
-	target.HP -= rawDmg
-	if target.HP < 0 {
-		target.HP = 0
-	}
-
-	return rawDmg, target.HP == 0
+// AttackTower simulates an attack on a tower by a troop.
+func (g *Game) AttackTower(p *model.Player, troop *model.Troop, target *model.Tower, critEnabled bool) (int, bool) {
+	atk := troop.CalculateDamage(p.User.Level, critEnabled)
+	return target.TakeDamage(atk, p.User.Level)
 }
 
 // PlayTurn - handles one attack turn (Simple Mode only)
-func (g *Game) PlayTurn(troop model.Troop, towerType string, critEnabled bool) string {
-	if g.Mode != "simple" {
-		return "PlayTurn only valid in Simple Mode"
+func (g *Game) PlayTurn(p *model.Player, troop *model.Troop, towerType string) string {
+	if g.Enhanced && time.Since(g.StartTime) > g.MaxTime {
+		return "Time is up!"
 	}
 
-	opponent := g.Opponent()
-	var target *model.Tower
+	if g.Enhanced {
+		skillResult := g.ApplySpecialSkill(p, troop)
+		return skillResult
+	}
 
+	if p.Mana < troop.MANA {
+		return "Not enough mana!"
+	}
+	p.Mana -= troop.MANA
+
+	op := g.Opponent(p)
+	var target *model.Tower
 	switch towerType {
 	case "guard1":
-		target = opponent.Towers["guard1"]
+		target = op.Towers["guard1"]
 	case "guard2":
-		if opponent.Towers["guard1"].HP > 0 {
-			return "You must destroy Guard Tower 1 first!"
+		if op.Towers["guard1"].HP > 0 {
+			return "Destroy Guard Tower 1 first!"
 		}
-		target = opponent.Towers["guard2"]
+		target = op.Towers["guard2"]
 	case "king":
-		if opponent.Towers["guard1"].HP > 0 || opponent.Towers["guard2"].HP > 0 {
+		if op.Towers["guard1"].HP > 0 || op.Towers["guard2"].HP > 0 {
 			return "Destroy both Guard Towers before attacking King Tower!"
 		}
-		target = opponent.Towers["king"]
+		target = op.Towers["king"]
 	default:
-		return "Invalid target tower."
+		return "Invalid tower."
 	}
 
-	damage, destroyed := g.AttackTroop(troop, target, critEnabled)
-	result := troop.Name + " dealt " + utils.Itoa(damage) + " damage to " + towerType
+	dmg, destroyed := g.AttackTower(p, troop, target, g.Enhanced)
+	result := troop.Name + " dealt " + utils.Itoa(dmg) + " damage to " + towerType
 	if destroyed {
 		result += " and destroyed it!"
 	}
 
-	g.Turn = 3 - g.Turn
+	if !g.Enhanced {
+		g.Turn = 3 - g.Turn
+	}
 	return result
+}
+
+func (g *Game) ApplySpecialSkill(p *model.Player, t *model.Troop) string {
+	if !g.Enhanced || time.Since(g.StartTime) > g.MaxTime {
+		return "Special skills are only available in Enhanced mode."
+	}
+
+	switch t.Special {
+	case "Shield":
+		// Apply shield to all towers
+		p.ApplyDefenseBoost(0.2)
+		return "Shield applied! Defense increased for all towers."
+	case "Attack Boost":
+		// Apply attack boost to all troops
+		p.BoostAllTroops()
+		return "Attack Boost applied! Damage increased for all troops."
+	case "Fortify":
+		// Apply fortify to all troops
+		t.FortifyHP(50)
+		return "Fortify applied! Troop's HP increased."
+	case "Double Strike":
+		// Attack twice
+		var target *model.Tower
+		opponentTowers := g.Opponent(p).Towers
+
+		if opponentTowers["guard1"].HP > 0 {
+			target = opponentTowers["guard1"]
+		} else if opponentTowers["guard2"].HP > 0 {
+			target = opponentTowers["guard2"]
+		} else {
+			target = opponentTowers["king"]
+		}
+		g.AttackTower(p, t, target, false)
+		g.AttackTower(p, t, target, false)
+		return "Double Strike applied! Troop attacks " + target.Type + " twice!"
+	case "Charge":
+		// Charge mana
+		p.FullyChargeMana()
+		return "Charge applied! Mana fully restored."
+	case "Heal":
+		var lowest *model.Tower
+		for _, tower := range p.Towers {
+			if lowest == nil || tower.HP < lowest.HP {
+				lowest = tower
+			}
+		}
+		if lowest != nil {
+			lowest.Heal(100)
+			return "Heal applied! " + lowest.Type + " tower HP restored."
+		}
+	}
+	return "Invalid special skill."
 }
 
 // CheckWinner returns result string if winner is found
 func (g *Game) CheckWinner() string {
 	if g.Player1.Towers["king"].HP <= 0 {
-		return g.Player2.Username + " wins!"
+		AwardEXP(g.Player2.User, g.Player1.User, false)
+		return g.Player2.User.Username + " wins!"
 	}
 	if g.Player2.Towers["king"].HP <= 0 {
-		return g.Player1.Username + " wins!"
+		AwardEXP(g.Player1.User, g.Player2.User, false)
+		return g.Player1.User.Username + " wins!"
+	}
+	if g.Enhanced && time.Since(g.StartTime) > g.MaxTime {
+		// Compare destroyed towers
+		p1Score := g.Player1.DestroyedCount()
+		p2Score := g.Player2.DestroyedCount()
+		if p1Score > p2Score {
+			AwardEXP(g.Player1.User, g.Player2.User, false)
+			return g.Player1.User.Username + " wins by score!"
+		}
+		if p2Score > p1Score {
+			AwardEXP(g.Player2.User, g.Player1.User, false)
+			return g.Player2.User.Username + " wins by score!"
+		}
+		AwardEXP(g.Player1.User, g.Player2.User, true)
+		return "It's a draw!"
 	}
 	return ""
 }
 
-// GetWinnerAfterTime returns the winner based on number of towers left (Enhanced Mode)
-func (g *Game) GetWinnerAfterTime() string {
-	if g.Mode != "enhanced" {
-		return ""
-	}
-	p1Towers := g.countRemainingTowers(g.Player1)
-	p2Towers := g.countRemainingTowers(g.Player2)
+// AwardEXP updates the user's EXP, level, and match records
+func AwardEXP(winner, loser *model.User, isDraw bool) {
+	winner.GamesPlayed++
+	loser.GamesPlayed++
 
-	if p1Towers > p2Towers {
-		return g.Player1.Username + " wins!"
-	} else if p2Towers > p1Towers {
-		return g.Player2.Username + " wins!"
+	if isDraw {
+		winner.AddExp(10)
+		loser.AddExp(10)
 	} else {
-		return "Draw"
+		winner.GamesWon++
+		winner.AddExp(30)
 	}
+
+	model.SaveUser(*winner)
+	model.SaveUser(*loser)
 }
 
-func (g *Game) countRemainingTowers(p *model.Player) int {
-	total := 0
-	for _, t := range p.Towers {
-		if t.HP > 0 {
-			total++
-		}
-	}
-	return total
-}
-
-// Reset game state
 func (g *Game) Reset() {
 	g.Player1.Reset()
 	g.Player2.Reset()
 	g.Turn = 1
 	g.Started = false
-	g.StartAt = time.Time{}
 }

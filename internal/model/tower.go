@@ -2,45 +2,70 @@
 
 package model
 
+import (
+	"encoding/json"
+	"os"
+)
+
 type Tower struct {
 	Type  string  `json:"type"`
+	MaxHP int     `json:"max_hp"`
 	HP    int     `json:"hp"`
 	ATK   int     `json:"atk"`
 	DEF   int     `json:"def"`
-	CRIT  float64 `json:"crit"` 
+	CRIT  float64 `json:"crit"`
 	EXP   int     `json:"exp"`
 }
 
-func NewTower(towerType string) *Tower {
-	switch towerType {
-	case "King Tower":
-		return &Tower{Type: towerType, HP: 2000, ATK: 500, DEF: 300, CRIT: 0.1, EXP: 200}
-	default:
-		return &Tower{Type: towerType, HP: 1000, ATK: 300, DEF: 100, CRIT: 0.05, EXP: 100}
+func LoadTower() map[string]*Tower {
+	file, err := os.Open("assets/data/towers.json")
+	if err != nil {
+		return nil
 	}
+	defer file.Close()
+
+	var towers []Tower
+	if err := json.NewDecoder(file).Decode(&towers); err != nil {
+		return nil
+	}
+
+	// Convert slice to map for easy access by tower type
+	towerMap := make(map[string]*Tower)
+	for _, t := range towers {
+		towerMap[t.Type] = &t
+	}
+
+	return towerMap
 }
 
-func (t *Tower) TakeDamage(amount int) {
-	t.HP -= amount
+func (t *Tower) TakeDamage(rawAtk int, attackerLevel int) (actualDamage int, destroyed bool) {
+	def := int(float64(t.DEF) * (1 + 0.1*float64(attackerLevel)))
+	dmg := rawAtk - def
+	if dmg < 0 {
+		dmg = 0
+	}
+	t.HP -= dmg
 	if t.HP < 0 {
 		t.HP = 0
 	}
+	return dmg, t.HP == 0
 }
 
-func AttackTower(troop *Troop, target *Tower) int {
-	dmg := troop.DamageTo(target)
-	target.TakeDamage(dmg)
-	return dmg
+func (t *Tower) IncreaseDefense(percent float64) {
+	t.DEF = int(float64(t.DEF) * (1 + percent))
 }
 
-func HealLowestTower(towers map[string]*Tower) {
-	var lowest *Tower
-	for _, t := range towers {
-		if t.HP > 0 && (lowest == nil || t.HP < lowest.HP) {
-			lowest = t
-		}
+func (t *Tower) Heal(amount int) {
+	t.HP += amount
+	if t.HP > t.MaxHP {
+		t.HP = t.MaxHP
 	}
-	if lowest != nil {
-		lowest.HP += 300
-	}
+}
+
+func (t *Tower) Reset() {
+	t.HP = 1000
+	t.ATK = 300
+	t.DEF = 100
+	t.CRIT = 0.05
+	t.EXP = 100
 }

@@ -593,6 +593,21 @@
                     addLogEntry(msg.type.toUpperCase(), msg.message || JSON.stringify(msg.data));
                 }
 
+                if (msg.type === "start_game") {
+                    socket.send(JSON.stringify({
+                        type: "start_game", 
+                        data: { 
+                            username: user.username,
+                            user: user,
+                        }
+                    }));
+                    addLogEntry("SYSTEM", "Game started! Redirecting...");
+                    showNotification("Game started! Redirecting...");
+                    setTimeout(() => {
+                        window.location.href = "/game.html";
+                    }, 1500);
+                }
+                
                 if (msg.type === "match_found") {
                     showNotification("Match found! Redirecting...");
                     setTimeout(() => {

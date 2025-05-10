@@ -66,6 +66,28 @@ func SaveUsers(users []User) error {
 	return ioutil.WriteFile(usersFile, data, 0644)
 }
 
+func SaveUser(user User) error {
+	users, err := LoadUsers()
+	if err != nil {
+		return err
+	}
+
+	updated := false
+	for i, u := range users {
+		if u.Username == user.Username {
+			users[i] = user
+			updated = true
+			break
+		}
+	}
+
+	if !updated {
+		users = append(users, user)
+	}
+
+	return SaveUsers(users)
+}
+
 // AddUser adds a new user if the username is unique
 func AddUser(newUser User) error {
 	users, err := LoadUsers()

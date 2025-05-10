@@ -21,11 +21,11 @@ var (
 	matchQueue       = make(chan *model.Player, 100)
 	pendingPlayers   = make(map[string]bool)
 	pendingPlayersMu sync.Mutex
-	
+
 	// Room management
-	rooms      = make(map[string]*model.Room)
-	roomsMu    sync.RWMutex
-	
+	rooms   = make(map[string]*model.Room)
+	roomsMu sync.RWMutex
+
 	matchmakerRunning bool
 )
 
@@ -45,34 +45,35 @@ func (c *ClientConnection) SafeWrite(data interface{}) error {
 // HandleStartGame handles player joining the match queue
 func HandleStartGame(conn *websocket.Conn, data json.RawMessage) {
 	var req struct {
-		Username string `json:"username"`
+		User *model.User `json:"user"`
+		mode string      `json:"mode"`
 	}
 
-	if err := json.Unmarshal(data, &req); err != nil || req.Username == "" {
+	if err := json.Unmarshal(data, &req); err != nil || req.User == nil || req.mode == "" {
 		conn.WriteJSON(utils.Response{Type: "start_game_response", Success: false, Message: "Invalid username"})
 		return
 	}
 
 	// Check if player is already in the queue
 	pendingPlayersMu.Lock()
-	if pendingPlayers[req.Username] {
+	if pendingPlayers[req.User.Username] {
 		pendingPlayersMu.Unlock()
 		conn.WriteJSON(utils.Response{Type: "start_game_response", Success: false, Message: "Already in queue"})
 		return
 	}
-	
+
 	// Mark this player as pending
-	pendingPlayers[req.Username] = true
+	pendingPlayers[req.User.Username] = true
 	pendingPlayersMu.Unlock()
 
 	// Create or update client connection with mutex protection
 	clientConn := &ClientConnection{Conn: conn, Mu: sync.Mutex{}}
-	
+
 	clientsMu.Lock()
-	clients[req.Username] = clientConn
+	clients[req.User.Username] = clientConn
 	clientsMu.Unlock()
 
-	player := model.NewPlayer(req.Username)
+	player := model.NewPlayer(req.User, req.mode)
 
 	// Send response to client
 	clientConn.SafeWrite(utils.Response{
@@ -83,7 +84,7 @@ func HandleStartGame(conn *websocket.Conn, data json.RawMessage) {
 
 	// Add player to queue in a separate goroutine
 	go func() {
-		log.Printf("Player %s added to match queue", req.Username)
+		log.Printf("Player %s added to match queue", req.User.Username)
 		matchQueue <- player
 
 		if !matchmakerRunning {
@@ -102,60 +103,60 @@ func startMatchmaker() {
 				time.Sleep(100 * time.Millisecond)
 				continue
 			}
-			
+
 			// Get two players
 			player1 := <-matchQueue
 			player2 := <-matchQueue
-			
+
 			// Make sure they're not the same player or we still have their connections
 			clientsMu.Lock()
-			conn1, ok1 := clients[player1.Username]
-			conn2, ok2 := clients[player2.Username]
+			conn1, ok1 := clients[player1.User.Username]
+			conn2, ok2 := clients[player2.User.Username]
 			clientsMu.Unlock()
-			
-			if !ok1 || !ok2 || player1.Username == player2.Username {
+
+			if !ok1 || !ok2 || player1.User.Username == player2.User.Username {
 				// Put valid players back in queue and retry
 				if ok1 {
 					matchQueue <- player1
 				}
-				if ok2 && player1.Username != player2.Username {
+				if ok2 && player1.User.Username != player2.User.Username {
 					matchQueue <- player2
 				}
 				continue
 			}
-			
+
 			// Start match between the two players
 			startMatch(player1, player2, conn1, conn2)
-			
+
 			// Remove players from pending list
 			pendingPlayersMu.Lock()
-			delete(pendingPlayers, player1.Username)
-			delete(pendingPlayers, player2.Username)
+			delete(pendingPlayers, player1.User.Username)
+			delete(pendingPlayers, player2.User.Username)
 			pendingPlayersMu.Unlock()
 		}
 	}()
 }
 
 func startMatch(p1, p2 *model.Player, conn1, conn2 *ClientConnection) {
-	log.Printf("Match started between %s and %s", p1.Username, p2.Username)
+	log.Printf("Match started between %s and %s", p1.User.Username, p2.User.Username)
 
 	roomID := generateRoomID()
 	room := model.NewRoom(roomID, p1, p2)
-	
+
 	roomsMu.Lock()
 	rooms[roomID] = room
 	roomsMu.Unlock()
 
 	matchInfo1 := map[string]interface{}{
 		"room_id":  roomID,
-		"opponent": p2.Username,
+		"opponent": p2.User.Username,
 	}
-	
+
 	matchInfo2 := map[string]interface{}{
 		"room_id":  roomID,
-		"opponent": p1.Username,
+		"opponent": p1.User.Username,
 	}
-	
+
 	// Send match found notifications safely
 	err1 := conn1.SafeWrite(utils.Response{
 		Type:    "match_found",
@@ -163,14 +164,14 @@ func startMatch(p1, p2 *model.Player, conn1, conn2 *ClientConnection) {
 		Message: "Match found!",
 		Data:    matchInfo1,
 	})
-	
+
 	err2 := conn2.SafeWrite(utils.Response{
 		Type:    "match_found",
 		Success: true,
 		Message: "Match found!",
 		Data:    matchInfo2,
 	})
-	
+
 	if err1 != nil || err2 != nil {
 		log.Printf("Error sending match notifications: %v, %v", err1, err2)
 	}
