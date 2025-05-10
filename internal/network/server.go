@@ -29,6 +29,12 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
+	defer func() {
+        if r := recover(); r != nil {
+            log.Println("Recovered from panic in WebSocket handler:", r)
+        }
+    }()
+
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {

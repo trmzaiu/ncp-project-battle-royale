@@ -368,142 +368,126 @@
         </div>
         
         <div class="card game-options">
-        <h3 class="section-title">Game Modes</h3>
-        
-        <div class="game-modes">
-            <div class="mode-card selected" data-mode="adventure">
-            <div class="mode-icon">⚔️</div>
-            <div class="mode-title">Adventure</div>
-            <div class="mode-desc">Classic dungeon exploration</div>
+            <h3 class="section-title">Game Modes</h3>
+            
+            <div class="game-modes">
+                <div class="mode-card selected" data-mode="simple">
+                    <div class="mode-icon">🏰</div>
+                    <div class="mode-title">Simple</div>
+                    <div class="mode-desc">Turn-based tower battle with basic rules</div>
+                </div>
+                <div class="mode-card" data-mode="enhanced">
+                    <div class="mode-icon">⚔️</div>
+                    <div class="mode-title">Enhanced</div>
+                    <div class="mode-desc">Real-time battle with skills, EXP, and leveling</div>
+                </div>
             </div>
-            <div class="mode-card" data-mode="pvp">
-            <div class="mode-icon">👥</div>
-            <div class="mode-title">PvP</div>
-            <div class="mode-desc">Battle other players</div>
-            </div>
-        </div>
-        
-        <button class="btn btn-primary" id="startGameBtn" onclick="startBattle()">
-            <span>Start Game</span>
-        </button>
-        
-        <button class="btn btn-secondary" id="leaderboardBtn">
-            View Leaderboard
-        </button>
-        
-        <button class="btn btn-accent" id="settingsBtn">
-            Settings
-        </button>
+            
+            <button class="btn btn-primary" id="startGameBtn" onclick="startBattle()">
+                <span>Start Game</span>
+            </button>
+            
+            <button class="btn btn-secondary" id="leaderboardBtn">
+                View Leaderboard
+            </button>
+            
+            <button class="btn btn-accent" id="settingsBtn">
+                Settings
+            </button>
         </div>
     </div>
     
     <div class="log-container">
         <div class="log-entry">
-        <span id="timestamp" class="timestamp"></span>
-        <span class="type">SYSTEM</span>
-        <span class="message">Welcome to Royaka!</span>
+            <span id="timestamp" class="timestamp"></span>
+            <span class="type">SYSTEM</span>
+            <span class="message">Welcome to Royaka!</span>
         </div>
         <div id="log"></div>
-    </div>
+    </div>    
     
     <div class="notification" id="notification">
         Connecting to game server...
     </div>
 
     <script>
-        let selectedMode = "adventure";
+        // --- Game Lobby Script ---
+        let selectedMode = "simple";
+        let isJoiningGame = false;
+        let user = null;
+        let socket = null;
         
-        // Mode selection
-        document.querySelectorAll('.mode-card').forEach(card => {
-            card.addEventListener('click', () => {
-                document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
-                card.classList.add('selected');
-                selectedMode = card.dataset.mode;
+        // Mode Selection
+        function setupModeSelection() {
+            document.querySelectorAll('.mode-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    selectedMode = card.dataset.mode;
+                });
             });
-        });
-        
-        // Notification system
-        function showNotification(message, duration = 3000) {
-        const notification = document.getElementById('notification');
-        notification.textContent = message;
-        notification.classList.add('show');
-        
-        setTimeout(() => {
-            notification.classList.remove('show');
-        }, duration);
         }
         
-        // Log system
+        // Notifications
+        function showNotification(message, duration = 3000) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => notification.classList.remove('show'), duration);
+        }
+        
+        // Logging
         function addLogEntry(type, message) {
             const logContainer = document.getElementById('log');
             const entry = document.createElement('div');
             entry.className = 'log-entry';
-            
+
             const now = new Date();
-            const timestamp = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
-            
+            const timestamp = now.toLocaleTimeString([], { hour12: true });
+
             entry.innerHTML = `
                 <span class="timestamp">${timestamp}</span>
                 <span class="type">${type}</span>
                 <span class="message">${message}</span>
             `;
-            
+
             logContainer.appendChild(entry);
             logContainer.scrollTop = logContainer.scrollHeight;
         }
-        
-        // Global flag to prevent multiple submissions
-        let isJoiningGame = false;
 
+        // Start Game Handler
         function startBattle() {
-            // Prevent multiple clicks
             if (isJoiningGame) {
                 showNotification("Already searching for a match...");
                 return;
             }
-            
+
             const btn = document.getElementById("startGameBtn");
             const originalText = btn.innerHTML;
-            
-            // Set the flag and disable the button
             isJoiningGame = true;
             btn.disabled = true;
             btn.innerHTML = '<div class="spinner"></div> Finding match...';
-            
+
             if (socket && socket.readyState === WebSocket.OPEN && user) {
-                // Add a toast message
-                const toast = document.createElement('div');
-                toast.className = 'toast';
-                toast.innerText = 'Joining match queue...';
-                document.body.appendChild(toast);
-                
-                // Show toast
-                setTimeout(() => {
-                    toast.classList.add('show');
-                }, 100);
-                
-                // Remove toast after 3 seconds
-                setTimeout(() => {
-                    toast.classList.remove('show');
-                    setTimeout(() => toast.remove(), 300);
-                }, 3000);
-                
-                socket.send(JSON.stringify({
+                showToast("Joining match queue...");
+
+                const payload = {
                     type: "start_game",
                     data: {
-                        username: user.username,
+                        user: user,
                         mode: selectedMode
                     }
-                }));
-                
+                };
+
+                socket.send(JSON.stringify(payload));
+                console.log("Sending start_game request:", payload);
                 addLogEntry("SYSTEM", `Searching for ${selectedMode} match...`);
                 showNotification(`Looking for ${selectedMode} match...`);
             } else {
                 addLogEntry("ERROR", "Not connected to server or user data missing");
                 showNotification("Connection error. Reconnecting...");
                 connectWebSocket();
-                
-                // Reset button after a delay
+
                 setTimeout(() => {
                     btn.disabled = false;
                     btn.innerHTML = originalText;
@@ -512,43 +496,31 @@
             }
         }
 
-        function updateSocketMessageHandler() {
-            const originalOnMessage = socket.onmessage;
-            
-            socket.onmessage = (event) => {
-                // First call the original handler
-                if (originalOnMessage) {
-                    originalOnMessage(event);
-                }
-                
-                // Then handle any specific cases for button state
-                const msg = JSON.parse(event.data);
-                
-                // If we get an error response, reset the button
-                if (msg.type === "error" || (msg.type === "start_game_response" && !msg.success)) {
-                    const btn = document.getElementById("startGameBtn");
-                    btn.disabled = false;
-                    btn.innerHTML = '<span>Start Game</span>';
-                    isJoiningGame = false;
-                }
-            };
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerText = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
-        // Update the WebSocket connection function to include the message handler
         function connectWebSocket() {
             socket = new WebSocket("ws://localhost:8080/ws");
-                
+
             socket.onopen = () => {
                 addLogEntry("SYSTEM", "Connected to game server");
                 showNotification("Connected to game server");
                 document.getElementById("startGameBtn").disabled = false;
-                const sessionId = localStorage.getItem("session_id");
-                console.log("Session ID:", sessionId)
 
-                if (sessionId !== null) {
-                    // Send get_user request to fetch user data
+                const sessionId = localStorage.getItem("session_id");
+                if (sessionId) {
                     socket.send(JSON.stringify({
-                        type: "get_user", 
+                        type: "get_user",
                         data: { session_id: sessionId }
                     }));
                     addLogEntry("SYSTEM", "Fetching user data...");
@@ -556,110 +528,74 @@
                     addLogEntry("ERROR", "Session ID not found");
                     showNotification("Session ID not found. Please log in again.");
                 }
-                
-                // Set up the enhanced message handler
-                updateSocketMessageHandler();
             };
-            
-            socket.onmessage = (event) => {
-                const msg = JSON.parse(event.data);
-                console.log("Received message:", msg);
 
-                if (msg.type === "get_user_response") {
-                    if (msg.success) {
-                        user = msg.data;
-                        console.log("User data received:", user);
-                        
-                        // Display user data on the page
-                        document.getElementById("username").innerText = user.username;
-                        document.getElementById("userInitial").innerText = user.username.charAt(0).toUpperCase();
-                        document.getElementById("level").innerText = user.level || "N/A";
-                        document.getElementById("exp").innerText = `${user.exp || 0}/${user.maxExp || 0}`;
-                        document.getElementById("gamesPlayed").innerText = user.gamesPlayed || 0;
-                        document.getElementById("wins").innerText = user.gamesWon || 0;
+            socket.onmessage = handleSocketMessage;
 
-                        // Update the progress bar
-                        if (user.exp && user.maxExp) {
-                            const progress = (user.exp / user.maxExp) * 100;
-                            document.getElementById("expProgress").style.width = `${progress}%`;
-                        }
-
-                        addLogEntry("SYSTEM", "Fetched user data successfully!");
-                    } else {
-                        addLogEntry("ERROR", msg.message || "Failed to fetch user data");
-                        showNotification(msg.message || "Failed to fetch user data. Please log in again.");
-                    }
-                } else {
-                    addLogEntry(msg.type.toUpperCase(), msg.message || JSON.stringify(msg.data));
-                }
-
-                if (msg.type === "start_game") {
-                    socket.send(JSON.stringify({
-                        type: "start_game", 
-                        data: { 
-                            username: user.username,
-                            user: user,
-                        }
-                    }));
-                    addLogEntry("SYSTEM", "Game started! Redirecting...");
-                    showNotification("Game started! Redirecting...");
-                    setTimeout(() => {
-                        window.location.href = "/game.html";
-                    }, 1500);
-                }
-                
-                if (msg.type === "match_found") {
-                    showNotification("Match found! Redirecting...");
-                    setTimeout(() => {
-                        window.location.href = "/game.html";
-                    }, 1500);
-                }
-            };
-            
             socket.onclose = () => {
                 addLogEntry("SYSTEM", "Disconnected from server");
-                showNotification("Disconnected from server. Trying to reconnect...");
-                
-                // Reset game joining state
+                showNotification("Disconnected from server. Reconnecting...");
                 isJoiningGame = false;
-                
-                // Try to reconnect
                 setTimeout(connectWebSocket, 3000);
             };
-            
+
             socket.onerror = () => {
-                addLogEntry("ERROR", "Connection error");
-                showNotification("Connection error");
-                
-                // Reset game joining state
+                addLogEntry("ERROR", "WebSocket error");
+                showNotification("WebSocket error");
                 isJoiningGame = false;
             };
         }
 
-        // Start game button
-        document.getElementById("startGameBtn").addEventListener("click", startBattle);
-        
-        // Leaderboard button
-        document.getElementById("leaderboardBtn").addEventListener("click", function() {
-            showNotification("Leaderboard coming soon!");
-        });
-        
-        // Settings button
-        document.getElementById("settingsBtn").addEventListener("click", function() {
-            showNotification("Settings coming soon!");
-        });
+        function handleSocketMessage(event) {
+            const msg = JSON.parse(event.data);
+            console.log("Received message:", msg);
 
-        function getCurrentTime() {
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            return `${hours}:${minutes}:${seconds}`;
+            if (msg.type === "get_user_response") {
+                if (msg.success) {
+                    user = msg.data;
+                    document.getElementById("username").innerText = user.username;
+                    document.getElementById("userInitial").innerText = user.username.charAt(0).toUpperCase();
+                    document.getElementById("level").innerText = user.level || "N/A";
+                    document.getElementById("exp").innerText = `${user.exp || 0}/${user.maxExp || 0}`;
+
+                    if (user.exp && user.maxExp) {
+                        document.getElementById("expProgress").style.width = `${(user.exp / user.maxExp) * 100}%`;
+                    }
+
+                    document.getElementById("gamesPlayed").innerText = user.gamesPlayed || 0;
+                    document.getElementById("wins").innerText = user.gamesWon || 0;
+                    addLogEntry("SYSTEM", "Fetched user data successfully!");
+                    return;
+                } else {
+                    addLogEntry("ERROR", msg.message || "Failed to fetch user data");
+                    showNotification(msg.message || "Login failed. Please try again.");
+                }
+            } else if (msg.type === "match_found") {
+                showNotification("Match found! Redirecting...");
+                setTimeout(() => {
+                    window.location.href = "/game.html";
+                }, 1500);
+            }
+
+            if (msg.type === "error" || (msg.type === "start_game_response" && !msg.success)) {
+                const btn = document.getElementById("startGameBtn");
+                btn.disabled = false;
+                btn.innerHTML = '<span>Start Game</span>';
+                isJoiningGame = false;
+            }
         }
 
-        document.getElementById('timestamp').textContent = getCurrentTime();
-        
-        // Initialize
+        // Setup button listeners
+        function setupUI() {
+            document.getElementById("startGameBtn").addEventListener("click", startBattle);
+            document.getElementById("leaderboardBtn").addEventListener("click", () => showNotification("Leaderboard coming soon!"));
+            document.getElementById("settingsBtn").addEventListener("click", () => showNotification("Settings coming soon!"));
+            document.getElementById("timestamp").textContent = new Date().toLocaleTimeString();
+        }
+
+        // Init
+        setupModeSelection();
+        setupUI();
         connectWebSocket();
     </script>
 </body>

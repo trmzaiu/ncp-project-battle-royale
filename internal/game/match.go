@@ -46,13 +46,14 @@ func (c *ClientConnection) SafeWrite(data interface{}) error {
 func HandleStartGame(conn *websocket.Conn, data json.RawMessage) {
 	var req struct {
 		User *model.User `json:"user"`
-		mode string      `json:"mode"`
+		Mode string      `json:"mode"`
 	}
 
-	if err := json.Unmarshal(data, &req); err != nil || req.User == nil || req.mode == "" {
-		conn.WriteJSON(utils.Response{Type: "start_game_response", Success: false, Message: "Invalid username"})
+	if err := json.Unmarshal(data, &req); err != nil || req.User == nil || req.Mode == "" {
+		log.Printf("Failed to parse start_game request: %v", err)
+		conn.WriteJSON(utils.Response{Type: "start_game_response", Success: false, Message: "Invalid request"})
 		return
-	}
+	}	
 
 	// Check if player is already in the queue
 	pendingPlayersMu.Lock()
@@ -73,7 +74,7 @@ func HandleStartGame(conn *websocket.Conn, data json.RawMessage) {
 	clients[req.User.Username] = clientConn
 	clientsMu.Unlock()
 
-	player := model.NewPlayer(req.User, req.mode)
+	player := model.NewPlayer(req.User, req.Mode)
 
 	// Send response to client
 	clientConn.SafeWrite(utils.Response{
