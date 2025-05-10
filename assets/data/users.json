@@ -7,6 +7,32 @@
     "lastLogin": "2025-05-08T23:38:31.6110692+07:00",
     "isActive": true,
     "exp": 0,
-    "level": 1
+    "level": 1,
+    "gamesPlayed": 0,
+    "gamesWon": 0
+  },
+  {
+    "id": "20250509232011abcdefgh",
+    "username": "giang",
+    "password": "$2a$10$OhN.hcpA/s4S6QCts1mP5OtPlwW8zz0GVoh2tJIywmv0nPMBTpa8O",
+    "createdAt": "2025-05-09T23:20:11.7080491+07:00",
+    "lastLogin": "2025-05-09T23:20:11.7080491+07:00",
+    "isActive": true,
+    "exp": 0,
+    "level": 1,
+    "gamesPlayed": 0,
+    "gamesWon": 0
+  },
+  {
+    "id": "20250510015315abcdefgh",
+    "username": "tragiang",
+    "password": "$2a$10$FjM5mVEP/FVQ6FVXN4kyuOEc0DfISOnNF6U0HBVrG.mC1Dof2G27O",
+    "createdAt": "2025-05-10T01:53:15.2001063+07:00",
+    "lastLogin": "2025-05-10T01:53:15.2001063+07:00",
+    "isActive": true,
+    "exp": 0,
+    "level": 1,
+    "gamesPlayed": 0,
+    "gamesWon": 0
   }
 ]
