@@ -3,6 +3,7 @@
 package game
 
 import (
+	"fmt"
 	"royaka/internal/model"
 	"royaka/internal/utils"
 	"time"
@@ -54,9 +55,24 @@ func (g *Game) Opponent(p *model.Player) *model.Player {
 }
 
 // AttackTower simulates an attack on a tower by a troop.
-func (g *Game) AttackTower(p *model.Player, troop *model.Troop, target *model.Tower, critEnabled bool) (int, bool) {
+func (g *Game) AttackTower(p *model.Player, troop *model.Troop, target *model.Tower, critEnabled bool) (int, bool, string) {
 	atk := troop.CalculateDamage(p.User.Level, critEnabled)
-	return target.TakeDamage(atk, p.User.Level)
+	dmgToTower, destroyed := target.TakeDamage(atk, p.User.Level)
+
+	if target.HP > 0 {
+		counterDmg := target.CounterDamage()
+		troop.HP -= counterDmg
+		if troop.HP < 0 {
+			troop.HP = 0
+		}
+		log := fmt.Sprintf("Tower retaliated for %d damage.", counterDmg)
+		if troop.HP == 0 {
+			log += " Troop was defeated!"
+		}
+		return dmgToTower, destroyed, log
+	}
+
+	return dmgToTower, destroyed, ""
 }
 
 // PlayTurn - handles one attack turn (Simple Mode only)
@@ -94,15 +110,31 @@ func (g *Game) PlayTurn(p *model.Player, troop *model.Troop, towerType string) s
 		return "Invalid tower."
 	}
 
-	dmg, destroyed := g.AttackTower(p, troop, target, g.Enhanced)
+	if troop.Name == "Queen" {
+		// Queen heals lowest HP tower by 300 instead of attacking
+		var lowest *model.Tower
+		for _, tower := range p.Towers {
+			if lowest == nil || tower.HP < lowest.HP {
+				lowest = tower
+			}
+		}
+		if lowest != nil {
+			lowest.Heal(300)
+			result := "Queen healed " + lowest.Type + " tower by 300 HP!"
+			if !g.Enhanced {
+				g.Turn = 3 - g.Turn
+			}
+			return result
+		}
+		return "Queen could not find a tower to heal."
+	}
+
+	dmg, destroyed, _ := g.AttackTower(p, troop, target, g.Enhanced)
 	result := troop.Name + " dealt " + utils.Itoa(dmg) + " damage to " + towerType
 	if destroyed {
 		result += " and destroyed it!"
 	}
 
-	if !g.Enhanced {
-		g.Turn = 3 - g.Turn
-	}
 	return result
 }
 
@@ -151,7 +183,7 @@ func (g *Game) ApplySpecialSkill(p *model.Player, t *model.Troop) string {
 			}
 		}
 		if lowest != nil {
-			lowest.Heal(100)
+			lowest.Heal(300)
 			return "Heal applied! " + lowest.Type + " tower HP restored."
 		}
 	}

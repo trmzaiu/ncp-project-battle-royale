@@ -4,7 +4,9 @@ package model
 
 import (
 	"encoding/json"
+	"math/rand"
 	"os"
+	"time"
 )
 
 type Tower struct {
@@ -15,6 +17,12 @@ type Tower struct {
 	DEF   int     `json:"def"`
 	CRIT  float64 `json:"crit"`
 	EXP   int     `json:"exp"`
+}
+
+var defaultTowers map[string]*Tower
+
+func init() {
+	defaultTowers = LoadTower()
 }
 
 func LoadTower() map[string]*Tower {
@@ -62,10 +70,32 @@ func (t *Tower) Heal(amount int) {
 	}
 }
 
+func (t *Tower) CounterDamage() int {
+	rand.Seed(time.Now().UnixNano())
+
+	baseDamage := t.ATK
+
+	if rand.Float64() < t.CRIT {
+		baseDamage = int(float64(baseDamage) * 1.5)
+	}
+
+	return baseDamage
+}
+
 func (t *Tower) Reset() {
-	t.HP = 1000
-	t.ATK = 300
-	t.DEF = 100
-	t.CRIT = 0.05
-	t.EXP = 100
+	if def, ok := defaultTowers[t.Type]; ok {
+		t.MaxHP = def.MaxHP
+		t.HP = def.MaxHP
+		t.ATK = def.ATK
+		t.DEF = def.DEF
+		t.CRIT = def.CRIT
+		t.EXP = def.EXP
+	} else {
+		t.MaxHP = 1000
+		t.HP = 1000
+		t.ATK = 300
+		t.DEF = 100
+		t.CRIT = 0.05
+		t.EXP = 100
+	}
 }

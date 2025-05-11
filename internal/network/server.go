@@ -30,10 +30,10 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 
 	defer func() {
-        if r := recover(); r != nil {
-            log.Println("Recovered from panic in WebSocket handler:", r)
-        }
-    }()
+		if r := recover(); r != nil {
+			log.Println("Recovered from panic in WebSocket handler:", r)
+		}
+	}()
 
 	for {
 		_, msg, err := conn.ReadMessage()
@@ -57,6 +57,8 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 			handleGetUser(conn, pdu.Data)
 		case "start_game":
 			game.HandleStartGame(conn, pdu.Data)
+		case "get_game_info":
+			game.HandleGetGameInfo(conn, pdu.Data)
 		default:
 			conn.WriteJSON(utils.Response{Type: "error", Success: false, Message: "Unknown message type"})
 			conn.Close()

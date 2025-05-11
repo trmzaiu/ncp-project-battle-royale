@@ -84,3 +84,25 @@ func (t *Troop) FortifyHP(amount int) {
 		t.HP = t.MaxHP
 	}
 }
+
+func (p *Player) TowerStatus() map[string]int {
+	status := make(map[string]int)
+	for k, v := range p.Towers {
+		status[k] = v.HP
+	}
+	return status
+}
+
+func (p *Player) TroopStatus() []map[string]interface{} {
+	var troops []map[string]interface{}
+	for _, t := range p.Troops {
+		troops = append(troops, map[string]interface{}{
+			"name":  t.Name,
+			"hp":    t.HP,
+			"mana":  t.MANA,
+			"skill": t.Special,
+		})
+	}
+	return troops
+}
+

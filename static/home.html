@@ -571,10 +571,22 @@
                     showNotification(msg.message || "Login failed. Please try again.");
                 }
             } else if (msg.type === "match_found") {
-                showNotification("Match found! Redirecting...");
-                setTimeout(() => {
-                    window.location.href = "/game.html";
-                }, 1500);
+                if (msg.success) {
+                    localStorage.setItem("room_id", msg.data.room_id);
+                    localStorage.setItem("username", user.username);
+                    console.log("Match found! Room ID:", msg.data.room_id);
+                    console.log("Room ID:", localStorage.getItem("room_id"));
+                    // socket.send(JSON.stringify({
+                    //     type: "get_game_info",
+                    //     data: { room_id: roomId }
+                    // }));
+                    addLogEntry("SYSTEM", "Match found! Starting game...");
+                    showNotification("Match found! Starting game...");
+                    window.location.href = `/game.html`;
+                } else {
+                    addLogEntry("ERROR", msg.message || "Failed to find a match");
+                    showNotification(msg.message || "Failed to find a match. Please try again.");
+                }
             }
 
             if (msg.type === "error" || (msg.type === "start_game_response" && !msg.success)) {

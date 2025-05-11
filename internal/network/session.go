@@ -92,15 +92,25 @@ func ReadSession(sessionID string) (Session, error) {
 
 // WriteSession writes the session data to the file
 func WriteSession(sessions []Session) error {
-	file, err := os.OpenFile(sessionFilePath, os.O_RDWR|os.O_CREATE, 0644)
+	latest := make(map[string]Session)
+	for _, s := range sessions {
+		latest[s.Username] = s
+	}
+
+	var uniqueSessions []Session
+	for _, s := range latest {
+		uniqueSessions = append(uniqueSessions, s)
+	}
+
+	file, err := os.OpenFile(sessionFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 
-	// Encode and write sessions to the file
+	// Encode
 	encoder := json.NewEncoder(file)
-	err = encoder.Encode(sessions)
+	err = encoder.Encode(uniqueSessions)
 	if err != nil {
 		return err
 	}
