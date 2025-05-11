@@ -1,137 +1,77 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Royaka - Tower Battle</title>
-    <style>
-        :root {
-            --primary-color: #5c6bc0;
-            --secondary-color: #8e24aa;
-            --accent-color: #ff7043;
-            --background-color: #1a1a2e;
-            --card-color: #252541;
-            --text-color: #e6e6e6;
-            --border-color: #3f3f5a;
-            --mana-color: #03a9f4;
-            --health-color: #4caf50;
-            --warning-color: #ff9800;
-            --danger-color: #f44336;
-            --shield-color: #9c27b0;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--background-color);
-            color: var(--text-color);
-        }
-        
-        .header {
-            text-align: center;
-            padding: 20px 0;
-            background-color: var(--card-color);
-            border-bottom: 2px solid var(--border-color);
-            position: relative;
-        }
-        
-        .title {
-            font-size: 2rem;
-            margin: 0;
-            color: var(--accent-color);
-            text-shadow: 0 0 10px rgba(255, 112, 67, 0.5);
-        }
-        
-        .subtitle {
-            font-size: 1rem;
-            margin: 5px 0 0;
-            color: var(--text-color);
-            opacity: 0.7;
-        }
-        
-        .game-container {
-            display: flex;
-            flex-direction: column;
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 20px;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Royaka - Tower Battle</title>
+  <style>
+    :root {
+      --primary-color: #4a90e2;
+      --secondary-color: #50b883;
+      --accent-color: #f5b84d;
+      --background-color: #f5f7fa;
+      --card-color: #ffffff;
+      --text-color: #3c4858;
+      --border-color: #e5e9f2;
+      --mana-color: #5e91f2;
+      --health-color: #50b883;
+      --warning-color: #f5b84d;
+      --danger-color: #ec5f67;
+      --shield-color: #9b59b6;
+    }
 
-        .stats-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: var(--card-color);
-            padding: 12px 24px;
-            border-radius: 12px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            color: #fff;
-            font-family: 'Segoe UI', sans-serif;
-        }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, rgba(86, 103, 255, 0.8) 0%, rgba(255, 138, 101, 0.8) 100%);
+      color: var(--text-color);
+    }
 
-        .opponent-stats,
-        .player-stats {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+    .header {
+      text-align: center;
+      padding: 20px 0;
+      background-color: var(--card-color);
+      border-bottom: 2px solid var(--border-color);
+      position: relative;
+    }
 
-        .user-avatar, .opponent-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 20px;
-            color: white;
-            box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
-        }
+    .title {
+      font-size: 2rem;
+      margin: 0;
+      color: var(--primary-color);
+      text-shadow: 0 0 10px rgba(74, 144, 226, 0.2);
+    }
 
-        .stat-column {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
+    .subtitle {
+      font-size: 1rem;
+      margin: 5px 0 0;
+      color: var(--text-color);
+      opacity: 0.7;
+    }
 
-        .stat {
-            display: flex;
-            gap: 6px;
-            align-items: center;
-            font-size: 14px;
-        }
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      margin: 0 auto;
+      padding: 20px;
+    }
 
-        .stat-label {
-            font-weight: 500;
-            color: #bbb;
-        }
+    .stats-bar {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      background-color: var(--card-color);
+      border-radius: 8px;
+      padding: 10px 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
 
-        .stat-value {
-            font-weight: bold;
-            color: #fff;
-        }
-
-        .mana {
-            color: #00bfff;
-        }
-
-        .turn-display {
-            text-align: center;
-            font-size: 16px;
-            background: #23272a;
-            padding: 8px 16px;
-            border-radius: 8px;
-            box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.3);
-        }
-
-        .stat {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-        }
+    .stat {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
 
         .stat-value.mana {
             color: var(--mana-color);
@@ -141,126 +81,130 @@
             color: var(--accent-color);
         }
 
-        .player-stats, .opponent-stats {
-            display: flex;
-        }
-        
-        .battlefield {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        
-        .player-side {
-            flex: 1;
-            padding: 15px;
-            background-color: var(--card-color);
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin: 0 10px;
-            position: relative;
-            overflow: hidden;
-        }
+    .player-stats, .opponent-stats {
+      display: flex;
+    }
+
+    .battlefield {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .player-side {
+      flex: 1;
+      padding: 15px;
+      background-color: var(--card-color);
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+      margin: 0 10px;
+      position: relative;
+      overflow: hidden;
+    }
 
         .player-side.active {
             box-shadow: 0 0 15px var(--primary-color);
         }
 
-        .opponent-side.active {
-            box-shadow: 0 0 15px var(--secondary-color);
-        }
-        
-        .player-name {
-            font-weight: bold;
-            padding: 5px 10px;
-            background-color: var(--primary-color);
-            border-radius: 4px;
-            display: inline-block;
-            margin-bottom: 10px;
-        }
-        
-        .opponent .player-name {
-            background-color: var(--secondary-color);
-        }
-        
-        .tower-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 30px;
-        }
-        
-        .towers {
-            display: flex;
-            justify-content: space-around;
-            width: 100%;
-        }
-        
-        .tower {
-            width: 120px;
-            height: 120px;
-            background-color: var(--border-color);
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        
-        .tower.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .tower.king {
-            width: 150px;
-            height: 150px;
-            background-color: var(--accent-color);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-        }
-        
-        .tower-icon {
-            font-size: 2.5rem;
-            margin-bottom: 5px;
-            filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
-        }
-        
-        .tower.king .tower-icon {
-            font-size: 3rem;
-        }
-        
-        .tower-name {
-            font-size: 0.85rem;
-            font-weight: bold;
-        }
-        
-        .tower-hp {
-            position: absolute;
-            bottom: 5px;
-            left: 0;
-            right: 0;
-            text-align: center;
-            font-size: 0.8rem;
-        }
-        
-        .hp-bar {
-            height: 8px;
-            width: 80%;
-            background-color: #444;
-            border-radius: 4px;
-            margin: 2px auto 0;
-            overflow: hidden;
-        }
-        
-        .hp-fill {
-            height: 100%;
-            background-color: var(--health-color);
-            transition: width 0.3s ease;
-        }
+    .opponent-side.active {
+      box-shadow: 0 0 15px var(--secondary-color);
+    }
+
+    .player-name {
+      font-weight: bold;
+      padding: 5px 10px;
+      background-color: var(--primary-color);
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 10px;
+      color: white;
+    }
+
+    .opponent .player-name {
+      background-color: var(--secondary-color);
+    }
+
+    .tower-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .towers {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+    }
+
+    .tower {
+      width: 120px;
+      height: 120px;
+      background-color: var(--border-color);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .tower.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .tower.king {
+      width: 150px;
+      height: 150px;
+      background-color: var(--accent-color);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .tower-icon {
+      font-size: 2.5rem;
+      margin-bottom: 5px;
+      filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+      color: var(--text-color);
+    }
+
+    .tower.king .tower-icon {
+      font-size: 3rem;
+    }
+
+    .tower-name {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--text-color);
+    }
+
+    .tower-hp {
+      position: absolute;
+      bottom: 5px;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-color);
+    }
+
+    .hp-bar {
+      height: 8px;
+      width: 80%;
+      background-color: #e5e9f2;
+      border-radius: 4px;
+      margin: 2px auto 0;
+      overflow: hidden;
+    }
+
+    .hp-fill {
+      height: 100%;
+      background-color: var(--health-color);
+      transition: width 0.3s ease;
+    }
 
         .shield-indicator {
             position: absolute;
@@ -303,97 +247,102 @@
             animation: status-float 1.5s forwards;
         }
 
-        @keyframes status-float {
-            0% { top: -10px; opacity: 0; }
-            20% { opacity: 1; }
-            100% { top: -30px; opacity: 0; }
-        }
-        
-        .controls {
-            padding: 15px;
-            background-color: var(--card-color);
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        
-        .troops-container {
-            margin-bottom: 20px;
-        }
+    @keyframes status-float {
+      0% { top: -10px; opacity: 0; }
+      20% { opacity: 1; }
+      100% { top: -30px; opacity: 0; }
+    }
 
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
+    .controls {
+      padding: 15px;
+      background-color: var(--card-color);
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
 
-        .mana-display {
-            display: flex;
-            align-items: center;
-            padding: 5px 10px;
-            background-color: rgba(3, 169, 244, 0.2);
-            border-radius: 4px;
-        }
+    .troops-container {
+      margin-bottom: 20px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      color: var(--text-color);
+    }
+
+    .mana-display {
+      display: flex;
+      align-items: center;
+      padding: 5px 10px;
+      background-color: rgba(94, 145, 242, 0.1);
+      border-radius: 4px;
+    }
 
         .mana-icon {
             margin-right: 5px;
             color: var(--mana-color);
         }
 
-        .mana-value {
-            font-weight: bold;
-            color: var(--mana-color);
-        }
-        
-        .troop-selection {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 10px;
-        }
-        
-        .troop {
-            width: 80px;
-            height: 120px;
-            background-color: var(--border-color);
-            border-radius: 8px;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            position: relative;
-        }
-        
-        .troop.selected {
-            border: 2px solid var(--accent-color);
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(255, 112, 67, 0.5);
-        }
+    .mana-value {
+      font-weight: bold;
+      color: var(--mana-color);
+    }
 
-        .troop.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .troop-icon {
-            font-size: 2rem;
-            margin-bottom: 5px;
-            filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
-        }
-        
-        .troop-name {
-            font-size: 0.8rem;
-            font-weight: bold;
-            text-align: center;
-        }
-        
-        .troop-stats {
-            font-size: 0.7rem;
-            margin-top: 5px;
-            text-align: center;
-            line-height: 1.3;
-        }
+    .troop-selection {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 10px;
+    }
+
+    .troop {
+      width: 80px;
+      height: 120px;
+      background-color: var(--card-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .troop.selected {
+      border: 2px solid var(--accent-color);
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(245, 184, 77, 0.3);
+    }
+
+    .troop.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .troop-icon {
+      font-size: 2rem;
+      margin-bottom: 5px;
+      filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
+      color: var(--text-color);
+    }
+
+    .troop-name {
+      font-size: 0.8rem;
+      font-weight: bold;
+      text-align: center;
+      color: var(--text-color);
+    }
+
+    .troop-stats {
+      font-size: 0.7rem;
+      margin-top: 5px;
+      text-align: center;
+      line-height: 1.3;
+      color: var(--text-color);
+    }
 
         .troop-mana-cost {
             position: absolute;
@@ -411,22 +360,23 @@
             font-weight: bold;
         }
 
-        .ability-description {
-            position: absolute;
-            bottom: -80px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 180px;
-            background-color: var(--card-color);
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            padding: 8px;
-            font-size: 0.75rem;
-            z-index: 10;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s, bottom 0.3s;
-        }
+    .ability-description {
+      position: absolute;
+      bottom: -80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 180px;
+      background-color: var(--card-color);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 8px;
+      font-size: 0.75rem;
+      z-index: 10;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s, bottom 0.3s;
+      color: var(--text-color);
+    }
 
         .troop:hover .ability-description {
             opacity: 1;
@@ -441,76 +391,79 @@
             padding-bottom: 5px;
         }
 
-        .special-action {
-            flex: 0 0 120px;
-            background-color: var(--border-color);
-            border-radius: 8px;
-            padding: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
+    .special-action {
+      flex: 0 0 120px;
+      background-color: var(--card-color);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
 
-        .special-action:hover {
-            background-color: #33334f;
-        }
+    .special-action:hover {
+      background-color: #f5f7fa;
+    }
 
         .special-action.disabled {
             opacity: 0.5;
             cursor: not-allowed;
         }
 
-        .special-action-icon {
-            font-size: 1.5rem;
-            margin-bottom: 5px;
-        }
+    .special-action-icon {
+      font-size: 1.5rem;
+      margin-bottom: 5px;
+      color: var(--text-color);
+    }
 
-        .special-action-name {
-            font-size: 0.75rem;
-            font-weight: bold;
-            text-align: center;
-        }
+    .special-action-name {
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-align: center;
+      color: var(--text-color);
+    }
 
-        .special-action-cost {
-            font-size: 0.7rem;
-            color: var(--mana-color);
-            margin-top: 3px;
-        }
-        
-        .action-buttons {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 15px;
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .btn-attack {
-            background-color: var(--danger-color);
-            flex: 1;
-            margin-right: 10px;
-        }
-        
-        .btn-attack:hover {
-            background-color: #d32f2f;
-            transform: translateY(-2px);
-        }
-        
-        .btn-attack:disabled {
-            background-color: #9e9e9e;
-            cursor: not-allowed;
-            transform: none;
-        }
+    .special-action-cost {
+      font-size: 0.7rem;
+      color: var(--mana-color);
+      margin-top: 3px;
+    }
+
+    .action-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-attack {
+      background-color: var(--danger-color);
+      flex: 1;
+      margin-right: 10px;
+    }
+
+    .btn-attack:hover {
+      background-color: #e64d43;
+      transform: translateY(-2px);
+    }
+
+    .btn-attack:disabled {
+      background-color: #d1d5db;
+      cursor: not-allowed;
+      transform: none;
+    }
 
         .btn-end-turn {
             background-color: var(--primary-color);
@@ -518,154 +471,156 @@
             margin-right: 10px;
         }
 
-        .btn-end-turn:hover {
-            background-color: #3949ab;
-            transform: translateY(-2px);
-        }
-        
-        .btn-leave {
-            background-color: #607d8b;
-            flex: 0 0 120px;
-        }
-        
-        .btn-leave:hover {
-            background-color: #455a64;
-            transform: translateY(-2px);
-        }
-        
-        .game-log {
-            height: 200px;
-            background-color: var(--card-color);
-            border-radius: 8px;
-            margin-top: 20px;
-            padding: 10px;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-        }
-        
-        .log-entry {
-            padding: 5px 0;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.9rem;
-        }
-        
-        .log-entry .timestamp {
-            color: #78909c;
-            margin-right: 8px;
-        }
-        
-        .log-entry .system {
-            color: #64b5f6;
-        }
-        
-        .log-entry .attack {
-            color: #ff8a65;
-        }
+    .btn-end-turn:hover {
+      background-color: #3a80d2;
+      transform: translateY(-2px);
+    }
 
-        .log-entry .critical {
-            color: #f44336;
-            font-weight: bold;
-        }
+    .btn-leave {
+      background-color: #94a3b8;
+      flex: 0 0 120px;
+    }
 
-        .log-entry .ability {
-            color: #9c27b0;
-        }
+    .btn-leave:hover {
+      background-color: #64748b;
+      transform: translateY(-2px);
+    }
 
-        .log-entry .mana {
-            color: #03a9f4;
-        }
-        
-        .notification {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: var(--primary-color);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 4px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-            z-index: 100;
-            max-width: 80%;
-            text-align: center;
-        }
-        
-        .notification.show {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .game-over-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s;
-        }
-        
-        .game-over-modal.show {
-            opacity: 1;
-            visibility: visible;
-        }
-        
-        .modal-content {
-            background-color: var(--card-color);
-            border-radius: 8px;
-            padding: 30px;
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-        }
-        
-        .modal-title {
-            font-size: 1.8rem;
-            margin-bottom: 20px;
-            color: var(--accent-color);
-        }
-        
-        .modal-body {
-            margin-bottom: 25px;
-        }
-        
-        .exp-gain {
-            font-size: 1.2rem;
-            margin: 15px 0;
-            color: var(--health-color);
-        }
+    .game-log {
+      height: 200px;
+      background-color: var(--card-color);
+      border-radius: 8px;
+      margin-top: 20px;
+      padding: 10px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+    }
 
-        .stats-summary {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            padding: 15px;
-            margin: 15px 0;
-            text-align: left;
-        }
-        
-        .modal-buttons {
-            display: flex;
-            justify-content: center;
-        }
-        
-        .btn-primary {
-            background-color: var(--primary-color);
-            padding: 12px 30px;
-        }
-        
-        .btn-primary:hover {
-            background-color: #3949ab;
-            transform: translateY(-2px);
-        }
+    .log-entry {
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 0.9rem;
+      color: var(--text-color);
+    }
+
+    .log-entry .timestamp {
+      color: #94a3b8;
+      margin-right: 8px;
+    }
+
+    .log-entry .system {
+      color: var(--primary-color);
+    }
+
+    .log-entry .attack {
+      color: var(--accent-color);
+    }
+
+    .log-entry .critical {
+      color: var(--danger-color);
+      font-weight: bold;
+    }
+
+    .log-entry .ability {
+      color: var(--shield-color);
+    }
+
+    .log-entry .mana {
+      color: var(--mana-color);
+    }
+
+    .notification {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: var(--primary-color);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 4px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+      z-index: 100;
+      max-width: 80%;
+      text-align: center;
+    }
+
+    .notification.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .game-over-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s, visibility 0.3s;
+    }
+
+    .game-over-modal.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background-color: var(--card-color);
+      border-radius: 8px;
+      padding: 30px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      color: var(--text-color);
+    }
+
+    .modal-title {
+      font-size: 1.8rem;
+      margin-bottom: 20px;
+      color: var(--primary-color);
+    }
+
+    .modal-body {
+      margin-bottom: 25px;
+    }
+
+    .exp-gain {
+      font-size: 1.2rem;
+      margin: 15px 0;
+      color: var(--health-color);
+    }
+
+    .stats-summary {
+      background-color: rgba(0, 0, 0, 0.02);
+      border-radius: 4px;
+      padding: 15px;
+      margin: 15px 0;
+      text-align: left;
+    }
+
+    .modal-buttons {
+      display: flex;
+      justify-content: center;
+    }
+
+    .btn-primary {
+      background-color: var(--primary-color);
+      padding: 12px 30px;
+    }
+
+    .btn-primary:hover {
+      background-color: #3a80d2;
+      transform: translateY(-2px);
+    }
 
         .animation-container {
             position: absolute;
@@ -687,24 +642,24 @@
             z-index: 10;
         }
 
-        .damage-number {
-            position: absolute;
-            font-weight: bold;
-            font-size: 1.5rem;
-            transform: translate(-50%, -50%);
-            animation: damage-float 1.5s forwards;
-            z-index: 15;
-            text-shadow: 0 0 5px rgba(0, 0, 0, 0.7);
-        }
+    .damage-number {
+      position: absolute;
+      font-weight: bold;
+      font-size: 1.5rem;
+      transform: translate(-50%, -50%);
+      animation: damage-float 1.5s forwards;
+      z-index: 15;
+      text-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    }
 
-        .damage-number.normal {
-            color: white;
-        }
+    .damage-number.normal {
+      color: var(--text-color);
+    }
 
-        .damage-number.critical {
-            color: #f44336;
-            font-size: 1.8rem;
-        }
+    .damage-number.critical {
+      color: var(--danger-color);
+      font-size: 1.8rem;
+    }
 
         @keyframes damage-float {
             0% { opacity: 0; margin-top: 0; }
@@ -721,23 +676,23 @@
             z-index: 5;
         }
 
-        @keyframes shield-pulse {
-            0% { opacity: 0.7; transform: scale(1); }
-            50% { opacity: 0.3; transform: scale(1.1); }
-            100% { opacity: 0.7; transform: scale(1); }
-        }
-        
-        .progress-dot {
-            width: 10px;
-            height: 10px;
-            background-color: #607d8b;
-            border-radius: 50%;
-            margin: 0 5px;
-        }
-        
-        .progress-dot.active {
-            background-color: var(--primary-color);
-        }
+    @keyframes shield-pulse {
+      0% { opacity: 0.7; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(1.1); }
+      100% { opacity: 0.7; transform: scale(1); }
+    }
+
+    .progress-dot {
+      width: 10px;
+      height: 10px;
+      background-color: #94a3b8;
+      border-radius: 50%;
+      margin: 0 5px;
+    }
+
+    .progress-dot.active {
+      background-color: var(--primary-color);
+    }
 
         .difficulty-selection {
             display: flex;
@@ -746,60 +701,60 @@
             margin: 20px 0;
         }
 
-        .difficulty-btn {
-            background-color: var(--border-color);
-            border: none;
-            border-radius: 4px;
-            padding: 10px 20px;
-            color: white;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
+    .difficulty-btn {
+      background-color: var(--card-color);
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 10px 20px;
+      color: var(--text-color);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
 
-        .difficulty-btn.easy {
-            border-bottom: 3px solid #4caf50;
-        }
+    .difficulty-btn.easy {
+      border-bottom: 3px solid var(--health-color);
+    }
 
-        .difficulty-btn.medium {
-            border-bottom: 3px solid #ff9800;
-        }
+    .difficulty-btn.medium {
+      border-bottom: 3px solid var(--warning-color);
+    }
 
-        .difficulty-btn.hard {
-            border-bottom: 3px solid #f44336;
-        }
+    .difficulty-btn.hard {
+      border-bottom: 3px solid var(--danger-color);
+    }
 
         .difficulty-btn:hover {
             transform: translateY(-2px);
         }
 
-        .difficulty-btn.selected {
-            background-color: var(--primary-color);
-        }
-        
-        @media (max-width: 100vw) {
-            .battlefield {
-                flex-direction: column;
-            }
-            
-            .player-side {
-                margin: 10px 0;
-                width: 100vw;
-            }
-            
-            .tower {
-                width: 90px;
-                height: 90px;
-            }
-            
-            .tower.king {
-                width: 120px;
-                height: 120px;
-            }
-            
-            .troop {
-                width: 60px;
-                height: 80px;
-            }
+    .difficulty-btn.selected {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    @media (max-width: 100vw) {
+      .battlefield {
+        flex-direction: column;
+      }
+      
+      .player-side {
+        margin: 10px 0;
+      }
+      
+      .tower {
+        width: 90px;
+        height: 90px;
+      }
+      
+      .tower.king {
+        width: 120px;
+        height: 120px;
+      }
+      
+      .troop {
+        width: 15vw;
+        height: 20vw;
+      }
 
             .troop-icon {
                 font-size: 1.5rem;
@@ -814,10 +769,29 @@
                 justify-content: space-around;
             }
 
-            .special-action {
-                flex: 0 0 calc(50% - 15px);
-                margin-bottom: 10px;
-            }
+      .special-action {
+        flex: 0 0 calc(50% - 15px);
+        margin-bottom: 10px;
+      }
+
+      .stats-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #e5e9f2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 10px;
+        font-weight: bold;
+        color: var(--text-color);
+      }
 
             .stat-column {
                 display: flex;
@@ -828,12 +802,12 @@
                 margin: 2px 0;
             }
 
-            .stat-label {
-                font-size: 12px;
-                color: #666;
-            }
-        }
-    </style>
+      .stat-label {
+        font-size: 12px;
+        color: #64748b;
+      }
+    }
+  </style>
 </head>
 <body>
     <div class="header">
