@@ -23,9 +23,9 @@ func HandleGetGame(conn *websocket.Conn, data json.RawMessage) {
 		return
 	}
 
-	roomsMu.Lock()
+	roomsMu.RLock()
 	room, exists := rooms[req.RoomID]
-	roomsMu.Unlock()
+	roomsMu.RUnlock()
 	if !exists {
 		log.Printf("[GAME_INFO] Room %s not found for user %s", req.RoomID, req.Username)
 		conn.WriteJSON(utils.Response{
@@ -81,12 +81,12 @@ func HandleAttack(conn *websocket.Conn, data json.RawMessage) {
 		return
 	}
 
-	roomsMu.Lock()
+	roomsMu.RLock()
 	room, exists := rooms[req.RoomID]
-	roomsMu.Unlock()
+	roomsMu.RUnlock()
 
 	if !exists {
-		log.Printf("[ROOM] Room %s not found", req.RoomID, req.Username)
+		log.Printf("[ROOM] Room %s not found", req.RoomID)
 		conn.WriteJSON(utils.Response{
 			Type:    "attack_response",
 			Success: false,
@@ -118,7 +118,7 @@ func HandleAttack(conn *websocket.Conn, data json.RawMessage) {
 	log.Printf("[ATTACK] %s attacking %s using troop %s in room %s", req.Username, req.Target, req.Troop, req.RoomID)
 	result := room.Game.PlayTurn(attacker, troop, req.Target)
 	if result == "" {
-		log.Printf("[ATTACK] Invalid attack result", req.RoomID, req.Username)
+		log.Printf("[ATTACK] Invalid attack result")
 		conn.WriteJSON(utils.Response{
 			Type:    "attack_response",
 			Success: false,
@@ -141,36 +141,37 @@ func HandleAttack(conn *websocket.Conn, data json.RawMessage) {
 		},
 	}
 
-	log.Printf(room.Player1.User.Username, room.Player2.User.Username)
-	conn.WriteJSON(payload)
+	err := conn.WriteJSON(utils.Response{
+        Type:    "attack_response",
+        Success: true,
+        Message: "Attack processed successfully",
+    })
+    if err != nil {
+        log.Printf("[WS] Error sending attack response: %v", err)
+    }
 
-	clientsMu.Lock()
+	clientsMu.RLock()
 	client1 := clients[room.Player1.User.Username]
 	client2 := clients[room.Player2.User.Username]
-	clientsMu.Unlock()
+	clientsMu.RUnlock()	
 
 	sendToClient(client1, payload)
 	sendToClient(client2, payload)
 }
 
-func getClientsForRoom(room *Room) (*ClientConnection, *ClientConnection) {
-	clientsMu.Lock()
-	defer clientsMu.Unlock()
-
-	client1 := clients[room.Player1.User.Username]
-	client2 := clients[room.Player2.User.Username]
-	return client1, client2
-}
-
 func sendToClient(client *ClientConnection, payload utils.Response) {
-	if client != nil && client.Conn != nil {
-		if err := client.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-            log.Printf("[ATTACK] WebSocket ping failed: %v", err)
-            return
-        }
-		client.SafeWrite(payload)
-	} else {
-		log.Printf("[ATTACK] Connection for client is closed")
+	if client == nil || client.Conn == nil {
+		log.Println("[ATTACK] Client or connection is nil.")
+		return
+	}
+	
+	if err := client.Conn.WriteMessage(websocket.PongMessage, nil); err != nil {
+		log.Printf("[ATTACK] WebSocket pong failed: %v", err)
+		return
+	}
+
+	if err := client.SafeWrite(payload); err != nil {
+		log.Printf("[ATTACK] Failed to send message: %v", err)
 	}
 }
 
@@ -183,10 +184,10 @@ func NotifyGameConclusion(room *Room, winner *model.Player) {
 	}
 
 	// Manage clients using channel-based synchronization
-	clientsMu.Lock()
+	clientsMu.RLock()
 	client1 := clients[room.Player1.User.Username]
 	client2 := clients[room.Player2.User.Username]
-	clientsMu.Unlock()
+	clientsMu.RUnlock()
 
 	if client1 != nil {
 		client1.SafeWrite(message)

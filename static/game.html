@@ -1092,12 +1092,18 @@
                 const room_id = localStorage.getItem("room_id");
                 const username = localStorage.getItem("username");
                 console.log("Room ID:", room_id);
-                socket.send(
-                    JSON.stringify({
-                        type: "get_game",
-                        data: { room_id: room_id, username: username },
-                    })
-                );
+
+                if (socket.readyState === WebSocket.OPEN) {
+                    socket.send(
+                        JSON.stringify({
+                            type: "get_game",
+                            data: { room_id: room_id, username: username },
+                        })
+                    );
+                }
+                setInterval(() => {
+                    socket.send(JSON.stringify({ type: "ping" }));
+                }, 30000);
             };
 
             socket.onmessage = handleSocketMessage;
@@ -1106,12 +1112,12 @@
                 console.log(
                     "WebSocket connection closed. Attempting to reconnect..."
                 );
-                setTimeout(connectWebSocket, 1000);
+                setTimeout(connectWebSocket, 3000);
             };
 
             socket.onerror = () => {
                 console.error("WebSocket error. Attempting to reconnect...");
-                setTimeout(connectWebSocket, 1000);
+                setTimeout(connectWebSocket, 3000);
             };
         }
 
@@ -1295,6 +1301,9 @@
         }
 
         function selectTarget(towerDiv) {
+            if (!yourTurn)
+                return showNotification("Not your turn.");
+
             if (!gameState.selectedTroop)
                 return showNotification("Select a troop first.");
 

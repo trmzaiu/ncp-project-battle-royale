@@ -84,19 +84,30 @@ func processMessage(conn *websocket.Conn, pdu utils.Message) {
 		game.HandleGetGame(conn, pdu.Data)
 	case "attack":
 		game.HandleAttack(conn, pdu.Data)
+	case "ping":
+		handlePingPong(conn)
 	default:
 		log.Printf("[WS] Unknown message type: %s", pdu.Type)
 		sendError(conn, "Unknown message type")
-		conn.Close()
 	}
 }
 
+func handlePingPong(conn *websocket.Conn) {
+    // Ensure the server sends a pong in response to ping
+    conn.WriteJSON(utils.Response{
+        Type: "pong",
+        Message: "Pong",
+    })
+}
+
 func sendError(conn *websocket.Conn, message string) {
-	conn.WriteJSON(utils.Response{
-		Type:    "error",
-		Success: false,
-		Message: message,
-	})
+    if err := conn.WriteJSON(utils.Response{
+        Type:    "error",
+        Success: false,
+        Message: message,
+    }); err != nil {
+        log.Printf("[WS] Error sending error message: %v", err)
+    }
 }
 
 func logWebSocketError(err error) {
