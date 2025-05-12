@@ -19,6 +19,8 @@ type Troop struct {
 	EXP     int     `json:"exp"`
 	CRIT    float64 `json:"crit"`
 	Special string  `json:"special"`
+	Icon	string  `json:"icon"`
+	Description string  `json:"description"`
 }
 
 func loadTroop() ([]Troop, error) {
@@ -56,6 +58,11 @@ func getRandomTroops(n int) []*Troop {
 			CRIT:  t.CRIT,
 			MaxHP: t.MaxHP,
 			HP:    t.MaxHP,
+			MANA:  t.MANA,
+			EXP:   t.EXP,
+			Special: t.Special,
+			Icon: t.Icon,
+			Description: t.Description,
 		})
 	}
 	return selected
@@ -101,6 +108,8 @@ func (p *Player) TroopStatus() []map[string]interface{} {
 			"hp":    t.HP,
 			"mana":  t.MANA,
 			"skill": t.Special,
+			"icon":  t.Icon,
+			"desc":  t.Description,
 		})
 	}
 	return troops

@@ -24,7 +24,7 @@ func NewGame(p1, p2 *model.Player, enhanced bool) *Game {
 	game := &Game{
 		Player1:  p1,
 		Player2:  p2,
-		Turn:     1,
+		Turn:     2,
 		Started:  true,
 		Enhanced: enhanced,
 	}
@@ -82,8 +82,7 @@ func (g *Game) PlayTurn(p *model.Player, troop *model.Troop, towerType string) s
 	}
 
 	if g.Enhanced {
-		skillResult := g.ApplySpecialSkill(p, troop)
-		return skillResult
+		return g.ApplySpecialSkill(p, troop)
 	}
 
 	if p.Mana < troop.MANA {
@@ -91,50 +90,56 @@ func (g *Game) PlayTurn(p *model.Player, troop *model.Troop, towerType string) s
 	}
 	p.Mana -= troop.MANA
 
-	op := g.Opponent(p)
-	var target *model.Tower
-	switch towerType {
-	case "guard1":
-		target = op.Towers["guard1"]
-	case "guard2":
-		if op.Towers["guard1"].HP > 0 {
-			return "Destroy Guard Tower 1 first!"
-		}
-		target = op.Towers["guard2"]
-	case "king":
-		if op.Towers["guard1"].HP > 0 || op.Towers["guard2"].HP > 0 {
-			return "Destroy both Guard Towers before attacking King Tower!"
-		}
-		target = op.Towers["king"]
-	default:
-		return "Invalid tower."
+	target, err := g.getTargetTower(p, towerType)
+	if err != nil {
+		return err.Error()
 	}
 
 	if troop.Name == "Queen" {
-		// Queen heals lowest HP tower by 300 instead of attacking
-		var lowest *model.Tower
-		for _, tower := range p.Towers {
-			if lowest == nil || tower.HP < lowest.HP {
-				lowest = tower
-			}
-		}
-		if lowest != nil {
-			lowest.Heal(300)
-			result := "Queen healed " + lowest.Type + " tower by 300 HP!"
-			if !g.Enhanced {
-				g.Turn = 3 - g.Turn
-			}
-			return result
-		}
-		return "Queen could not find a tower to heal."
+		return g.handleQueenAction(p)
 	}
 
+	return g.handleAttackAction(p, troop, target, towerType)
+}
+
+func (g *Game) getTargetTower(p *model.Player, towerType string) (*model.Tower, error) {
+	op := g.Opponent(p)
+	switch towerType {
+	case "guard1":
+		return op.Towers["guard1"], nil
+	case "guard2":
+		return op.Towers["guard2"], nil
+	case "king":
+		return op.Towers["king"], nil
+	default:
+		return nil, fmt.Errorf("invalid tower")
+	}
+}
+
+func (g *Game) handleQueenAction(p *model.Player) string {
+	var lowest *model.Tower
+	for _, tower := range p.Towers {
+		if lowest == nil || tower.HP < lowest.HP {
+			lowest = tower
+		}
+	}
+	if lowest != nil {
+		lowest.Heal(300)
+		result := "Queen healed " + lowest.Type + " tower by 300 HP!"
+		if !g.Enhanced {
+			g.Turn = 3 - g.Turn
+		}
+		return result
+	}
+	return "Queen could not find a tower to heal."
+}
+
+func (g *Game) handleAttackAction(p *model.Player, troop *model.Troop, target *model.Tower, towerType string) string {
 	dmg, destroyed, _ := g.AttackTower(p, troop, target, g.Enhanced)
 	result := troop.Name + " dealt " + utils.Itoa(dmg) + " damage to " + towerType
 	if destroyed {
 		result += " and destroyed it!"
 	}
-
 	return result
 }
 

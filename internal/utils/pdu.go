@@ -2,11 +2,21 @@
 
 package utils
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"royaka/internal/model"
+)
 
 type Message struct {
 	Type string          `json:"type"`
 	Data json.RawMessage `json:"data"`
+}
+
+type Response struct {
+	Type    string `json:"type"`
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
 }
 
 type RegisterRequest struct {
@@ -19,9 +29,23 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-type Response struct {
-	Type    string 		`json:"type"`
-	Success bool   		`json:"success"`
-	Message string 		`json:"message"`
-	Data    any			`json:"data,omitempty"`
+type UserRequest struct {
+	SessionID string `json:"session_id"`
+}
+
+type FindMatchRequest struct {
+	User *model.User `json:"user"`
+	Mode string      `json:"mode"`
+}
+
+type GameRequest struct {
+	RoomID   string `json:"room_id"`
+	Username string `json:"username"`
+}
+
+type AttackRequest struct {
+	RoomID     string `json:"room_id"`
+	Username   string `json:"username"`
+	Troop  string `json:"troop"`
+	Target string `json:"target"`
 }

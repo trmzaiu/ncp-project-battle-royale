@@ -2,20 +2,34 @@
 
 package model
 
+import (
+	"sync"
+
+	"github.com/gorilla/websocket"
+)
+
 type Player struct {
 	Mana   int               `json:"mana"`
 	Towers map[string]*Tower `json:"towers"`
 	Troops []*Troop          `json:"troops"`
-	Active bool              `json:"active"` 
-	User   *User             `json:"user"`  
+	Active bool              `json:"active"`
+	User   *User             `json:"user"`
 }
+
+var (
+	connToPlayer   = make(map[*websocket.Conn]*Player)
+	usernameToConn = make(map[string]*websocket.Conn) // Đảm bảo lấy được kết nối từ username
+	playerLock     sync.RWMutex
+	playerData     = make(map[string]*Player) // username -> player
+	playerDataMu   sync.Mutex
+)
 
 func NewPlayer(user *User, mode string) *Player {
 	var troops []*Troop
 	if mode != "simple" && mode != "enhanced" {
 		return nil
 	} else if mode == "simple" {
-		troops = getRandomTroops(3)
+		troops = getRandomTroops(4)
 	} else {
 		troops = getRandomTroops(6)
 	}
@@ -30,7 +44,7 @@ func NewPlayer(user *User, mode string) *Player {
 			"guard2": towers["Guard Tower"],
 		},
 		Troops: troops,
-		Active: false,
+		Active: true,
 		User:   user,
 	}
 }
@@ -57,6 +71,7 @@ func (p *Player) Reset() {
 	p.Towers["guard1"].Reset()
 	p.Towers["guard2"].Reset()
 	p.Troops = getRandomTroops(3)
+	p.Active = false
 }
 
 func (p *Player) DestroyedCount() int {
@@ -67,4 +82,61 @@ func (p *Player) DestroyedCount() int {
 		}
 	}
 	return count
+}
+
+// Register a new player connection
+func RegisterConnection(conn *websocket.Conn, player *Player) {
+	playerLock.Lock()
+	defer playerLock.Unlock()
+
+	connToPlayer[conn] = player
+	usernameToConn[player.User.Username] = conn // Mapping username -> conn
+	playerData[player.User.Username] = player // Mapping username -> player
+}
+
+// Remove connection mapping when player disconnects
+func RemoveConnection(conn *websocket.Conn) {
+	playerLock.Lock()
+	defer playerLock.Unlock()
+
+	player := connToPlayer[conn]
+	if player != nil {
+		delete(usernameToConn, player.User.Username) // Remove username -> conn mapping
+		delete(playerData, player.User.Username)    // Remove username -> player mapping
+		delete(connToPlayer, conn)                  // Remove conn -> player mapping
+	}
+}
+
+// Get player by connection
+func GetPlayerByConn(conn *websocket.Conn) *Player {
+	playerLock.RLock()
+	defer playerLock.RUnlock()
+	return connToPlayer[conn]
+}
+
+// Get connection by username
+func GetConnByUsername(username string) *websocket.Conn {
+	playerLock.RLock()
+	defer playerLock.RUnlock()
+	return usernameToConn[username]
+}
+
+// Remove player data by username
+func RemovePlayerByUsername(username string) {
+	playerDataMu.Lock()
+	defer playerDataMu.Unlock()
+	delete(playerData, username)
+	delete(usernameToConn, username)
+}
+
+func GetUsernameByConn(conn *websocket.Conn) string {
+	playerLock.RLock()
+	defer playerLock.RUnlock()
+
+	// Truy tìm player từ conn
+	player := connToPlayer[conn]
+	if player != nil {
+		return player.User.Username 
+	}
+	return "" 
 }

@@ -21,48 +21,88 @@ var upgrader = websocket.Upgrader{
 
 // HandleWS handles WebSocket connections and messages
 func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
+	log.Println("[WS] New WebSocket connection request")
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("Upgrade error: %v", err)
+		log.Printf("[WS] Upgrade error: %v", err)
 		http.Error(w, "WebSocket upgrade failed", http.StatusInternalServerError)
 		return
 	}
-	defer conn.Close()
+	defer func() {
+		conn.Close()
+		log.Println("[WS] WebSocket connection closed")
+	}()
 
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println("Recovered from panic in WebSocket handler:", r)
+			log.Printf("[WS] Recovered from panic: %v", r)
 		}
 	}()
 
+	log.Println("[WS] WebSocket connection established")
+
 	for {
-		_, msg, err := conn.ReadMessage()
-		if err != nil {
-			log.Printf("Error reading message: %v", err)
-			return
+		if !readAndProcessMessage(conn) {
+			break
 		}
+	}
+}
 
-		var pdu utils.Message
-		if err := json.Unmarshal(msg, &pdu); err != nil {
-			conn.WriteJSON(utils.Response{Type: "error", Success: false, Message: "Invalid message format"})
-			continue
-		}
+func readAndProcessMessage(conn *websocket.Conn) bool {
+	_, msg, err := conn.ReadMessage()
+	if err != nil {
+		logWebSocketError(err)
+		return false
+	}
 
-		switch pdu.Type {
-		case "register":
-			handleRegister(conn, pdu.Data)
-		case "login":
-			handleLogin(conn, pdu.Data)
-		case "get_user":
-			handleGetUser(conn, pdu.Data)
-		case "start_game":
-			game.HandleStartGame(conn, pdu.Data)
-		case "get_game_info":
-			game.HandleGetGameInfo(conn, pdu.Data)
-		default:
-			conn.WriteJSON(utils.Response{Type: "error", Success: false, Message: "Unknown message type"})
-			conn.Close()
-			return
-		}
+	log.Printf("[WS] Received raw message: %s", msg)
+
+	var pdu utils.Message
+	if err := json.Unmarshal(msg, &pdu); err != nil {
+		log.Printf("[WS] JSON unmarshal error: %v", err)
+		sendError(conn, "Invalid message format")
+		return true
+	}
+
+	log.Printf("[WS] Handling message type: %s", pdu.Type)
+	processMessage(conn, pdu)
+	return true
+}
+
+func processMessage(conn *websocket.Conn, pdu utils.Message) {
+	switch pdu.Type {
+	case "register":
+		handleRegister(conn, pdu.Data)
+	case "login":
+		handleLogin(conn, pdu.Data)
+	case "get_user":
+		handleGetUser(conn, pdu.Data)
+	case "find_match":
+		game.HandleFindMatch(conn, pdu.Data)
+	case "get_game":
+		game.HandleGetGame(conn, pdu.Data)
+	case "attack":
+		game.HandleAttack(conn, pdu.Data)
+	default:
+		log.Printf("[WS] Unknown message type: %s", pdu.Type)
+		sendError(conn, "Unknown message type")
+		conn.Close()
+	}
+}
+
+func sendError(conn *websocket.Conn, message string) {
+	conn.WriteJSON(utils.Response{
+		Type:    "error",
+		Success: false,
+		Message: message,
+	})
+}
+
+func logWebSocketError(err error) {
+	if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+		log.Printf("[WS] Unexpected WebSocket closure: %v", err)
+	} else {
+		log.Printf("[WS] Error reading message: %v", err)
 	}
 }

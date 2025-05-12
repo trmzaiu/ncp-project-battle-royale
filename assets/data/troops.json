@@ -1,50 +1,80 @@
-{
-    "Pawn": {
-        "hp": 50,
-        "atk": 150,
-        "def": 100,
-        "mana": 3,
-        "exp": 5,
-        "special": "Shield"
-    },
-    "Bishop": {
-        "hp": 100,
-        "atk": 200,
-        "def": 150,
-        "mana": 4,
-        "exp": 10,
-        "special": "Attack Boost"
-    },
-    "Rook": {
-        "hp": 250,
-        "atk": 200,
-        "def": 200,
-        "mana": 5,
-        "exp": 25,
-        "special": "Fortify"
-    },
-    "Knight": {
-        "hp": 200,
-        "atk": 300,
-        "def": 150,
-        "mana": 5,
-        "exp": 25,
-        "special": "Double Strike"
-    },
-    "Prince": {
-        "hp": 500,
-        "atk": 400,
-        "def": 300,
-        "mana": 6,
-        "exp": 50,
-        "special": "Charge"
-    },
-    "Queen": {
-        "hp": 0,
-        "atk": 0,
-        "def": 0,
-        "mana": 5,
-        "exp": 30,
-        "special": "Heal"
-    }
-}
+[
+  {
+    "name": "Pawn",
+    "max_hp": 50,
+    "hp": 50,
+    "atk": 150,
+    "def": 100,
+    "mana": 3,
+    "exp": 5,
+    "crit": 0.05,
+    "special": "Shield",
+    "icon": "♙",
+    "description": "A basic unit with strong defense. Uses Shield to protect itself from attacks."
+  },
+  {
+    "name": "Bishop",
+    "max_hp": 100,
+    "hp": 100,
+    "atk": 200,
+    "def": 150,
+    "mana": 4,
+    "exp": 10,
+    "crit": 0.1,
+    "special": "Attack Boost",
+    "icon": "♗",
+    "description": "A strategic unit with a powerful attack boost ability. Boosts the damage of allies around."
+  },
+  {
+    "name": "Rook",
+    "max_hp": 250,
+    "hp": 250,
+    "atk": 200,
+    "def": 200,
+    "mana": 5,
+    "exp": 25,
+    "crit": 0.1,
+    "special": "Fortify",
+    "icon": "♖",
+    "description": "A powerful tank with high defense and fortification abilities. Fortifies the team’s defenses."
+  },
+  {
+    "name": "Knight",
+    "max_hp": 200,
+    "hp": 200,
+    "atk": 300,
+    "def": 150,
+    "mana": 5,
+    "exp": 25,
+    "crit": 0.15,
+    "special": "Double Strike",
+    "icon": "♘",
+    "description": "A highly mobile unit with the ability to attack twice in one turn, dealing massive damage."
+  },
+  {
+    "name": "Prince",
+    "max_hp": 500,
+    "hp": 500,
+    "atk": 400,
+    "def": 300,
+    "mana": 6,
+    "exp": 50,
+    "crit": 0.2,
+    "special": "Charge",
+    "icon": "♔",
+    "description": "A royal warrior with massive health and powerful charge attacks. Can break through enemy defenses."
+  },
+  {
+    "name": "Queen",
+    "max_hp": 400,
+    "hp": 400,
+    "atk": 0,
+    "def": 0,
+    "mana": 5,
+    "exp": 30,
+    "crit": 0.05,
+    "special": "Heal",
+    "icon": "♕",
+    "description": "A versatile unit with the ability to heal allies. Provides support to the team with her healing ability."
+  }
+]

@@ -4,6 +4,7 @@ package network
 
 import (
 	"encoding/json"
+	"log"
 	"royaka/internal/model"
 	"royaka/internal/utils"
 
@@ -14,53 +15,108 @@ import (
 
 func handleRegister(conn *websocket.Conn, data json.RawMessage) {
 	var req utils.RegisterRequest
+
 	if err := json.Unmarshal(data, &req); err != nil {
-		conn.WriteJSON(utils.Response{Type: "register_response", Success: false, Message: "Invalid register data"})
+		log.Println("[AUTH] Invalid register data:", err)
+		conn.WriteJSON(utils.Response{
+			Type: "register_response",
+			Success: false,
+			Message: "Invalid register data",
+		})
 		return
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		conn.WriteJSON(utils.Response{Type: "register_response", Success: false, Message: "Error hashing password"})
+		log.Println("[AUTH] Error hashing password for", req.Username, ":", err)
+		conn.WriteJSON(utils.Response{
+			Type: "register_response",
+			Success: false,
+			Message: "Error hashing password",
+		})
 		return
 	}
 
 	err = model.AddUser(*model.NewUser(req.Username, string(hashedPassword)))
-	resp := utils.Response{Type: "register_response", Success: err == nil, Message: "Registered successfully"}
 	if err != nil {
-		resp.Message = "Registration failed: " + err.Error()
+		log.Printf("[AUTH] Registration failed for %s: %s", req.Username, err.Error())
+		conn.WriteJSON(utils.Response{
+			Type:    "register_response",
+			Success: false,
+			Message: "Registration failed: " + err.Error(),
+		})
+		return
 	}
-	conn.WriteJSON(resp)
+
+	log.Printf("[AUTH] User %s registered successfully", req.Username)
+	conn.WriteJSON(utils.Response{
+		Type:    "register_response",
+		Success: true,
+		Message: "Registered successfully",
+	})
 }
 
 func handleLogin(conn *websocket.Conn, data json.RawMessage) {
 	var req utils.LoginRequest
+
 	if err := json.Unmarshal(data, &req); err != nil {
-		conn.WriteJSON(utils.Response{Type: "login_response", Success: false, Message: "Invalid login data"})
+		log.Println("[AUTH] Invalid login data:", err)
+		conn.WriteJSON(utils.Response{
+			Type: "login_response",
+			Success: false,
+			Message: "Invalid login data",
+		})
 		return
 	}
 
 	u, ok := model.FindUserByUsername(req.Username)
-	if !ok || bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(req.Password)) != nil {
-		conn.WriteJSON(utils.Response{Type: "login_response", Success: false, Message: "Invalid credentials"})
+	if !ok {
+		log.Printf("[AUTH] Login failed: user %s not found", req.Username)
+		conn.WriteJSON(utils.Response{
+			Type: "login_response",
+			Success: false, 
+			Message: "Invalid credentials",
+		})
+		return
+	}
+
+	if bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(req.Password)) != nil {
+		log.Printf("[AUTH] Login failed: incorrect password for %s", req.Username)
+		conn.WriteJSON(utils.Response{
+			Type: "login_response",
+			Success: false, 
+			Message: "Invalid credentials",
+		})
 		return
 	}
 
 	sessionID := uuid.New().String()[:8]
 	session := Session{SessionID: sessionID, Username: req.Username, Authenticated: true}
+	log.Printf("[AUTH] User %s authenticated, session ID: %s", req.Username, sessionID)
 
 	sessions, err := ReadSessions()
 	if err != nil {
-		conn.WriteJSON(utils.Response{Type: "login_response", Success: false, Message: "Error reading sessions"})
+		log.Println("[AUTH] Error reading sessions:", err)
+		conn.WriteJSON(utils.Response{
+			Type: "login_response",
+			Success: false, 
+			Message: "Error reading sessions",
+		})
 		return
 	}
 
 	sessions = append(sessions, session)
 	if err := WriteSession(sessions); err != nil {
-		conn.WriteJSON(utils.Response{Type: "login_response", Success: false, Message: "Error saving session"})
+		log.Println("[AUTH] Error writing session:", err)
+		conn.WriteJSON(utils.Response{
+			Type: "login_response",
+			Success: false,
+			Message: "Error saving session",
+		})
 		return
 	}
 
+	log.Printf("[AUTH] Session stored for user %s", req.Username)
 	conn.WriteJSON(utils.Response{
 		Type:    "login_response",
 		Success: true,
@@ -70,29 +126,43 @@ func handleLogin(conn *websocket.Conn, data json.RawMessage) {
 }
 
 func handleGetUser(conn *websocket.Conn, data json.RawMessage) {
-	var req struct {
-		SessionID string `json:"session_id"`
-	}
-	
+	var req utils.UserRequest
+
 	if err := json.Unmarshal(data, &req); err != nil {
-		conn.WriteJSON(utils.Response{Type: "get_user_response", Success: false, Message: "Invalid session ID"})
+		log.Println("[AUTH] Invalid session ID in get_user request:", err)
+		conn.WriteJSON(utils.Response{
+			Type: "user_response",
+			Success: false, 
+			Message: "Invalid session ID",
+		})
 		return
 	}
 
 	session, err := FindSessionByID(req.SessionID)
 	if err != nil {
-		conn.WriteJSON(utils.Response{Type: "get_user_response", Success: false, Message: "Session not found"})
+		log.Printf("[AUTH] Session %s not found", req.SessionID)
+		conn.WriteJSON(utils.Response{
+			Type: "user_response",
+			Success: false, 
+			Message: "Session not found",
+		})
 		return
 	}
 
 	user, ok := model.FindUserByUsername(session.Username)
 	if !ok {
-		conn.WriteJSON(utils.Response{Type: "get_user_response", Success: false, Message: "User not found"})
+		log.Printf("[AUTH] User %s from session not found", session.Username)
+		conn.WriteJSON(utils.Response{
+			Type: "user_response",
+			Success: false, 
+			Message: "User not found",
+		})
 		return
 	}
 
+	log.Printf("[AUTH] Returning user data for %s from session %s", user.Username, req.SessionID)
 	conn.WriteJSON(utils.Response{
-		Type:    "get_user_response",
+		Type:    "user_response",
 		Success: true,
 		Data:    user,
 	})

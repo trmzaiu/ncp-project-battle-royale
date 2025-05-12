@@ -17,21 +17,21 @@ type Session struct {
 	Authenticated bool   `json:"authenticated"`
 }
 
-var sessionsMap = make(map[string]Session)
-
-// File to store session data
 var sessionFilePath = "assets/data/sessions.json"
 
 // ReadSessions đọc tất cả các session từ file JSON
 func ReadSessions() ([]Session, error) {
-	var sessions []Session
+	log.Println("[SESSION] Reading all sessions")
 
+	var sessions []Session
 	if _, err := os.Stat(sessionFilePath); os.IsNotExist(err) {
+		log.Println("[SESSION] Session file not found. Returning empty list.")
 		return sessions, nil
 	}
 
 	file, err := os.Open(sessionFilePath)
 	if err != nil {
+		log.Println("[SESSION] Failed to open session file:", err)
 		return sessions, err
 	}
 	defer file.Close()
@@ -39,59 +39,61 @@ func ReadSessions() ([]Session, error) {
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&sessions)
 	if err == io.EOF {
+		log.Println("[SESSION] Session file is empty.")
 		return sessions, nil
 	} else if err != nil {
+		log.Println("[SESSION] Error decoding session file:", err)
 		return sessions, err
 	}
 
+	log.Printf("[SESSION] Loaded %d sessions from file", len(sessions))
 	return sessions, nil
 }
 
 // ReadSession reads the session data from the file
 func ReadSession(sessionID string) (Session, error) {
+	log.Printf("[SESSION] Reading session with ID: %s", sessionID)
+
 	var sessions []Session
 	var session Session
 
-	// Check if the session file exists
 	if _, err := os.Stat(sessionFilePath); os.IsNotExist(err) {
-		// If session file does not exist, return an empty session
-		log.Println("Session file does not exist, creating default session.")
-		session = Session{Authenticated: false, Username: "", SessionID: ""}
-		return session, nil
+		log.Println("[SESSION] Session file does not exist")
+		return Session{Authenticated: false, Username: "", SessionID: ""}, nil
 	}
 
-	// Open the session file
 	file, err := os.Open(sessionFilePath)
 	if err != nil {
+		log.Println("[SESSION] Failed to open session file:", err)
 		return session, err
 	}
 	defer file.Close()
 
-	// Decode the sessions into a slice
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&sessions)
 	if err == io.EOF {
-		// No sessions found
-		log.Println("No sessions found in file.")
+		log.Println("[SESSION] No sessions in file")
 		return session, fmt.Errorf("session with id %s not found", sessionID)
 	} else if err != nil {
+		log.Println("[SESSION] Failed to decode session file:", err)
 		return session, err
 	}
 
-	// Search for the session by session_id
 	for _, s := range sessions {
 		if s.SessionID == sessionID {
+			log.Printf("[SESSION] Found session for user %s", s.Username)
 			return s, nil
 		}
 	}
 
-	// Return an empty session if not found
-	log.Printf("Session with ID %s not found", sessionID)
+	log.Printf("[SESSION] Session with ID %s not found", sessionID)
 	return session, fmt.Errorf("session with id %s not found", sessionID)
 }
 
 // WriteSession writes the session data to the file
 func WriteSession(sessions []Session) error {
+	log.Println("[SESSION] Writing sessions to file")
+
 	latest := make(map[string]Session)
 	for _, s := range sessions {
 		latest[s.Username] = s
@@ -104,23 +106,28 @@ func WriteSession(sessions []Session) error {
 
 	file, err := os.OpenFile(sessionFilePath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
+		log.Println("[SESSION] Failed to open file for writing:", err)
 		return err
 	}
 	defer file.Close()
 
-	// Encode
 	encoder := json.NewEncoder(file)
 	err = encoder.Encode(uniqueSessions)
 	if err != nil {
+		log.Println("[SESSION] Failed to encode sessions to file:", err)
 		return err
 	}
 
+	log.Printf("[SESSION] Successfully wrote %d unique sessions", len(uniqueSessions))
 	return nil
 }
 
 func FindSessionByID(sessionID string) (Session, error) {
+	log.Printf("[SESSION] Finding session by ID: %s", sessionID)
+
 	file, err := os.Open(sessionFilePath)
 	if err != nil {
+		log.Println("[SESSION] Could not open session file:", err)
 		return Session{}, err
 	}
 	defer file.Close()
@@ -129,14 +136,17 @@ func FindSessionByID(sessionID string) (Session, error) {
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&sessions)
 	if err != nil {
+		log.Println("[SESSION] Could not decode session file:", err)
 		return Session{}, err
 	}
 
-	// Debug log the session lookup
 	for _, s := range sessions {
 		if s.SessionID == sessionID {
+			log.Printf("[SESSION] Session found: user=%s", s.Username)
 			return s, nil
 		}
 	}
+
+	log.Printf("[SESSION] Session ID %s not found", sessionID)
 	return Session{}, fmt.Errorf("session not found")
 }
