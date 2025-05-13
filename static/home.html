@@ -80,7 +80,7 @@
             </div>
         </div>
 
-        <div class="log-container">
+        <div class="log-container" id="log-lobby">
             <div class="log-entry">
                 <span id="timestamp" class="timestamp"></span>
                 <span class="type">SYSTEM</span>
@@ -89,7 +89,7 @@
             <div id="log"></div>
         </div>
 
-        <div class="notification" id="notification">
+        <div class="notification" id="lobby-notification">
             Connecting to game server...
         </div>
     </div>
@@ -138,7 +138,7 @@
                         <div class="tower-icon">👑</div>
                         <div class="tower-hp">
                             <div class="hp-bar">
-                                <div class="hp-fill" id="opponent-king-hp-fill" style="width: 100%"></div>
+                                <div class="hp-fill opponent" id="opponent-king-hp-fill" style="width: 100%"></div>
                             </div>
                         </div>
                         <div class="shield-indicator" id="opponent-king-shield">0</div>
@@ -151,7 +151,8 @@
                                 <div class="tower-icon">🛡️</div>
                                 <div class="tower-hp">
                                     <div class="hp-bar">
-                                        <div class="hp-fill" id="opponent-guard1-hp-fill" style="width: 100%"></div>
+                                        <div class="hp-fill opponent" id="opponent-guard1-hp-fill" style="width: 100%">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="shield-indicator" id="opponent-guard1-shield">
@@ -164,7 +165,8 @@
                                 <div class="tower-icon">🛡️</div>
                                 <div class="tower-hp">
                                     <div class="hp-bar">
-                                        <div class="hp-fill" id="opponent-guard2-hp-fill" style="width: 100%"></div>
+                                        <div class="hp-fill opponent" id="opponent-guard2-hp-fill" style="width: 100%">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="shield-indicator" id="opponent-guard2-shield">
@@ -186,7 +188,8 @@
                                 <div class="tower-icon">🛡️</div>
                                 <div class="tower-hp">
                                     <div class="hp-bar">
-                                        <div class="hp-fill" id="player-guard1-hp-fill" style="width: 100%"></div>
+                                        <div class="hp-fill player" id="player-guard1-hp-fill" style="width: 100%">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="shield-indicator" id="player-guard1-shield">
@@ -199,7 +202,8 @@
                                 <div class="tower-icon">🛡️</div>
                                 <div class="tower-hp">
                                     <div class="hp-bar">
-                                        <div class="hp-fill" id="player-guard2-hp-fill" style="width: 100%"></div>
+                                        <div class="hp-fill player" id="player-guard2-hp-fill" style="width: 100%">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="shield-indicator" id="player-guard1-shield">
@@ -215,7 +219,7 @@
                     <div class="tower king" id="player-king">
                         <div class="tower-hp">
                             <div class="hp-bar">
-                                <div class="hp-fill" id="player-king-hp-fill" style="width: 100%"></div>
+                                <div class="hp-fill player" id="player-king-hp-fill" style="width: 100%"></div>
                             </div>
                         </div>
                         <div class="tower-icon">👑</div>
@@ -262,7 +266,7 @@
                 </div>
             </div>
         </div>
-        <div class="log-container" id="log-container">
+        <div class="log-container" id="log-game">
             <div class="log-entry">
                 <span id="timestamp" class="timestamp"></span>
                 <span class="type"></span>
@@ -271,7 +275,7 @@
             <div id="log"></div>
         </div>
 
-        <div class="notification" id="notification">
+        <div class="notification" id="game-notification">
             <span id="notification-text"></span>
         </div>
 
@@ -311,106 +315,39 @@
     </div>
 
     <script>
-        // --- Game Lobby Script ---
+        // ====== Global State ======
         let selectedMode = "simple";
+        let currentView = "lobby";
         let isJoiningGame = false;
-        let user, opponent, yourTurn;
-        let gameState;
+        let user, player, opponent, socket, gameState;
         let isGameInitialized = false;
-        let socket = null;
 
-        // Mode Selection
+        // ====== Initialization ======
+        setupModeSelection();
+        setupUI();
+        connectWebSocket();
+
         function setupModeSelection() {
-            document.querySelectorAll(".mode-card").forEach((card) => {
+            document.querySelectorAll(".mode-card").forEach(card => {
                 card.addEventListener("click", () => {
-                    document
-                        .querySelectorAll(".mode-card")
-                        .forEach((c) => c.classList.remove("selected"));
+                    document.querySelectorAll(".mode-card").forEach(c => c.classList.remove("selected"));
                     card.classList.add("selected");
                     selectedMode = card.dataset.mode;
                 });
             });
         }
 
-        // Notifications
-        function showNotification(message, duration = 3000) {
-            const notification = document.getElementById("notification");
-            notification.textContent = message;
-            notification.classList.add("show");
-            setTimeout(() => notification.classList.remove("show"), duration);
-        }
+        function setupUI() {
+            document.getElementById("startGameBtn").addEventListener("click", findMatch);
+            document.getElementById("leaderboardBtn").addEventListener("click", () => showNotification("Leaderboard coming soon!"));
+            document.getElementById("logoutBtn").addEventListener("click", () => showNotification("Logout coming soon!"));
+            document.getElementById("timestamp").textContent = new Date().toLocaleTimeString();
 
-        // Logging
-        function addLogEntry(type, message) {
-            const logContainer = document.getElementById("log");
-            const entry = document.createElement("div");
-            entry.className = "log-entry";
-
-            const now = new Date();
-            const timestamp = now.toLocaleTimeString([], { hour12: true });
-
-            entry.innerHTML = `
-                <span class="timestamp">${timestamp}</span>
-                <span class="type">${type}</span>
-                <span class="message">${message}</span>
-            `;
-
-            logContainer.appendChild(entry);
-            logContainer.scrollTop = logContainer.scrollHeight;
-        }
-
-        // Start Game Handler
-        function findMatch() {
-            if (isJoiningGame) {
-                showNotification("Already searching for a match...");
-                return;
-            }
-
-            const btn = document.getElementById("startGameBtn");
-            const originalText = btn.innerHTML;
-            isJoiningGame = true;
-            btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div> Finding match...';
-
-            if (socket && socket.readyState === WebSocket.OPEN && user) {
-                showToast("Joining match queue...");
-
-                const payload = {
-                    type: "find_match",
-                    data: {
-                        user: user,
-                        mode: selectedMode,
-                    },
-                };
-
-                socket.send(JSON.stringify(payload));
-                console.log("Sending find_match request:", payload);
-                addLogEntry("SYSTEM", `Searching for ${selectedMode} match...`);
-                showNotification(`Looking for ${selectedMode} match...`);
-            } else {
-                addLogEntry("ERROR", "Not connected to server or user data missing");
-                showNotification("Connection error. Reconnecting...");
-                connectWebSocket();
-
-                setTimeout(() => {
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                    isJoiningGame = false;
-                }, 2000);
-            }
-        }
-
-        function showToast(message) {
-            const toast = document.createElement("div");
-            toast.className = "toast";
-            toast.innerText = message;
-            document.body.appendChild(toast);
-
-            setTimeout(() => toast.classList.add("show"), 100);
-            setTimeout(() => {
-                toast.classList.remove("show");
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            // Add event listener for Play Again button
+            document.getElementById("play-again-btn").addEventListener("click", () => {
+                document.getElementById("game-over-modal").style.display = "none";
+                goToLobby();
+            });
         }
 
         function connectWebSocket() {
@@ -423,12 +360,10 @@
 
                 const sessionId = localStorage.getItem("session_id");
                 if (sessionId) {
-                    socket.send(
-                        JSON.stringify({
-                            type: "get_user",
-                            data: { session_id: sessionId },
-                        })
-                    );
+                    socket.send(JSON.stringify({
+                        type: "get_user",
+                        data: { session_id: sessionId }
+                    }));
                     addLogEntry("SYSTEM", "Fetching user data...");
                 } else {
                     addLogEntry("ERROR", "Session ID not found");
@@ -437,14 +372,12 @@
             };
 
             socket.onmessage = handleSocketMessage;
-
             socket.onclose = () => {
                 addLogEntry("SYSTEM", "Disconnected from server");
                 showNotification("Disconnected from server. Reconnecting...");
                 isJoiningGame = false;
                 setTimeout(connectWebSocket, 1000);
             };
-
             socket.onerror = () => {
                 addLogEntry("ERROR", "WebSocket error");
                 showNotification("WebSocket error");
@@ -452,18 +385,54 @@
             };
         }
 
+        // ====== Matchmaking ======
+        function findMatch() {
+            if (isJoiningGame) {
+                showNotification("Already searching for a match...");
+                return;
+            }
+
+            const btn = document.getElementById("startGameBtn");
+            const originalText = btn.innerHTML;
+            isJoiningGame = true;
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Finding match...';
+
+            if (socket?.readyState === WebSocket.OPEN && user) {
+                showToast("Joining match queue...");
+
+                const payload = {
+                    type: "find_match",
+                    data: { user: user, mode: selectedMode }
+
+                };
+                socket.send(JSON.stringify(payload));
+                console.log("Sending find_match request:", payload);
+                addLogEntry("SYSTEM", `Searching for ${selectedMode} match...`);
+                showNotification(`Looking for ${selectedMode} match...`);
+            } else {
+                addLogEntry("ERROR", "Not connected to server or user data missing");
+                showNotification("Connection error. Reconnecting...");
+                connectWebSocket();
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    isJoiningGame = false;
+                }, 2000);
+            }
+        }
+
+        // ====== WebSocket Message Handlers ======
         function handleSocketMessage(event) {
             const msg = JSON.parse(event.data);
             console.log("Received message:", msg);
 
-            if (msg.type === "user_response") {
-                handleUserResponse(msg);
-            } else if (msg.type === "match_found") {
-                handleMatchFound(msg);
-            } else if (msg.type === "game_response") {
-                handleGameResponse(msg);
-            } else if (msg.type === "attack_response") {
-                handleAttackResponse(msg);
+            switch (msg.type) {
+                case "user_response": handleUserResponse(msg); break;
+                case "match_found": handleMatchFound(msg); break;
+                case "game_response": handleGameResponse(msg); break;
+                case "attack_response": handleAttackResponse(msg); break;
+                case "game_over_response": handleGameOver(msg); break;
             }
 
             if (msg.type === "error" || (msg.type === "find_match_response" && !msg.success)) {
@@ -476,21 +445,16 @@
 
         function handleUserResponse(msg) {
             if (msg.success) {
-                user = msg.data;
+                user = msg.data.user;
+                console.log("User data:", user);
                 document.getElementById("username").innerText = user.username;
-                document.getElementById("userInitial").innerText = user.username.charAt(0).toUpperCase();
-                document.getElementById("level").innerText = user.level || "N/A";
-                document.getElementById("exp").innerText = `${user.exp || 0}/${user.maxExp || 0
-                    }`;
-
-                if (user.exp && user.maxExp) {
-                    document.getElementById("expProgress").style.width = `${(user.exp / user.maxExp) * 100}%`;
-                }
-
+                document.getElementById("userInitial").innerText = user.username[0].toUpperCase();
+                document.getElementById("level").innerText = user.level || "1";
+                document.getElementById("exp").innerText = `${user.exp || 0}/${msg.data.maxExp || 0}`;
+                document.getElementById("expProgress").style.width = `${(user.exp / msg.data.maxExp) * 100}%`;
                 document.getElementById("gamesPlayed").innerText = user.gamesPlayed || 0;
                 document.getElementById("wins").innerText = user.gamesWon || 0;
                 addLogEntry("SYSTEM", "Fetched user data successfully!");
-                return;
             } else {
                 addLogEntry("ERROR", msg.message || "Failed to fetch user data");
                 showNotification(msg.message || "Login failed. Please try again.");
@@ -500,75 +464,186 @@
         function handleMatchFound(msg) {
             if (msg.success) {
                 localStorage.setItem("room_id", msg.data.room_id);
-                localStorage.setItem("username", user.username);
-
                 addLogEntry("SYSTEM", "Match found! Starting game...");
                 showNotification("Match found! Starting game...");
                 goToGame();
             } else {
                 addLogEntry("ERROR", msg.message || "Failed to find a match");
-                showNotification(
-                    msg.message || "Failed to find a match. Please try again."
-                );
+                showNotification(msg.message || "Failed to find a match. Please try again.");
             }
         }
 
         function handleGameResponse(msg) {
             if (msg.success) {
                 updateUserAndOpponentInfo(msg.data);
-                yourTurn = msg.data.your_turn;
-                console.log("Your turn:", yourTurn);
 
-                if (!isGameInitialized) {
-                    initializeGame(msg.data.user.troops);
-                }
+                if (!gameState) initGameState(msg.data.your_turn);
+
+                if (!isGameInitialized) initializeGame(msg.data.your_turn, msg.data.user.troops);
             } else {
                 console.error("Failed to get game info:", msg.error);
             }
         }
 
-        function updateUserAndOpponentInfo(data) {
-            user = data.user;
-            document.getElementById("user-name").innerText = user.user.username;
-            document.getElementById("user-avatar").innerText = user.user.username.charAt(0).toUpperCase();
-            document.getElementById("user-level").innerText = user.user.level;
-
-            opponent = data.opponent;
-            document.getElementById("opponent-name").innerText = opponent.user.username;
-            document.getElementById("opponent-avatar").innerText = opponent.user.username.charAt(0).toUpperCase();
-            document.getElementById("opponent-level").innerText = opponent.user.level;
-        }
-
-        function initializeGame(troops) {
-            initGameState();
-            loadTroops(troops);
-            initGame();
-            addLogEntry("SYSTEM", "Game started.");
-            if (yourTurn) {
-                addLogEntry("SYSTEM", "Your turn.");
-            } else {
-                addLogEntry("SYSTEM", "Waiting for opponent's turn...");
-            }
-            isGameInitialized = true;
-        }
-
         function handleAttackResponse(msg) {
             if (msg.success) {
-                console.log("Attack success:", msg);
+                const { attacker, damage, target, remainHp, isDestroyed } = msg.data;
+                const isMe = attacker === player.user.username;
+
+                const targetSide = isMe ? "opponent" : "player";
+                const targetId = `${targetSide}-${target}`;
+                const targetHealth = isMe ? gameState.opponentHealth : gameState.playerHealth;
+
+                const towerMaxHP = player.towers[target]?.hp;
+
+                targetHealth[target] = remainHp;
+
+                updateTowerHP(targetId, targetHealth[target], towerMaxHP);
+
+                if (isDestroyed) {
+                    disableTower(target, isMe);
+                    addLogEntry("TOWER", `Tower ${target} has been destroyed!`);
+                }
+
+                if (isMe) {
+                    addLogEntry("ACTION", `Your ${msg.data.troop || "troop"} dealt ${damage} damage to opponent's ${target}.`);
+                } else {
+                    addLogEntry("ACTION", `Opponent's ${msg.data.troop || "troop"} dealt ${damage} damage to your ${target}.`);
+                }
+
+                gameState.playerTurn = msg.data.turn;
+                if (gameState.playerTurn === player.user.username) {
+                    addLogEntry("SYSTEM", "Your turn.");
+                } else {
+                    addLogEntry("SYSTEM", "Waiting for opponent's turn...");
+                }
+
+                // Update UI
+                updateTurnDisplay();
+                socket.send(JSON.stringify({type: "game_over", data: { room_id: localStorage.getItem("room_id") }}));
             } else {
                 console.error("Attack failed:", msg.error);
             }
         }
 
-        function initGameState() {
+        function handleGameOver(msg) {
+            gameState.gameOver = true;
+            const isWinner = msg.data.winner === player.user.username;
+
+            document.getElementById("result-title").innerText = isWinner ? "Victory!" : "Defeat";
+            document.getElementById("result-message").innerText = isWinner ?
+                "You have defeated your opponent!" :
+                "Your kingdom has fallen!";
+
+            document.getElementById("exp-gain").innerText = isWinner ? "+100 XP" : "+25 XP";
+
+            // Update stats
+            document.getElementById("stats-turns").innerText = msg.data.stats.turns || 0;
+            document.getElementById("stats-damage").innerText = msg.data.stats.damageDealt || 0;
+            document.getElementById("stats-mana").innerText = msg.data.stats.manaSpent || 0;
+            document.getElementById("stats-crits").innerText = msg.data.stats.criticalHits || 0;
+
+            // Show modal
+            document.getElementById("game-over-modal").style.display = "flex";
+            goToLobby();
+        }
+
+        // ====== Game Init & Flow ======
+        function goToGame() {
+            currentView = "game";
+
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: "get_game",
+                    data: {
+                        "room_id": localStorage.getItem("room_id"),
+                        "username": user.username,
+                    }
+                }));
+            }
+
+            document.getElementById("lobby").style.display = "none";
+            document.getElementById("gameView").style.display = "flex";
+            document.getElementById("lobby-style").disabled = true;
+            document.getElementById("game-style").disabled = false;
+        }
+
+        function goToLobby() {
+            currentView = "lobby";
+            isGameInitialized = false;
+            gameState = null;
+
+            document.getElementById("gameView").style.display = "none";
+            document.getElementById("lobby").style.display = "flex";
+            document.getElementById("game-style").disabled = true;
+            document.getElementById("lobby-style").disabled = false;
+
+            const btn = document.getElementById("startGameBtn");
+            btn.disabled = false;
+            btn.innerHTML = "<span>Start Game</span>";
+            isJoiningGame = false;
+        }
+
+        function updateUserAndOpponentInfo(data) {
+            player = data.user;
+            opponent = data.opponent;
+            console.log("User and opponent info:", user, opponent);
+
+            document.getElementById("user-name").innerText = player.user.username;
+            document.getElementById("user-avatar").innerText = player.user.username[0].toUpperCase();
+            document.getElementById("user-level").innerText = player.user.level;
+
+            document.getElementById("opponent-name").innerText = opponent.user.username;
+            document.getElementById("opponent-avatar").innerText = opponent.user.username[0].toUpperCase();
+            document.getElementById("opponent-level").innerText = opponent.user.level;
+        }
+
+        function initializeGame(turn, troops) {
+            initGameState(turn);
+            loadTroops(troops);
+            initGame();
+
+            const gameMode = selectedMode;
+            const manaContainer = document.getElementById("mana-container");
+            if (gameMode === "simple") {
+                manaContainer.style.display = "none";
+            } else {
+                manaContainer.style.display = "flex";
+            }
+
+            addLogEntry("SYSTEM", "Game started.");
+            addLogEntry("SYSTEM", gameState.playerTurn === player.user.username ? "Your turn." : "Waiting for opponent's turn...");
+
+            updateTurnDisplay();
+
+            isGameInitialized = true;
+        }
+
+        function initGame() {
+            updateManaDisplay();
+            const gameMode = selectedMode;
+            if (gameMode === "enhanced") {
+                setInterval(() => {
+                    if (gameState.playerMana < gameState.maxMana) {
+                        gameState.playerMana++;
+                        updateManaDisplay();
+                    }
+                }, 3000);
+            }
+
+            document.querySelectorAll(".tower[data-target]").forEach(tower =>
+                tower.addEventListener("click", () => selectTarget(tower))
+            );
+        }
+
+        function initGameState(turn) {
             gameState = {
-                turn: yourTurn,
-                playerMana: user.mana,
+                playerMana: player.mana,
                 maxMana: 10,
                 playerHealth: {
-                    king: user.towers.king.max_hp,
-                    guard1: user.towers.guard1.max_hp,
-                    guard2: user.towers.guard2.max_hp,
+                    king: player.towers.king.max_hp,
+                    guard1: player.towers.guard1.max_hp,
+                    guard2: player.towers.guard2.max_hp,
                 },
                 opponentHealth: {
                     king: opponent.towers.king.max_hp,
@@ -578,187 +653,236 @@
                 troops: {},
                 selectedTroop: null,
                 selectedTarget: null,
-                playerTurn: true,
+                playerTurn: turn,
                 gameOver: false,
             };
         }
 
+        // ====== UI Update Functions ======
         function updateManaDisplay() {
-            const currentMana = gameState.playerMana;
-            const maxMana = gameState.maxMana;
-
             const manaContainer = document.getElementById("mana-container");
             manaContainer.innerHTML = "";
-
-            for (let i = 0; i < maxMana; i++) {
+            for (let i = 0; i < gameState.maxMana; i++) {
                 const segment = document.createElement("div");
                 segment.className = "mana-segment";
-                if (i < currentMana) segment.classList.add("filled");
+                if (i < gameState.playerMana) segment.classList.add("filled");
                 manaContainer.appendChild(segment);
             }
-
             updateTroopAvailability();
         }
 
         function updateTroopAvailability() {
-            document.querySelectorAll(".troop").forEach(troopDiv => {
-                const cost = parseInt(troopDiv.dataset.cost, 10);
-                if (gameState.playerMana < cost) {
-                    troopDiv.classList.add("disabled");
-                } else {
-                    troopDiv.classList.remove("disabled");
-                }
-            });
+            // Only update troop availability based on mana if in enhanced mode
+            if (selectedMode === "enhanced") {
+                document.querySelectorAll(".troop").forEach(troopDiv => {
+                    const cost = parseInt(troopDiv.dataset.cost);
+                    troopDiv.classList.toggle("disabled", gameState.playerMana < cost);
+                });
+            }
+        }
+
+        function updateTurnDisplay() {
+            const turnDisplay = document.querySelector(".turn-display .stat-label");
+            if (gameState.playerTurn === player.user.username) {
+                turnDisplay.textContent = "Your Turn";
+                turnDisplay.style.color = "#4caf50";
+            } else {
+                turnDisplay.textContent = "Opponent's Turn";
+                turnDisplay.style.color = "#f44336";
+            }
         }
 
         function loadTroops(troopsArray) {
             const container = document.querySelector(".troop-selection");
             container.innerHTML = "";
-
-            if (!gameState.troop) gameState.troop = {};
-
-            troopsArray.forEach((troop, index) => {
+            troopsArray.forEach((troop, i) => {
                 gameState.troops[troop.name] = troop;
-
-                const troopDiv = document.createElement("div");
-                troopDiv.className = "troop";
-                troopDiv.id = `troop${index + 1}`;
-                troopDiv.dataset.cost = troop.mana;
-                troopDiv.dataset.troopName = troop.name;
-
-                troopDiv.innerHTML = `
-            <div class="troop-icon">${troop.icon}</div>
-            <div class="troop-name">${troop.name}</div>
-            <div class="troop-mana-cost">${troop.mana}</div>
-            <div class="ability-description">${troop.description}</div>
-        `;
-
-                if (gameState.playerMana < troop.mana) {
-                    troopDiv.classList.add("disabled");
+                const div = document.createElement("div");
+                div.className = "troop";
+                div.id = `troop${i + 1}`;
+                div.dataset.cost = troop.mana;
+                div.dataset.troopName = troop.name;
+                div.innerHTML = `
+                    <div class="troop-icon">${troop.icon}</div>
+                    <div class="troop-name">${troop.name}</div>
+                    <div class="troop-mana-cost">${troop.mana}</div>
+                    <div class="ability-description">${troop.description}</div>
+                `;
+                // Only disable troops based on mana if in enhanced mode
+                if (selectedMode === "enhanced" && gameState.playerMana < troop.mana) {
+                    div.classList.add("disabled");
                 }
-
-                troopDiv.addEventListener("click", () => selectTroop(troopDiv));
-                container.appendChild(troopDiv);
+                div.addEventListener("click", () => selectTroop(div));
+                container.appendChild(div);
             });
         }
 
         function selectTroop(troopDiv) {
-            if (!yourTurn) return showNotification("Not your turn.");
-            if (troopDiv.classList.contains("disabled")) return showNotification("Not enough mana to use this troop.");
+            if (gameState.playerTurn !== player.user.username) {
+                return showNotification("Not your turn.");
+            }
+
+            // Only check for mana constraint in enhanced mode
+            if (selectedMode === "enhanced" && troopDiv.classList.contains("disabled")) {
+                return showNotification("Not enough mana.");
+            }
 
             document.querySelectorAll(".troop.selected").forEach(div => div.classList.remove("selected"));
             troopDiv.classList.add("selected");
 
             const troopName = troopDiv.dataset.troopName;
             const troopData = gameState.troops[troopName];
-
-            if (gameState.playerMana < troopData.mana) {
-                showNotification("Not enough mana!");
-                return;
-            }
-
             gameState.selectedTroop = troopData;
         }
 
         function selectTarget(towerDiv) {
-            if (!yourTurn || !gameState.selectedTroop || !gameState.playerTurn) {
+            if (gameState.playerTurn !== player.user.username || !gameState.selectedTroop) {
                 return showNotification("Invalid action.");
             }
 
-            if (gameState.playerMana < gameState.selectedTroop.mana)
+            // Only check for mana constraint in enhanced mode
+            if (selectedMode === "enhanced" && gameState.playerMana < gameState.selectedTroop.mana) {
                 return showNotification("Not enough mana.");
-
-            const target = towerDiv.dataset.target;
-            const troop = gameState.selectedTroop;
-
-            gameState.playerMana -= troop.mana;
-            updateManaDisplay();
+            }
 
             const payload = {
                 type: "attack",
                 data: {
-                    troop: troop.name,
-                    target: target,
+                    troop: gameState.selectedTroop.name,
+                    target: towerDiv.dataset.target,
                     room_id: localStorage.getItem("room_id"),
-                    username: localStorage.getItem("username"),
+                    username: player.user.username,
                 },
             };
 
-            if (socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify(payload));
-                console.log("Sending attack request:", payload);
-            } else {
-                console.error("WebSocket is not open. State: " + socket.readyState);
+            // Only consume mana in enhanced mode
+            if (selectedMode === "enhanced") {
+                gameState.playerMana -= gameState.selectedTroop.mana;
+                updateManaDisplay();
             }
 
-            yourTurn = false;
-            gameState.playerTurn = false;
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(payload));
+            } else {
+                console.error("WebSocket is not open. State:", socket.readyState);
+            }
 
-            addLogEntry("ACTION", `${troop.name} deployed to attack ${target}.`);
-            addLogEntry("SYSTEM", "Waiting for opponent's turn...");
+            addLogEntry("ACTION", `${payload.data.troop} deployed to attack ${payload.data.target}.`);
 
             document.querySelectorAll(".troop").forEach(div => div.classList.remove("selected"));
             gameState.selectedTroop = null;
         }
 
-        function initGame() {
-            updateManaDisplay();
+        function updateTowerHP(towerId, currentHP, maxHP) {
+            const fill = document.getElementById(`${towerId}-hp-fill`);
+            if (!fill) return;
 
-            setInterval(() => {
-                if (gameState.playerMana < gameState.maxMana) {
-                    gameState.playerMana++;
-                    updateManaDisplay();
-                }
-            }, 3000);
+            const percent = Math.max(0, (currentHP / maxHP) * 100);
 
-            document.querySelectorAll(".tower[data-target]").forEach(tower => {
-                tower.addEventListener("click", () => selectTarget(tower));
-            });
-        }
+            // Add animation class
+            fill.classList.add("damage-anim");
 
-        function goToGame() {
-            const room_id = localStorage.getItem("room_id");
-            const username = localStorage.getItem("username");
-            console.log("Room ID:", room_id);
+            // Update width
+            fill.style.width = percent + "%";
 
-            if (socket.readyState === WebSocket.OPEN) {
-                socket.send(JSON.stringify({
-                    type: "get_game",
-                    data: { room_id, username },
-                }));
+            // Remove animation class after animation ends
+            setTimeout(() => fill.classList.remove("damage-anim"), 200);
+
+            if (currentHP <= 0) {
+                addLogEntry("TOWER", `Tower ${towerId} has been destroyed.`);
             }
-
-            document.getElementById("lobby").style.display = "none";
-            document.getElementById("gameView").style.display = "block";
-            document.getElementById("lobby-style").disabled = true;
-            document.getElementById("game-style").disabled = false;
-
-            initGame();
         }
 
-        // Setup button listeners
-        function setupUI() {
-            document
-                .getElementById("startGameBtn")
-                .addEventListener("click", findMatch);
-            document
-                .getElementById("leaderboardBtn")
-                .addEventListener("click", () =>
-                    showNotification("Leaderboard coming soon!")
-                );
-            document
-                .getElementById("logoutBtn")
-                .addEventListener("click", () =>
-                    showNotification("Logout coming soon!")
-                );
-            document.getElementById("timestamp").textContent = new Date().toLocaleTimeString();
+        function disableTower(target, isOpponent) {
+            const prefix = isOpponent ? "opponent" : "player";
+            const towerEl = document.getElementById(`${prefix}-${target}`);
+            const statusEl = document.getElementById(`${prefix}-${target}-status`);
+            const hpFillEl = document.getElementById(`${prefix}-${target}-hp-fill`);
+            const shieldEl = document.getElementById(`${prefix}-${target}-shield`);
+
+            if (towerEl) {
+                towerEl.classList.add("disabled");
+
+                // Visual cues
+                if (statusEl) {
+                    statusEl.textContent = "💀 Destroyed";
+                    statusEl.style.color = "#e74c3c";
+                }
+
+                // Dim the HP bar
+                if (hpFillEl) {
+                    hpFillEl.style.width = "0%";
+                    hpFillEl.style.backgroundColor = "#555";
+                }
+
+                // Clear shield if exists
+                if (shieldEl) {
+                    shieldEl.textContent = "0";
+                }
+
+                // Add destroyed effects
+                const destroyEffect = document.createElement("div");
+                destroyEffect.className = "destroy-effect";
+                towerEl.appendChild(destroyEffect);
+
+                // Play destruction animation
+                showTowerAnimation(prefix, target, "destroy");
+            }
         }
 
-        // Init
-        setupModeSelection();
-        setupUI();
-        connectWebSocket();
+        function showTowerAnimation(side, target, type) {
+            const animContainer = document.getElementById(`${side}-animations`);
+            const position = document.getElementById(`${side}-${target}`).getBoundingClientRect();
+            const containerPos = animContainer.getBoundingClientRect();
+
+            const animation = document.createElement("div");
+            animation.className = `tower-animation ${type}-animation`;
+            animation.style.left = `${position.left - containerPos.left + position.width / 2}px`;
+            animation.style.top = `${position.top - containerPos.top + position.height / 2}px`;
+
+            animContainer.appendChild(animation);
+
+            // Remove animation after it completes
+            setTimeout(() => animation.remove(), 1000);
+        }
+
+        // ====== Utility ======
+        function showNotification(message, duration = 3000) {
+            const notification = document.getElementById(currentView === "game" ? "game-notification" : "lobby-notification");
+            notification.textContent = message;
+            notification.classList.add("show");
+            setTimeout(() => notification.classList.remove("show"), duration);
+        }
+
+        function showToast(message) {
+            const toast = document.createElement("div");
+            toast.className = "toast";
+            toast.innerText = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.classList.add("show"), 100);
+            setTimeout(() => {
+                toast.classList.remove("show");
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function addLogEntry(type, message) {
+            const timestamp = new Date().toLocaleTimeString([], { hour12: true });
+            const entry = document.createElement("div");
+
+            entry.className = "log-entry";
+            entry.innerHTML = `
+                <span class="timestamp">${timestamp}</span>
+                <span class="type">${type}</span>
+                <span class="message">${message}</span>
+            `;
+
+            const logContainer = document.getElementById(currentView === "game" ? "log-game" : "log-lobby");
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
     </script>
+
 </body>
 
 </html>

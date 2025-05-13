@@ -7,7 +7,8 @@
     --text-color: #3c4858;
     --border-color: #e5e9f2;
     --mana-color: #5e91f2;
-    --health-color: #50b883;
+    --player-health-color: #4caf50;
+    --opponent-health-color: #f44336;
     --warning-color: #f5b84d;
     --danger-color: #ec5f67;
     --shield-color: #9b59b6;
@@ -146,7 +147,10 @@ body {
 }
 
 .tower.disabled {
-    opacity: 0.5;
+    opacity: 0.6;
+    filter: grayscale(100%);
+    position: relative;
+    overflow: hidden;
     cursor: not-allowed;
 }
 
@@ -181,6 +185,63 @@ body {
     color: var(--text-color);
 }
 
+.tower[data-target].pending-target {
+    outline: 2px solid #ffeb3b;
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 235, 59, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 235, 59, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 235, 59, 0); }
+}
+
+.destroy-effect {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(45deg,
+            rgba(231, 76, 60, 0.2),
+            rgba(231, 76, 60, 0.2) 10px,
+            rgba(0, 0, 0, 0.3) 10px,
+            rgba(0, 0, 0, 0.3) 20px);
+    z-index: 5;
+}
+
+.tower-animation {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    margin-left: -50px;
+    margin-top: -50px;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.destroy-animation {
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" fill="none" stroke="red" stroke-width="5" stroke-dasharray="10 15" /></svg>');
+    animation: explode 0.8s ease-out forwards;
+}
+
+@keyframes explode {
+    0% {
+        transform: scale(0.2);
+        opacity: 1;
+    }
+
+    80% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+}
+
 .hp-bar {
     height: 8px;
     width: 80%;
@@ -192,8 +253,51 @@ body {
 
 .hp-fill {
     height: 100%;
-    background-color: var(--health-color);
     transition: width 0.3s ease;
+}
+
+.hp-fill.player {
+    background-color: var(--player-health-color);
+}
+
+.hp-fill.opponent {
+    background-color: var(--opponent-health-color);
+}
+
+@keyframes shake {
+    0% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-10px);
+    }
+
+    50% {
+        transform: translateX(10px);
+    }
+
+    75% {
+        transform: translateX(-10px);
+    }
+
+    100% {
+        transform: translateX(0);
+    }
+}
+
+.hp-fill.damage-anim {
+    animation: damageFlash 0.2s ease-in-out;
+}
+
+@keyframes damageFlash {
+    0% {
+        background-color: #ff6666;
+    }
+
+    100% {
+        background-color: red;
+    }
 }
 
 .shield-indicator {
@@ -219,17 +323,14 @@ body {
 
 .tower-status {
     position: absolute;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 0.8rem;
+    bottom: -10px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 12px;
     font-weight: bold;
-    background-color: var(--danger-color);
-    color: white;
-    opacity: 0;
-    transition: all 0.3s ease;
+    text-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+    z-index: 10;
 }
 
 .tower-status.show {
@@ -258,6 +359,11 @@ body {
     justify-content: space-between;
     align-items: center;
     color: var(--text-color);
+}
+
+.simple-mode .mana-bar-container,
+.simple-mode .troop-mana-cost {
+    display: none !important;
 }
 
 .mana-display {
@@ -468,7 +574,7 @@ body {
 .log-container {
     background: rgba(229, 233, 242, 0.5);
     border-radius: 8px;
-    overflow-y: auto;
+    overflow-y: scroll;
     font-family: monospace;
     font-size: 0.9rem;
     width: 19.5vw;

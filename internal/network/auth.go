@@ -164,6 +164,9 @@ func handleGetUser(conn *websocket.Conn, data json.RawMessage) {
 	conn.WriteJSON(utils.Response{
 		Type:    "user_response",
 		Success: true,
-		Data:    user,
+		Data: map[string]interface{}{
+			"user":  user,
+			"maxExp": model.GetMaxExp(user.Level),
+		},
 	})
 }

@@ -2,7 +2,11 @@
 
 package model
 
-import "time"
+import (
+	"crypto/rand"
+	"math/big"
+	"time"
+)
 
 type User struct {
 	ID          string    `json:"id"`
@@ -34,17 +38,21 @@ func NewUser(username, password string) *User {
 
 // Helper function for ID generation
 func generateID() string {
-	// In a real implementation, use a more robust ID generation method
-	return time.Now().Format("20060102150405") + randomString(8)
+	timestamp := time.Now().Format("20060102150405")
+	randomPart := randomString(8)
+	return timestamp + randomPart
 }
 
 // Helper function for random string generation
 func randomString(length int) string {
-	// Implement a proper random string generator
-	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	result := make([]byte, length)
 	for i := range result {
-		result[i] = chars[i%len(chars)]
+		num, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			panic("failed to generate secure random string: " + err.Error())
+		}
+		result[i] = charset[num.Int64()]
 	}
 	return string(result)
 }
@@ -88,8 +96,8 @@ func GetMaxExp(level int) int {
 		return 0
 	}
 	if level > len(Levels) {
-		lastLevel := Levels[len(Levels)-1]
-		return lastLevel.MaxExp + 500*(level-len(Levels))
+		last := Levels[len(Levels)-1]
+		return last.MaxExp + 500*(level-len(Levels))
 	}
 	return Levels[level-1].MaxExp
 }

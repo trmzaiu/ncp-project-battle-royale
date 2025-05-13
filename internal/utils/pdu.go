@@ -44,8 +44,12 @@ type GameRequest struct {
 }
 
 type AttackRequest struct {
-	RoomID     string `json:"room_id"`
-	Username   string `json:"username"`
-	Troop  string `json:"troop"`
-	Target string `json:"target"`
+	RoomID   string `json:"room_id"`
+	Username string `json:"username"`
+	Troop    string `json:"troop"`
+	Target   string `json:"target"`
+}
+
+type GameOverRequest struct {
+	RoomID string `json:"room_id"`
 }

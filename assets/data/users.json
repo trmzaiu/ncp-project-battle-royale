@@ -8,7 +8,7 @@
     "isActive": true,
     "exp": 0,
     "level": 1,
-    "gamesPlayed": 0,
+    "gamesPlayed": 2,
     "gamesWon": 0
   },
   {
@@ -34,5 +34,17 @@
     "level": 1,
     "gamesPlayed": 0,
     "gamesWon": 0
+  },
+  {
+    "id": "20250513111521abcdefgh",
+    "username": "admin",
+    "password": "$2a$10$G0p109pZOrkTvYqmu44XV.JLMYK72ma76rdoCCelnL3RKa2oeRblC",
+    "createdAt": "2025-05-13T11:15:21.3595435+07:00",
+    "lastLogin": "2025-05-13T11:15:21.3595435+07:00",
+    "isActive": true,
+    "exp": 60,
+    "level": 1,
+    "gamesPlayed": 2,
+    "gamesWon": 2
   }
 ]

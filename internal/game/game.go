@@ -4,6 +4,7 @@ package game
 
 import (
 	"fmt"
+	"math/rand"
 	"royaka/internal/model"
 	"royaka/internal/utils"
 	"time"
@@ -12,7 +13,7 @@ import (
 type Game struct {
 	Player1   *model.Player
 	Player2   *model.Player
-	Turn      int // For simple mode (1 or 2)
+	Turn      string
 	Started   bool
 	Enhanced  bool
 	StartTime time.Time
@@ -21,10 +22,15 @@ type Game struct {
 
 // NewGame initializes a new game with two players.
 func NewGame(p1, p2 *model.Player, enhanced bool) *Game {
+	startingPlayer := p1.User.Username
+	if rand.Intn(2) == 0 {
+		startingPlayer = p2.User.Username
+	}
+
 	game := &Game{
 		Player1:  p1,
 		Player2:  p2,
-		Turn:     2,
+		Turn:     startingPlayer,
 		Started:  true,
 		Enhanced: enhanced,
 	}
@@ -41,7 +47,7 @@ func (g *Game) CurrentPlayer() *model.Player {
 	if g.Enhanced {
 		return nil // No turn-based play in enhanced mode
 	}
-	if g.Turn == 1 {
+	if g.Turn == g.Player1.User.Username {
 		return g.Player1
 	}
 	return g.Player2
@@ -76,30 +82,106 @@ func (g *Game) AttackTower(p *model.Player, troop *model.Troop, target *model.To
 }
 
 // PlayTurn - handles one attack turn (Simple Mode only)
-func (g *Game) PlayTurn(p *model.Player, troop *model.Troop, towerType string) string {
+func (g *Game) PlayTurn(p *model.Player, troop *model.Troop, towerType string) (string, int) {
 	if g.Enhanced && time.Since(g.StartTime) > g.MaxTime {
-		return "Time is up!"
+		return "Time is up!", 0
 	}
 
+	// Queen action (heals)
+	if troop.Name == "Queen" {
+		var lowest *model.Tower
+		for _, tower := range p.Towers {
+			if lowest == nil || tower.HP < lowest.HP {
+				lowest = tower
+			}
+		}
+		if lowest != nil {
+			lowest.Heal(300)
+			msg := "Queen healed " + lowest.Type + " tower by 300 HP!"
+			if !g.Enhanced {
+				g.SwitchTurn()
+			}
+			return msg, 0
+		}
+		return "Queen could not find a tower to heal.", 0
+	}
+
+	// Enhanced mode special skill logic
+	if g.Enhanced && troop.Special != "" {
+		switch troop.Special {
+		case "Shield":
+			p.ApplyDefenseBoost(0.2)
+			return "Shield applied! Defense increased for all towers.", 0
+		case "Attack Boost":
+			p.BoostAllTroops()
+			return "Attack Boost applied! Damage increased for all troops.", 0
+		case "Fortify":
+			troop.FortifyHP(50)
+			return "Fortify applied! Troop's HP increased.", 0
+		case "Double Strike":
+			opTowers := g.Opponent(p).Towers
+			var target *model.Tower
+			if opTowers["guard1"].HP > 0 {
+				target = opTowers["guard1"]
+			} else if opTowers["guard2"].HP > 0 {
+				target = opTowers["guard2"]
+			} else {
+				target = opTowers["king"]
+			}
+			dmg1, _, _ := g.AttackTower(p, troop, target, false)
+			dmg2, _, _ := g.AttackTower(p, troop, target, false)
+			totalDmg := dmg1 + dmg2
+			return "Double Strike applied! Troop attacks " + target.Type + " twice!", totalDmg
+		case "Charge":
+			p.FullyChargeMana()
+			return "Charge applied! Mana fully restored.", 0
+		case "Heal":
+			var lowest *model.Tower
+			for _, tower := range p.Towers {
+				if lowest == nil || tower.HP < lowest.HP {
+					lowest = tower
+				}
+			}
+			if lowest != nil {
+				lowest.Heal(300)
+				return "Heal applied! " + lowest.Type + " tower HP restored.", 0
+			}
+		}
+		return "Invalid special skill.", 0
+	}
+
+	// Simple or Enhanced: normal attack logic
 	if g.Enhanced {
-		return g.ApplySpecialSkill(p, troop)
+		if p.Mana < troop.MANA {
+			return "Not enough mana!", 0
+		}
+		p.Mana -= troop.MANA
 	}
-
-	if p.Mana < troop.MANA {
-		return "Not enough mana!"
-	}
-	p.Mana -= troop.MANA
 
 	target, err := g.getTargetTower(p, towerType)
 	if err != nil {
-		return err.Error()
+		return err.Error(), 0
 	}
 
-	if troop.Name == "Queen" {
-		return g.handleQueenAction(p)
+	dmg, destroyed, _ := g.AttackTower(p, troop, target, g.Enhanced)
+	result := troop.Name + " dealt " + utils.Itoa(dmg) + " damage to " + towerType
+	if destroyed {
+		result += " and destroyed it!"
 	}
 
-	return g.handleAttackAction(p, troop, target, towerType)
+	if !g.Enhanced {
+		g.SwitchTurn()
+	}
+
+	return result, dmg
+}
+
+func (g *Game) SwitchTurn() {
+	if g.Turn == g.Player1.User.Username {
+		g.Turn = g.Player2.User.Username
+	} else {
+		g.Turn = g.Player1.User.Username
+	}
 }
 
 func (g *Game) getTargetTower(p *model.Player, towerType string) (*model.Tower, error) {
@@ -114,33 +196,6 @@ func (g *Game) getTargetTower(p *model.Player, towerType string) (*model.Tower, 
 	default:
 		return nil, fmt.Errorf("invalid tower")
 	}
-}
-
-func (g *Game) handleQueenAction(p *model.Player) string {
-	var lowest *model.Tower
-	for _, tower := range p.Towers {
-		if lowest == nil || tower.HP < lowest.HP {
-			lowest = tower
-		}
-	}
-	if lowest != nil {
-		lowest.Heal(300)
-		result := "Queen healed " + lowest.Type + " tower by 300 HP!"
-		if !g.Enhanced {
-			g.Turn = 3 - g.Turn
-		}
-		return result
-	}
-	return "Queen could not find a tower to heal."
-}
-
-func (g *Game) handleAttackAction(p *model.Player, troop *model.Troop, target *model.Tower, towerType string) string {
-	dmg, destroyed, _ := g.AttackTower(p, troop, target, g.Enhanced)
-	result := troop.Name + " dealt " + utils.Itoa(dmg) + " damage to " + towerType
-	if destroyed {
-		result += " and destroyed it!"
-	}
-	return result
 }
 
 func (g *Game) ApplySpecialSkill(p *model.Player, t *model.Troop) string {
@@ -243,6 +298,8 @@ func AwardEXP(winner, loser *model.User, isDraw bool) {
 func (g *Game) Reset() {
 	g.Player1.Reset()
 	g.Player2.Reset()
-	g.Turn = 1
+	g.Turn = ""
+	g.Enhanced = false
+	g.StartTime = time.Time{}
 	g.Started = false
 }

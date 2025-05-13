@@ -31,9 +31,9 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	}
 	defer func() {
 		if err := conn.Close(); err != nil {
-			log.Printf("[ATTACK] Error closing connection: %v", err)
+			log.Printf("[WS] Error closing connection: %v", err)
 		}
-		log.Printf("[ATTACK] WebSocket connection for client is closed")
+		log.Printf("[WS] WebSocket connection for client is closed")
 	}()	
 
 	defer func() {
@@ -86,6 +86,8 @@ func processMessage(conn *websocket.Conn, pdu utils.Message) {
 		game.HandleGetGame(conn, pdu.Data)
 	case "attack":
 		game.HandleAttack(conn, pdu.Data)
+	case "game_over":
+		game.HandleGameOver(conn, pdu.Data)
 	default:
 		log.Printf("[WS] Unknown message type: %s", pdu.Type)
 		sendError(conn, "Unknown message type")

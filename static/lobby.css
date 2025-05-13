@@ -242,7 +242,7 @@ body {
     border-radius: 8px;
     padding: 15px;
     max-height: 150px;
-    overflow-y: auto;
+    overflow-y: scroll;
     font-family: monospace;
     font-size: 0.9rem;
     width: 100%;
