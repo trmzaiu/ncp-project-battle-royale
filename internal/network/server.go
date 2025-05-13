@@ -30,9 +30,11 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer func() {
-		conn.Close()
-		log.Println("[WS] WebSocket connection closed")
-	}()
+		if err := conn.Close(); err != nil {
+			log.Printf("[ATTACK] Error closing connection: %v", err)
+		}
+		log.Printf("[ATTACK] WebSocket connection for client is closed")
+	}()	
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -84,20 +86,10 @@ func processMessage(conn *websocket.Conn, pdu utils.Message) {
 		game.HandleGetGame(conn, pdu.Data)
 	case "attack":
 		game.HandleAttack(conn, pdu.Data)
-	case "ping":
-		handlePingPong(conn)
 	default:
 		log.Printf("[WS] Unknown message type: %s", pdu.Type)
 		sendError(conn, "Unknown message type")
 	}
-}
-
-func handlePingPong(conn *websocket.Conn) {
-    // Ensure the server sends a pong in response to ping
-    conn.WriteJSON(utils.Response{
-        Type: "pong",
-        Message: "Pong",
-    })
 }
 
 func sendError(conn *websocket.Conn, message string) {

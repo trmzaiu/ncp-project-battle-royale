@@ -4,426 +4,319 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="lobby.css" id="lobby-style">
+    <link rel="stylesheet" href="game.css" id="game-style" disabled>
     <title>Royaka</title>
-    <style>
-        :root {
-            --primary: #4a90e2;
-            --primary-dark: #3a80d2;
-            --secondary: #50b883;
-            --dark: #3c4858;
-            --light: #f5f7fa;
-            --accent: #f5b84d;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background: linear-gradient(135deg,
-                    rgba(86, 103, 255, 0.8) 0%,
-                    rgba(255, 138, 101, 0.8) 100%);
-            color: var(--dark);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 900px;
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 24px;
-            margin-top: 30px;
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .title {
-            font-size: 2.8rem;
-            margin-bottom: 8px;
-            color: var(--light);
-            text-shadow: 0 0 15px rgba(74, 144, 226, 0.3);
-        }
-
-        .subtitle {
-            font-size: 1.2rem;
-            color: var(--light);
-        }
-
-        .card {
-            background: #ffffff;
-            backdrop-filter: blur(10px);
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-            border: 1px solid rgba(229, 233, 242, 0.5);
-            transition: all 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
-        }
-
-        .player-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-        }
-
-        .avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            color: white;
-            margin-bottom: 20px;
-            border: 4px solid rgba(255, 255, 255, 0.8);
-            box-shadow: 0 0 20px rgba(74, 144, 226, 0.2);
-        }
-
-        .user-name {
-            font-size: 1.8rem;
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
-
-        .stats-container {
-            width: 100%;
-            margin: 15px 0;
-        }
-
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .stat-label {
-            color: #6b7c93;
-        }
-
-        .stat-value {
-            font-weight: 600;
-            color: var(--dark);
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: rgba(229, 233, 242, 0.5);
-            border-radius: 10px;
-            margin: 15px 0;
-            overflow: hidden;
-        }
-
-        .progress {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-            border-radius: 10px;
-            width: 45%;
-            transition: width 0.5s ease;
-        }
-
-        .game-options {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .section-title {
-            font-size: 1.4rem;
-            margin-bottom: 20px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid var(--primary);
-        }
-
-        .btn {
-            background: linear-gradient(45deg, var(--primary), var(--primary-dark));
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 24px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(74, 144, 226, 0.4);
-        }
-
-        .btn:active {
-            transform: translateY(1px);
-        }
-
-        .btn-primary {
-            background: linear-gradient(45deg, var(--primary), var(--primary-dark));
-        }
-
-        .btn-secondary {
-            background: linear-gradient(45deg, var(--secondary), #40a873);
-        }
-
-        .btn-accent {
-            background: linear-gradient(45deg, var(--accent), #f0a83d);
-            color: var(--light);
-        }
-
-        .game-modes {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .mode-card {
-            background: rgba(229, 233, 242, 0.5);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
-        }
-
-        .mode-card:hover {
-            background: rgba(229, 233, 242, 0.8);
-            border-color: var(--primary);
-        }
-
-        .mode-card.selected {
-            border-color: var(--primary);
-            background: rgba(74, 144, 226, 0.1);
-        }
-
-        .mode-icon {
-            font-size: 2rem;
-            margin-bottom: 12px;
-            color: var(--accent);
-        }
-
-        .mode-title {
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-
-        .mode-desc {
-            font-size: 0.85rem;
-            color: #6b7c93;
-        }
-
-        .log-container {
-            margin-top: 30px;
-            background: rgba(229, 233, 242, 0.5);
-            border-radius: 8px;
-            padding: 15px;
-            max-height: 150px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 0.9rem;
-            width: 100%;
-            max-width: 900px;
-        }
-
-        .log-entry {
-            margin-bottom: 5px;
-            color: #6b7c93;
-        }
-
-        .log-entry .timestamp {
-            color: var(--primary-dark);
-            margin-right: 8px;
-        }
-
-        .log-entry .type {
-            color: var(--secondary);
-            margin-right: 8px;
-            font-weight: bold;
-        }
-
-        .spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(60, 72, 88, 0.2);
-            border-radius: 50%;
-            border-top-color: var(--dark);
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 8px;
-            padding: 15px 20px;
-            color: var(--dark);
-            font-size: 0.9rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            border-left: 4px solid var(--primary);
-            z-index: 1000;
-            transform: translateX(120%);
-            transition: transform 0.3s ease;
-        }
-
-        .notification.show {
-            transform: translateX(0);
-        }
-
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background-color: #ffffff;
-            color: var(--dark);
-            padding: 12px 24px;
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            opacity: 0;
-            transition: opacity 0.3s ease, transform 0.3s ease;
-            z-index: 9999;
-        }
-
-        .toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(-10px);
-        }
-    </style>
 </head>
 
 <body>
-    <div class="header">
-        <h1 class="title">🏰 ROYAKA</h1>
-        <p class="subtitle">
-            Begin your adventure in the mystical world of Eldoria
-        </p>
-    </div>
-
-    <div class="container">
-        <div class="card player-card">
-            <div class="avatar">
-                <span id="userInitial"></span>
-            </div>
-            <h2 class="user-name" id="username">User</h2>
-
-            <div class="stats-container">
-                <div class="stat-item">
-                    <span class="stat-label">Level</span>
-                    <span class="stat-value" id="level">1</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Experience</span>
-                    <span class="stat-value" id="exp">0/100</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress" id="expProgress"></div>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Games Played</span>
-                    <span class="stat-value" id="gamesPlayed">0</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Wins</span>
-                    <span class="stat-value" id="wins">0</span>
-                </div>
-            </div>
+    <div class="home-container" id="lobby">
+        <div class="header">
+            <h1 class="title">🏰 ROYAKA</h1>
+            <p class="subtitle">
+                Begin your adventure in the mystical world of Eldoria
+            </p>
         </div>
 
-        <div class="card game-options">
-            <h3 class="section-title">Game Modes</h3>
-
-            <div class="game-modes">
-                <div class="mode-card selected" data-mode="simple">
-                    <div class="mode-icon">🏰</div>
-                    <div class="mode-title">Simple</div>
-                    <div class="mode-desc">
-                        Turn-based tower battle with basic rules
-                    </div>
+        <div class="container">
+            <div class="card player-card">
+                <div class="avatar">
+                    <span id="userInitial"></span>
                 </div>
-                <div class="mode-card" data-mode="enhanced">
-                    <div class="mode-icon">⚔️</div>
-                    <div class="mode-title">Enhanced</div>
-                    <div class="mode-desc">
-                        Real-time battle with skills, EXP, and leveling
+                <h2 class="user-name" id="username">User</h2>
+
+                <div class="stats-container">
+                    <div class="stat-item">
+                        <span class="stat-label">Level</span>
+                        <span class="stat-value" id="level">1</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Experience</span>
+                        <span class="stat-value" id="exp">0/100</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress" id="expProgress"></div>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Games Played</span>
+                        <span class="stat-value" id="gamesPlayed">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Wins</span>
+                        <span class="stat-value" id="wins">0</span>
                     </div>
                 </div>
             </div>
 
-            <button class="btn btn-primary" id="startGameBtn" onclick="startBattle()">
-                <span>Start Game</span>
-            </button>
+            <div class="card game-options">
+                <h3 class="section-title">Game Modes</h3>
 
-            <button class="btn btn-secondary" id="leaderboardBtn">
-                View Leaderboard
-            </button>
+                <div class="game-modes">
+                    <div class="mode-card selected" data-mode="simple">
+                        <div class="mode-icon">🏰</div>
+                        <div class="mode-title">Simple</div>
+                        <div class="mode-desc">
+                            Turn-based tower battle with basic rules
+                        </div>
+                    </div>
+                    <div class="mode-card" data-mode="enhanced">
+                        <div class="mode-icon">⚔️</div>
+                        <div class="mode-title">Enhanced</div>
+                        <div class="mode-desc">
+                            Real-time battle with skills, EXP, and leveling
+                        </div>
+                    </div>
+                </div>
 
-            <button class="btn btn-accent" id="logoutBtn">Logout</button>
+                <button class="btn btn-primary" id="startGameBtn" onclick="findMatch()">
+                    <span>Start Game</span>
+                </button>
+
+                <button class="btn btn-secondary" id="leaderboardBtn">
+                    View Leaderboard
+                </button>
+
+                <button class="btn btn-accent" id="logoutBtn">Logout</button>
+            </div>
+        </div>
+
+        <div class="log-container">
+            <div class="log-entry">
+                <span id="timestamp" class="timestamp"></span>
+                <span class="type">SYSTEM</span>
+                <span class="message">Welcome to Royaka!</span>
+            </div>
+            <div id="log"></div>
+        </div>
+
+        <div class="notification" id="notification">
+            Connecting to game server...
         </div>
     </div>
 
-    <div class="log-container">
-        <div class="log-entry">
-            <span id="timestamp" class="timestamp"></span>
-            <span class="type">SYSTEM</span>
-            <span class="message">Welcome to Royaka!</span>
-        </div>
-        <div id="log"></div>
-    </div>
+    <div class="game-container" id="gameView" style="display: none;">
+        <div class="stats-bar">
+            <div class="opponent-stats">
+                <div class="opponent-avatar" id="opponent-avatar">O</div>
+                <div class="stat-column">
+                    <div class="stat">
+                        <div class="stat-label">Opponent:</div>
+                        <div class="stat-value name" id="opponent-name">Opponent</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Level:</div>
+                        <div class="stat-value" id="opponent-level">5</div>
+                    </div>
+                </div>
+            </div>
 
-    <div class="notification" id="notification">
-        Connecting to game server...
+            <div class="stat turn-display">
+                <div class="stat-label">Your Turn</div>
+            </div>
+
+            <div class="player-stats">
+                <div class="user-avatar" id="user-avatar">P</div>
+                <div class="stat-column">
+                    <div class="stat">
+                        <div class="stat-label">You:</div>
+                        <div class="stat-value name" id="user-name">User</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-label">Level:</div>
+                        <div class="stat-value" id="user-level">5</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="battle-container">
+            <div class="battlefield">
+                <!-- Opponent Side -->
+                <div class="player-side opponent" id="opponent-side">
+                    <!-- King Tower -->
+                    <div class="tower king" id="opponent-king" data-target="king">
+                        <div class="tower-icon">👑</div>
+                        <div class="tower-hp">
+                            <div class="hp-bar">
+                                <div class="hp-fill" id="opponent-king-hp-fill" style="width: 100%"></div>
+                            </div>
+                        </div>
+                        <div class="shield-indicator" id="opponent-king-shield">0</div>
+                        <div class="tower-status" id="opponent-king-status"></div>
+                    </div>
+                    <div class="tower-container">
+                        <!-- Guard Towers -->
+                        <div class="towers">
+                            <div class="tower" id="opponent-guard1" data-target="guard1">
+                                <div class="tower-icon">🛡️</div>
+                                <div class="tower-hp">
+                                    <div class="hp-bar">
+                                        <div class="hp-fill" id="opponent-guard1-hp-fill" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                <div class="shield-indicator" id="opponent-guard1-shield">
+                                    0
+                                </div>
+                                <div class="tower-status" id="opponent-guard1-status"></div>
+                            </div>
+
+                            <div class="tower" id="opponent-guard2" data-target="guard2">
+                                <div class="tower-icon">🛡️</div>
+                                <div class="tower-hp">
+                                    <div class="hp-bar">
+                                        <div class="hp-fill" id="opponent-guard2-hp-fill" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                <div class="shield-indicator" id="opponent-guard2-shield">
+                                    0
+                                </div>
+                                <div class="tower-status" id="opponent-guard2-status"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="animation-container" id="opponent-animations"></div>
+                </div>
+
+                <!-- Player Side -->
+                <div class="player-side" id="player-side">
+                    <div class="tower-container">
+                        <!-- Guard Towers -->
+                        <div class="towers">
+                            <div class="tower" id="player-guard1">
+                                <div class="tower-icon">🛡️</div>
+                                <div class="tower-hp">
+                                    <div class="hp-bar">
+                                        <div class="hp-fill" id="player-guard1-hp-fill" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                <div class="shield-indicator" id="player-guard1-shield">
+                                    0
+                                </div>
+                                <div class="tower-status" id="player-guard1-status"></div>
+                            </div>
+
+                            <div class="tower" id="player-guard2">
+                                <div class="tower-icon">🛡️</div>
+                                <div class="tower-hp">
+                                    <div class="hp-bar">
+                                        <div class="hp-fill" id="player-guard2-hp-fill" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                <div class="shield-indicator" id="player-guard1-shield">
+                                    0
+                                </div>
+                                <div class="tower-status" id="player-guard1-status"></div>
+                            </div>
+                        </div>
+
+                        <div class="animation-container" id="player-animations"></div>
+                    </div>
+                    <!-- King Tower -->
+                    <div class="tower king" id="player-king">
+                        <div class="tower-hp">
+                            <div class="hp-bar">
+                                <div class="hp-fill" id="player-king-hp-fill" style="width: 100%"></div>
+                            </div>
+                        </div>
+                        <div class="tower-icon">👑</div>
+                        <div class="shield-indicator" id="player-king-shield">0</div>
+                        <div class="tower-status" id="player-king-status"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="controls">
+                <div class="troops-container">
+                    <div class="section-header">
+                        <div id="mana-container" class="mana-bar-container"></div>
+                    </div>
+
+                    <div class="troop-selection">
+                        <div class="troop" id="troop1" data-cost="">
+                            <div class="troop-icon"></div>
+                            <div class="troop-name"></div>
+                            <div class="troop-mana-cost"></div>
+                            <div class="ability-description"></div>
+                        </div>
+
+                        <div class="troop" id="troop2" data-cost="">
+                            <div class="troop-icon"></div>
+                            <div class="troop-name"></div>
+                            <div class="troop-mana-cost"></div>
+                            <div class="ability-description"></div>
+                        </div>
+
+                        <div class="troop" id="troop3" data-cost="">
+                            <div class="troop-icon"></div>
+                            <div class="troop-name"></div>
+                            <div class="troop-mana-cost"></div>
+                            <div class="ability-description"></div>
+                        </div>
+
+                        <div class="troop" id="troop4" data-cost="">
+                            <div class="troop-icon"></div>
+                            <div class="troop-name"></div>
+                            <div class="troop-mana-cost"></div>
+                            <div class="ability-description"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="log-container" id="log-container">
+            <div class="log-entry">
+                <span id="timestamp" class="timestamp"></span>
+                <span class="type"></span>
+                <span class="message">Welcome to Royaka!</span>
+            </div>
+            <div id="log"></div>
+        </div>
+
+        <div class="notification" id="notification">
+            <span id="notification-text"></span>
+        </div>
+
+        <div class="game-over-modal" id="game-over-modal">
+            <div class="modal-content">
+                <h2 class="modal-title" id="result-title">Victory!</h2>
+                <div class="modal-body">
+                    <p id="result-message">You have defeated your opponent!</p>
+                    <div class="exp-gain" id="exp-gain">+100 XP</div>
+
+                    <div class="stats-summary">
+                        <div class="stat-row">
+                            <span class="stat-label">Turns Played:</span>
+                            <span class="stat-value" id="stats-turns">12</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Damage Dealt:</span>
+                            <span class="stat-value" id="stats-damage">3500</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Mana Spent:</span>
+                            <span class="stat-value" id="stats-mana">45</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Critical Hits:</span>
+                            <span class="stat-value" id="stats-crits">4</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn btn-primary" id="play-again-btn">
+                        Play Again
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         // --- Game Lobby Script ---
         let selectedMode = "simple";
         let isJoiningGame = false;
-        let user = null;
+        let user, opponent, yourTurn;
+        let gameState;
+        let isGameInitialized = false;
         let socket = null;
 
         // Mode Selection
@@ -467,7 +360,7 @@
         }
 
         // Start Game Handler
-        function startBattle() {
+        function findMatch() {
             if (isJoiningGame) {
                 showNotification("Already searching for a match...");
                 return;
@@ -564,42 +457,13 @@
             console.log("Received message:", msg);
 
             if (msg.type === "user_response") {
-                if (msg.success) {
-                    user = msg.data;
-                    document.getElementById("username").innerText = user.username;
-                    document.getElementById("userInitial").innerText = user.username.charAt(0).toUpperCase();
-                    document.getElementById("level").innerText = user.level || "N/A";
-                    document.getElementById("exp").innerText = `${user.exp || 0}/${user.maxExp || 0
-                        }`;
-
-                    if (user.exp && user.maxExp) {
-                        document.getElementById("expProgress").style.width = `${(user.exp / user.maxExp) * 100}%`;
-                    }
-
-                    document.getElementById("gamesPlayed").innerText = user.gamesPlayed || 0;
-                    document.getElementById("wins").innerText = user.gamesWon || 0;
-                    addLogEntry("SYSTEM", "Fetched user data successfully!");
-                    return;
-                } else {
-                    addLogEntry("ERROR", msg.message || "Failed to fetch user data");
-                    showNotification(msg.message || "Login failed. Please try again.");
-                }
+                handleUserResponse(msg);
             } else if (msg.type === "match_found") {
-                if (msg.success) {
-                    localStorage.setItem("room_id", msg.data.room_id);
-                    localStorage.setItem("username", user.username);
-
-                    addLogEntry("SYSTEM", "Match found! Starting game...");
-                    showNotification("Match found! Starting game...");
-                    setTimeout(() => {
-                        window.location.href = "/game.html";
-                    }, 100);
-                } else {
-                    addLogEntry("ERROR", msg.message || "Failed to find a match");
-                    showNotification(
-                        msg.message || "Failed to find a match. Please try again."
-                    );
-                }
+                handleMatchFound(msg);
+            } else if (msg.type === "game_response") {
+                handleGameResponse(msg);
+            } else if (msg.type === "attack_response") {
+                handleAttackResponse(msg);
             }
 
             if (msg.type === "error" || (msg.type === "find_match_response" && !msg.success)) {
@@ -610,11 +474,273 @@
             }
         }
 
+        function handleUserResponse(msg) {
+            if (msg.success) {
+                user = msg.data;
+                document.getElementById("username").innerText = user.username;
+                document.getElementById("userInitial").innerText = user.username.charAt(0).toUpperCase();
+                document.getElementById("level").innerText = user.level || "N/A";
+                document.getElementById("exp").innerText = `${user.exp || 0}/${user.maxExp || 0
+                    }`;
+
+                if (user.exp && user.maxExp) {
+                    document.getElementById("expProgress").style.width = `${(user.exp / user.maxExp) * 100}%`;
+                }
+
+                document.getElementById("gamesPlayed").innerText = user.gamesPlayed || 0;
+                document.getElementById("wins").innerText = user.gamesWon || 0;
+                addLogEntry("SYSTEM", "Fetched user data successfully!");
+                return;
+            } else {
+                addLogEntry("ERROR", msg.message || "Failed to fetch user data");
+                showNotification(msg.message || "Login failed. Please try again.");
+            }
+        }
+
+        function handleMatchFound(msg) {
+            if (msg.success) {
+                localStorage.setItem("room_id", msg.data.room_id);
+                localStorage.setItem("username", user.username);
+
+                addLogEntry("SYSTEM", "Match found! Starting game...");
+                showNotification("Match found! Starting game...");
+                goToGame();
+            } else {
+                addLogEntry("ERROR", msg.message || "Failed to find a match");
+                showNotification(
+                    msg.message || "Failed to find a match. Please try again."
+                );
+            }
+        }
+
+        function handleGameResponse(msg) {
+            if (msg.success) {
+                updateUserAndOpponentInfo(msg.data);
+                yourTurn = msg.data.your_turn;
+                console.log("Your turn:", yourTurn);
+
+                if (!isGameInitialized) {
+                    initializeGame(msg.data.user.troops);
+                }
+            } else {
+                console.error("Failed to get game info:", msg.error);
+            }
+        }
+
+        function updateUserAndOpponentInfo(data) {
+            user = data.user;
+            document.getElementById("user-name").innerText = user.user.username;
+            document.getElementById("user-avatar").innerText = user.user.username.charAt(0).toUpperCase();
+            document.getElementById("user-level").innerText = user.user.level;
+
+            opponent = data.opponent;
+            document.getElementById("opponent-name").innerText = opponent.user.username;
+            document.getElementById("opponent-avatar").innerText = opponent.user.username.charAt(0).toUpperCase();
+            document.getElementById("opponent-level").innerText = opponent.user.level;
+        }
+
+        function initializeGame(troops) {
+            initGameState();
+            loadTroops(troops);
+            initGame();
+            addLogEntry("SYSTEM", "Game started.");
+            if (yourTurn) {
+                addLogEntry("SYSTEM", "Your turn.");
+            } else {
+                addLogEntry("SYSTEM", "Waiting for opponent's turn...");
+            }
+            isGameInitialized = true;
+        }
+
+        function handleAttackResponse(msg) {
+            if (msg.success) {
+                console.log("Attack success:", msg);
+            } else {
+                console.error("Attack failed:", msg.error);
+            }
+        }
+
+        function initGameState() {
+            gameState = {
+                turn: yourTurn,
+                playerMana: user.mana,
+                maxMana: 10,
+                playerHealth: {
+                    king: user.towers.king.max_hp,
+                    guard1: user.towers.guard1.max_hp,
+                    guard2: user.towers.guard2.max_hp,
+                },
+                opponentHealth: {
+                    king: opponent.towers.king.max_hp,
+                    guard1: opponent.towers.guard1.max_hp,
+                    guard2: opponent.towers.guard2.max_hp,
+                },
+                troops: {},
+                selectedTroop: null,
+                selectedTarget: null,
+                playerTurn: true,
+                gameOver: false,
+            };
+        }
+
+        function updateManaDisplay() {
+            const currentMana = gameState.playerMana;
+            const maxMana = gameState.maxMana;
+
+            const manaContainer = document.getElementById("mana-container");
+            manaContainer.innerHTML = "";
+
+            for (let i = 0; i < maxMana; i++) {
+                const segment = document.createElement("div");
+                segment.className = "mana-segment";
+                if (i < currentMana) segment.classList.add("filled");
+                manaContainer.appendChild(segment);
+            }
+
+            updateTroopAvailability();
+        }
+
+        function updateTroopAvailability() {
+            document.querySelectorAll(".troop").forEach(troopDiv => {
+                const cost = parseInt(troopDiv.dataset.cost, 10);
+                if (gameState.playerMana < cost) {
+                    troopDiv.classList.add("disabled");
+                } else {
+                    troopDiv.classList.remove("disabled");
+                }
+            });
+        }
+
+        function loadTroops(troopsArray) {
+            const container = document.querySelector(".troop-selection");
+            container.innerHTML = "";
+
+            if (!gameState.troop) gameState.troop = {};
+
+            troopsArray.forEach((troop, index) => {
+                gameState.troops[troop.name] = troop;
+
+                const troopDiv = document.createElement("div");
+                troopDiv.className = "troop";
+                troopDiv.id = `troop${index + 1}`;
+                troopDiv.dataset.cost = troop.mana;
+                troopDiv.dataset.troopName = troop.name;
+
+                troopDiv.innerHTML = `
+            <div class="troop-icon">${troop.icon}</div>
+            <div class="troop-name">${troop.name}</div>
+            <div class="troop-mana-cost">${troop.mana}</div>
+            <div class="ability-description">${troop.description}</div>
+        `;
+
+                if (gameState.playerMana < troop.mana) {
+                    troopDiv.classList.add("disabled");
+                }
+
+                troopDiv.addEventListener("click", () => selectTroop(troopDiv));
+                container.appendChild(troopDiv);
+            });
+        }
+
+        function selectTroop(troopDiv) {
+            if (!yourTurn) return showNotification("Not your turn.");
+            if (troopDiv.classList.contains("disabled")) return showNotification("Not enough mana to use this troop.");
+
+            document.querySelectorAll(".troop.selected").forEach(div => div.classList.remove("selected"));
+            troopDiv.classList.add("selected");
+
+            const troopName = troopDiv.dataset.troopName;
+            const troopData = gameState.troops[troopName];
+
+            if (gameState.playerMana < troopData.mana) {
+                showNotification("Not enough mana!");
+                return;
+            }
+
+            gameState.selectedTroop = troopData;
+        }
+
+        function selectTarget(towerDiv) {
+            if (!yourTurn || !gameState.selectedTroop || !gameState.playerTurn) {
+                return showNotification("Invalid action.");
+            }
+
+            if (gameState.playerMana < gameState.selectedTroop.mana)
+                return showNotification("Not enough mana.");
+
+            const target = towerDiv.dataset.target;
+            const troop = gameState.selectedTroop;
+
+            gameState.playerMana -= troop.mana;
+            updateManaDisplay();
+
+            const payload = {
+                type: "attack",
+                data: {
+                    troop: troop.name,
+                    target: target,
+                    room_id: localStorage.getItem("room_id"),
+                    username: localStorage.getItem("username"),
+                },
+            };
+
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(payload));
+                console.log("Sending attack request:", payload);
+            } else {
+                console.error("WebSocket is not open. State: " + socket.readyState);
+            }
+
+            yourTurn = false;
+            gameState.playerTurn = false;
+
+            addLogEntry("ACTION", `${troop.name} deployed to attack ${target}.`);
+            addLogEntry("SYSTEM", "Waiting for opponent's turn...");
+
+            document.querySelectorAll(".troop").forEach(div => div.classList.remove("selected"));
+            gameState.selectedTroop = null;
+        }
+
+        function initGame() {
+            updateManaDisplay();
+
+            setInterval(() => {
+                if (gameState.playerMana < gameState.maxMana) {
+                    gameState.playerMana++;
+                    updateManaDisplay();
+                }
+            }, 3000);
+
+            document.querySelectorAll(".tower[data-target]").forEach(tower => {
+                tower.addEventListener("click", () => selectTarget(tower));
+            });
+        }
+
+        function goToGame() {
+            const room_id = localStorage.getItem("room_id");
+            const username = localStorage.getItem("username");
+            console.log("Room ID:", room_id);
+
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: "get_game",
+                    data: { room_id, username },
+                }));
+            }
+
+            document.getElementById("lobby").style.display = "none";
+            document.getElementById("gameView").style.display = "block";
+            document.getElementById("lobby-style").disabled = true;
+            document.getElementById("game-style").disabled = false;
+
+            initGame();
+        }
+
         // Setup button listeners
         function setupUI() {
             document
                 .getElementById("startGameBtn")
-                .addEventListener("click", startBattle);
+                .addEventListener("click", findMatch);
             document
                 .getElementById("leaderboardBtn")
                 .addEventListener("click", () =>

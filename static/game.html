@@ -864,7 +864,7 @@
 </head>
 
 <body>
-    <div class="game-container">
+    <div class="game-container" id="gameView">
         <div class="stats-bar">
             <div class="opponent-stats">
                 <div class="opponent-avatar" id="opponent-avatar">O</div>
@@ -1086,7 +1086,7 @@
         let gameState;
         let isGameInitialized = false;
 
-        function connectWebSocket() {
+        function gameConnectWebSocket() {
 
             socket.onopen = () => {
                 const room_id = localStorage.getItem("room_id");
@@ -1101,9 +1101,6 @@
                         })
                     );
                 }
-                setInterval(() => {
-                    socket.send(JSON.stringify({ type: "ping" }));
-                }, 30000);
             };
 
             socket.onmessage = handleSocketMessage;
@@ -1126,13 +1123,13 @@
             console.log("Received message:", msg);
 
             if (msg.type === "game_response") {
-                handleGameInfoResponse(msg);
+                handleGameResponse(msg);
             } else if (msg.type === "attack_response") {
                 handleAttackResponse(msg);
             }
         }
 
-        function handleGameInfoResponse(msg) {
+        function handleGameResponse(msg) {
             if (msg.success) {
                 updateUserAndOpponentInfo(msg.data);
                 yourTurn = msg.data.your_turn;
@@ -1329,8 +1326,13 @@
                 },
             };
 
-            socket.send(JSON.stringify(payload));
-            console.log("Sending attack request:", payload);
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(payload));
+                console.log("Sending attack request:", payload);
+            } else {
+                console.error("WebSocket is not open. State: " + socket.readyState);
+            }
+
             yourTurn = false;
             gameState.playerTurn = false;
 
@@ -1384,8 +1386,8 @@
                 tower.addEventListener("click", () => selectTarget(tower));
             });
         }
-
-        document.addEventListener("DOMContentLoaded", connectWebSocket);
+        initGame();
+        gameConnectWebSocket();
     </script>
 </body>
 

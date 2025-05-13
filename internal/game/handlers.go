@@ -141,38 +141,26 @@ func HandleAttack(conn *websocket.Conn, data json.RawMessage) {
 		},
 	}
 
-	err := conn.WriteJSON(utils.Response{
-        Type:    "attack_response",
-        Success: true,
-        Message: "Attack processed successfully",
-    })
-    if err != nil {
-        log.Printf("[WS] Error sending attack response: %v", err)
-    }
-
-	clientsMu.RLock()
-	client1 := clients[room.Player1.User.Username]
-	client2 := clients[room.Player2.User.Username]
-	clientsMu.RUnlock()	
-
-	sendToClient(client1, payload)
-	sendToClient(client2, payload)
+	sendToClient(room.Player1.User.Username, payload)
+	sendToClient(room.Player2.User.Username, payload)
 }
 
-func sendToClient(client *ClientConnection, payload utils.Response) {
-	if client == nil || client.Conn == nil {
-		log.Println("[ATTACK] Client or connection is nil.")
-		return
-	}
-	
-	if err := client.Conn.WriteMessage(websocket.PongMessage, nil); err != nil {
-		log.Printf("[ATTACK] WebSocket pong failed: %v", err)
+func sendToClient(username string, payload utils.Response) {
+	clientsMu.RLock()
+	client, exists := clients[username]
+	clientsMu.RUnlock()
+	log.Printf("[ATTACK] Sending message to clients: %v", clients)
+
+	if !exists || client == nil || client.Conn == nil {
+		log.Printf("[ATTACK] Client %s not found or connection is nil", username)
 		return
 	}
 
-	if err := client.SafeWrite(payload); err != nil {
-		log.Printf("[ATTACK] Failed to send message: %v", err)
-	}
+	go func() {
+        if err := client.SafeWrite(payload); err != nil {
+            log.Printf("[ATTACK] Failed to send message to client %s: %v", username, err)
+        }
+    }()
 }
 
 func NotifyGameConclusion(room *Room, winner *model.Player) {
