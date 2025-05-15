@@ -345,7 +345,7 @@
 
             // Add event listener for Play Again button
             document.getElementById("play-again-btn").addEventListener("click", () => {
-                document.getElementById("game-over-modal").style.display = "none";
+                document.getElementById("game-over-modal").classList.remove("show");
                 goToLobby();
             });
         }
@@ -545,7 +545,8 @@
             // document.getElementById("stats-crits").innerText = msg.data.stats.criticalHits || 0;
 
             // Show modal
-            document.getElementById("game-over-modal").style.display = "flex";
+            const modal = document.getElementById("game-over-modal");
+            modal.classList.add("show");
         }
 
         function handleMatchTimeout(msg) {
@@ -580,6 +581,15 @@
             currentView = "lobby";
             isGameInitialized = false;
             gameState = null;
+
+            if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({
+                    type: "play_again",
+                    data: {
+                        "room_id": localStorage.getItem("room_id"),
+                    }
+                }));
+            }
 
             document.getElementById("gameView").style.display = "none";
             document.getElementById("lobby").style.display = "flex";

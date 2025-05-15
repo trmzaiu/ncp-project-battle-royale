@@ -88,6 +88,8 @@ func processMessage(conn *websocket.Conn, pdu utils.Message) {
 		game.HandleAttack(conn, pdu.Data)
 	case "game_over":
 		game.HandleGameOver(conn, pdu.Data)
+	case "play_again":
+		game.HandlePlayAgain(conn, pdu.Data)
 	default:
 		log.Printf("[WARN][WS] Unknown message type: %s", pdu.Type)
 		sendError(conn, "Unknown message type")
