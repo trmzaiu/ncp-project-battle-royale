@@ -6,10 +6,10 @@
     "createdAt": "2025-05-08T23:38:31.6110692+07:00",
     "lastLogin": "2025-05-08T23:38:31.6110692+07:00",
     "isActive": true,
-    "exp": 0,
-    "level": 1,
-    "gamesPlayed": 2,
-    "gamesWon": 0
+    "exp": 80,
+    "level": 2,
+    "gamesPlayed": 12,
+    "gamesWon": 6
   },
   {
     "id": "20250509232011abcdefgh",
@@ -42,9 +42,9 @@
     "createdAt": "2025-05-13T11:15:21.3595435+07:00",
     "lastLogin": "2025-05-13T11:15:21.3595435+07:00",
     "isActive": true,
-    "exp": 60,
-    "level": 1,
-    "gamesPlayed": 2,
-    "gamesWon": 2
+    "exp": 80,
+    "level": 2,
+    "gamesPlayed": 12,
+    "gamesWon": 6
   }
 ]

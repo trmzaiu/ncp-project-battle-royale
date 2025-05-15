@@ -1,25 +1,23 @@
-// internal/model/troop.go
-
 package model
 
 import (
+	"crypto/rand"
 	"encoding/json"
-	"math/rand"
+	"math/big"
 	"os"
-	"time"
 )
 
 type Troop struct {
-	Name    string  `json:"name"`
-	MaxHP   int     `json:"max_hp"`
-	HP      int     `json:"hp"`
-	ATK     int     `json:"atk"`
-	DEF     int     `json:"def"`
-	MANA    int     `json:"mana"`
-	EXP     int     `json:"exp"`
-	CRIT    float64 `json:"crit"`
-	Special string  `json:"special"`
-	Icon	string  `json:"icon"`
+	Name        string  `json:"name"`
+	MaxHP       int     `json:"max_hp"`
+	HP          int     `json:"hp"`
+	ATK         int     `json:"atk"`
+	DEF         int     `json:"def"`
+	MANA        int     `json:"mana"`
+	EXP         int     `json:"exp"`
+	CRIT        float64 `json:"crit"`
+	Special     string  `json:"special"`
+	Icon        string  `json:"icon"`
 	Description string  `json:"description"`
 }
 
@@ -37,48 +35,65 @@ func loadTroop() ([]Troop, error) {
 	return templates, nil
 }
 
+func cryptoRandInt(max int64) (int64, error) {
+	n, err := rand.Int(rand.Reader, big.NewInt(max))
+	if err != nil {
+		return 0, err
+	}
+	return n.Int64(), nil
+}
+
 func getRandomTroops(n int) []*Troop {
 	templates, err := loadTroop()
 	if err != nil {
 		return nil
 	}
 
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(templates), func(i, j int) {
+	// Fisher–Yates Shuffle with crypto/rand
+	for i := len(templates) - 1; i > 0; i-- {
+		j64, err := cryptoRandInt(int64(i + 1))
+		if err != nil {
+			continue
+		}
+		j := int(j64)
 		templates[i], templates[j] = templates[j], templates[i]
-	})
+	}
 
 	selected := make([]*Troop, 0, n)
 	for i := 0; i < n && i < len(templates); i++ {
 		t := templates[i]
 		selected = append(selected, &Troop{
-			Name:  t.Name,
-			ATK:   t.ATK,
-			DEF:   t.DEF,
-			CRIT:  t.CRIT,
-			MaxHP: t.MaxHP,
-			HP:    t.MaxHP,
-			MANA:  t.MANA,
-			EXP:   t.EXP,
-			Special: t.Special,
-			Icon: t.Icon,
+			Name:        t.Name,
+			ATK:         t.ATK,
+			DEF:         t.DEF,
+			CRIT:        t.CRIT,
+			MaxHP:       t.MaxHP,
+			HP:          t.MaxHP,
+			MANA:        t.MANA,
+			EXP:         t.EXP,
+			Special:     t.Special,
+			Icon:        t.Icon,
 			Description: t.Description,
 		})
 	}
 	return selected
 }
 
-func (t *Troop) CalculateDamage(level int, critEnabled bool) int {
-	atk := float64(t.ATK) * (1 + 0.1*float64(level))
-	if critEnabled && IsCriticalHit(int(t.CRIT)) {
-		atk *= 1.2
-	}
-	return int(atk)
-}
+func (t *Troop) CalculateDamage(level int) (int, bool) {
+	baseAtk := float64(t.ATK) * (1 + 0.1*float64(level))
 
-func IsCriticalHit(critChance int) bool {
-	rand.Seed(time.Now().UnixNano())
-	return rand.Intn(100) < critChance
+	// Use crypto/rand for crit calculation
+	critRoll, err := cryptoRandInt(100)
+	if err != nil {
+		return int(baseAtk), false
+	}
+	isCrit := critRoll < int64(t.CRIT)
+
+	if isCrit {
+		baseAtk *= 1.5
+	}
+
+	return int(baseAtk), isCrit
 }
 
 func (t *Troop) BoostAttack() {
@@ -114,4 +129,3 @@ func (p *Player) TroopStatus() []map[string]interface{} {
 	}
 	return troops
 }
-

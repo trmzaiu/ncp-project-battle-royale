@@ -10,12 +10,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// HandleGetGame sends the current game state to the requesting player.
 func HandleGetGame(conn *websocket.Conn, data json.RawMessage) {
 	var req utils.GameRequest
 
-	log.Printf("[GAME_INFO] Received request: %s", string(data))
+	// Parse & validate request
 	if err := json.Unmarshal(data, &req); err != nil || req.RoomID == "" || req.Username == "" {
-		log.Printf("[GAME_INFO] Invalid request payload")
+		log.Printf("[WARN][GAME] invalid request: %v", err)
 		conn.WriteJSON(utils.Response{
 			Type:    "game_response",
 			Success: false,
@@ -24,37 +25,35 @@ func HandleGetGame(conn *websocket.Conn, data json.RawMessage) {
 		return
 	}
 
+	// Get room safely
 	roomsMu.RLock()
 	room, exists := rooms[req.RoomID]
 	roomsMu.RUnlock()
 	if !exists {
-		log.Printf("[GAME_INFO] Room %s not found for user %s", req.RoomID, req.Username)
+		log.Printf("[WARN][GAME] room %s not found for user %s", req.RoomID, req.Username)
 		conn.WriteJSON(utils.Response{
 			Type:    "game_response",
 			Success: false,
-			Message: "Room not found",
+			Message: roomRequestMessage,
 		})
 		return
 	}
 
+	// Identify current player and opponent
 	var currentUser, opponent *model.Player
 	if room.Player1.User.Username == req.Username {
 		currentUser, opponent = room.Player1, room.Player2
 	} else if room.Player2.User.Username == req.Username {
 		currentUser, opponent = room.Player2, room.Player1
-	}
-
-	if currentUser == nil || opponent == nil {
-		log.Printf("[GAME_INFO] Player %s not part of room %s", req.Username, req.RoomID)
+	} else {
+		log.Printf("[WARN][GAME] user %s not in room %s", req.Username, req.RoomID)
 		conn.WriteJSON(utils.Response{
 			Type:    "game_response",
 			Success: false,
-			Message: "Invalid player in room",
+			Message: "Player not in room",
 		})
 		return
 	}
-
-	log.Printf("[GAME_INFO] Sending game state to %s in room %s", req.Username, req.RoomID)
 
 	conn.WriteJSON(utils.Response{
 		Type:    "game_response",
@@ -66,14 +65,17 @@ func HandleGetGame(conn *websocket.Conn, data json.RawMessage) {
 			"your_turn": room.Game.Turn,
 		},
 	})
+
+	log.Printf("[INFO][GAME] sent game state to %s in room %s", req.Username, req.RoomID)
 }
 
 // HandleAttack processes a player's attack action.
 func HandleAttack(conn *websocket.Conn, data json.RawMessage) {
 	var req utils.AttackRequest
 
+	// Parse & validate request data
 	if err := json.Unmarshal(data, &req); err != nil || req.RoomID == "" || req.Username == "" || req.Troop == "" || req.Target == "" {
-		log.Printf("[ATTACK] Invalid attack request")
+		log.Printf("[WARN][ATTACK] invalid request: %v", err)
 		conn.WriteJSON(utils.Response{
 			Type:    "attack_response",
 			Success: false,
@@ -82,29 +84,39 @@ func HandleAttack(conn *websocket.Conn, data json.RawMessage) {
 		return
 	}
 
+	// Fetch the room from memory
 	roomsMu.RLock()
 	room, exists := rooms[req.RoomID]
 	roomsMu.RUnlock()
-
 	if !exists {
-		log.Printf("[ROOM] Room %s not found", req.RoomID)
+		log.Printf("[WARN][ATTACK] Room %s not found for user %s", req.RoomID, req.Username)
 		conn.WriteJSON(utils.Response{
 			Type:    "attack_response",
 			Success: false,
-			Message: "Room not found",
+			Message: roomRequestMessage,
 		})
 		return
 	}
 
-	var attacker *model.Player
+	// Identify the attacker
+	var attacker, defender *model.Player
 	if room.Player1.User.Username == req.Username {
 		attacker = room.Player1
+		defender = room.Player2
 	} else if room.Player2.User.Username == req.Username {
 		attacker = room.Player2
+		defender = room.Player1
 	} else {
+		log.Printf("[WARN][ATTACK] User %s not in room %s", req.Username, req.RoomID)
+		conn.WriteJSON(utils.Response{
+			Type:    "attack_response",
+			Success: false,
+			Message: "You are not part of this match",
+		})
 		return
 	}
 
+	// Find the troop being used for attack
 	var troop *model.Troop
 	for i := range attacker.Troops {
 		if attacker.Troops[i].Name == req.Troop {
@@ -113,45 +125,43 @@ func HandleAttack(conn *websocket.Conn, data json.RawMessage) {
 		}
 	}
 	if troop == nil {
-		return
-	}
-
-	log.Printf("[ATTACK] %s attacking %s using troop %s in room %s", req.Username, req.Target, req.Troop, req.RoomID)
-	result, dmg := room.Game.PlayTurn(attacker, troop, req.Target)
-	if result == "" {
-		log.Printf("[ATTACK] Invalid attack result")
+		log.Printf("[WARN][ATTACK] Troop %s not found for user %s", req.Troop, req.Username)
 		conn.WriteJSON(utils.Response{
 			Type:    "attack_response",
 			Success: false,
-			Message: "Invalid attack result",
+			Message: "Invalid troop used for attack",
 		})
 		return
 	}
 
-	log.Printf("[ATTACK] Result: %s -> %s", req.Username, result)
-
-	remainHp := attacker.Towers[req.Target].HP - dmg
-	if remainHp <= 0 {
-		attacker.Towers[req.Target].HP = 0
+	// Process the attack via game logic
+	log.Printf("[INFO][ATTACK] %s attacking with %s targeting %s in room %s", attacker.User.Username, troop.Name, req.Target, req.RoomID)
+	damage, isCrit, message := room.Game.PlayTurnSimple(attacker, troop, req.Target)
+	if message == "" {
+		log.Printf("[WARN][ATTACK] Attack failed: no result")
+		conn.WriteJSON(utils.Response{
+			Type:    "attack_response",
+			Success: false,
+			Message: "Attack failed",
+		})
+		return
 	}
 
 	payload := utils.Response{
 		Type:    "attack_response",
 		Success: true,
-		Message: result,
+		Message: message,
 		Data: map[string]interface{}{
-			"attacker":    attacker.User.Username,
+			"attacker":    attacker,
+			"defender":    defender,
 			"troop":       troop.Name,
 			"target":      req.Target,
-			"result":      result,
-			"damage":      dmg,
-			"remainHp":    remainHp,
-			"isDestroyed": attacker.Towers[req.Target].HP <= 0,
+			"damage":      damage,
+			"isCrit":      isCrit,
+			"isDestroyed": defender.Towers[req.Target].HP <= 0,
 			"turn":        room.Game.Turn,
 		},
 	}
-
-	log.Printf("[ATTACK] The remaining Hp of the tower is %d - %d = %d", attacker.Towers[req.Target].MaxHP, dmg, remainHp)
 
 	sendToClient(room.Player1.User.Username, payload)
 	sendToClient(room.Player2.User.Username, payload)
@@ -161,47 +171,38 @@ func sendToClient(username string, payload utils.Response) {
 	clientsMu.RLock()
 	client, exists := clients[username]
 	clientsMu.RUnlock()
-	log.Printf("[ATTACK] Sending message to clients: %v", clients)
 
 	if !exists || client == nil || client.Conn == nil {
-		log.Printf("[ATTACK] Client %s not found or connection is nil", username)
+		log.Printf("[WARN][SEND] Client %s not found or connection is nil", username)
 		return
 	}
 
 	go func() {
 		if err := client.SafeWrite(payload); err != nil {
-			log.Printf("[ATTACK] Failed to send message to client %s: %v", username, err)
+			log.Printf("[ERROR][SEND] Failed to send to %s: %v", username, err)
 		}
 	}()
 }
 
 func NotifyGameConclusion(room *Room, winner *model.Player) {
-	log.Printf("[GAME_END] Winner is %s in room %s", winner.User.Username, room.ID)
+	log.Printf("[INFO][GAME_OVER] Winner: %s in room %s", winner.User.Username, room.ID)
 	message := utils.Response{
-		Type:    "game_finished",
+		Type:    "game_over_response",
 		Success: true,
 		Message: "Game over! " + winner.User.Username + " wins!",
+		Data: map[string]interface{}{
+			"winner": winner.User.Username,
+		},
 	}
-
-	// Manage clients using channel-based synchronization
-	clientsMu.RLock()
-	client1 := clients[room.Player1.User.Username]
-	client2 := clients[room.Player2.User.Username]
-	clientsMu.RUnlock()
-
-	if client1 != nil {
-		client1.SafeWrite(message)
-	}
-	if client2 != nil {
-		client2.SafeWrite(message)
-	}
+	sendToClient(room.Player1.User.Username, message)
+	sendToClient(room.Player2.User.Username, message)
 }
 
 func HandleGameOver(conn *websocket.Conn, data json.RawMessage) {
 	var req utils.GameOverRequest
 
 	if err := json.Unmarshal(data, &req); err != nil || req.RoomID == "" {
-		log.Printf("[GAME_OVER] Invalid request data: %v", err)
+		log.Printf("[WARN][GAME_OVER] Invalid request: %v", err)
 		conn.WriteJSON(utils.Response{
 			Type:    "game_over_response",
 			Success: false,
@@ -214,17 +215,17 @@ func HandleGameOver(conn *websocket.Conn, data json.RawMessage) {
 	room, exists := rooms[req.RoomID]
 	roomsMu.RUnlock()
 	if !exists {
-		log.Printf("[GAME_OVER] Room %s not found", req.RoomID)
+		log.Printf("[WARN][GAME_OVER] Room %s not found", req.RoomID)
 		conn.WriteJSON(utils.Response{
 			Type:    "game_over_response",
 			Success: false,
-			Message: "Room not found",
+			Message: roomRequestMessage,
 		})
 		return
 	}
 
 	if result := room.Game.CheckWinner(); result == "" {
-		log.Println("[GAME_OVER] Game not finished yet for RoomID:", req.RoomID)
+		log.Printf("[INFO][GAME_OVER] Game still in progress in room %s", req.RoomID)
 		return
 	}
 
@@ -237,10 +238,9 @@ func HandleGameOver(conn *websocket.Conn, data json.RawMessage) {
 	case p2.Towers["king"].HP <= 0:
 		winner = p1
 	case room.Game.Enhanced && time.Since(room.Game.StartTime) > room.Game.MaxTime:
-		p1Score, p2Score := p1.DestroyedCount(), p2.DestroyedCount()
-		if p1Score > p2Score {
+		if p1.DestroyedCount() > p2.DestroyedCount() {
 			winner = p1
-		} else if p2Score > p1Score {
+		} else if p2.DestroyedCount() > p1.DestroyedCount() {
 			winner = p2
 		}
 	}
@@ -248,7 +248,6 @@ func HandleGameOver(conn *websocket.Conn, data json.RawMessage) {
 	if winner != nil {
 		NotifyGameConclusion(room, winner)
 	} else {
-		// It’s a draw
 		msg := utils.Response{
 			Type:    "game_over_response",
 			Success: true,
@@ -256,12 +255,12 @@ func HandleGameOver(conn *websocket.Conn, data json.RawMessage) {
 		}
 		sendToClient(p1.User.Username, msg)
 		sendToClient(p2.User.Username, msg)
+		log.Printf("[INFO][GAME_OVER] Room %s ended in draw", room.ID)
 	}
 
-	// Clean up the room
 	roomsMu.Lock()
 	delete(rooms, room.ID)
 	roomsMu.Unlock()
 
-	log.Printf("[GAME_OVER] Room %s closed", room.ID)
+	log.Printf("[INFO][GAME_OVER] Room %s cleaned up", room.ID)
 }

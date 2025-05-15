@@ -13,5 +13,5 @@ func Itoa(num int) string {
 }
 
 func GenerateRoomID() string {
-	return fmt.Sprintf("room-%d", time.Now().UnixNano())
+	return fmt.Sprintf("%d", time.Now().UnixNano())
 }

@@ -9,11 +9,12 @@ import (
 )
 
 type Player struct {
-	Mana   int               `json:"mana"`
-	Towers map[string]*Tower `json:"towers"`
-	Troops []*Troop          `json:"troops"`
-	Active bool              `json:"active"`
-	User   *User             `json:"user"`
+	Mana    int               `json:"mana"`
+	Towers  map[string]*Tower `json:"towers"`
+	Troops  []*Troop          `json:"troops"`
+	Active  bool              `json:"active"`
+	User    *User             `json:"user"`
+	Matched chan bool         `json:"-"`
 }
 
 var (
@@ -39,13 +40,14 @@ func NewPlayer(user *User, mode string) *Player {
 	return &Player{
 		Mana: 5,
 		Towers: map[string]*Tower{
-			"king":   towers["King Tower"],
-			"guard1": towers["Guard Tower"],
-			"guard2": towers["Guard Tower"],
+			"king":   towers["King Tower"].Clone(),
+			"guard1": towers["Guard Tower"].Clone(),
+			"guard2": towers["Guard Tower"].Clone(),
 		},
-		Troops: troops,
-		Active: true,
-		User:   user,
+		Troops:  troops,
+		Active:  true,
+		User:    user,
+		Matched: make(chan bool, 1),
 	}
 }
 
@@ -67,10 +69,10 @@ func (p *Player) FullyChargeMana() {
 
 func (p *Player) Reset() {
 	p.Mana = 5
-	p.Towers["king"].Reset()
-	p.Towers["guard1"].Reset()
-	p.Towers["guard2"].Reset()
-	p.Troops = getRandomTroops(3)
+	p.Towers["king"].Reset("king")
+	p.Towers["guard1"].Reset("guard1")
+	p.Towers["guard2"].Reset("guard2")
+	p.Troops = getRandomTroops(4)
 	p.Active = false
 }
 
@@ -91,7 +93,7 @@ func RegisterConnection(conn *websocket.Conn, player *Player) {
 
 	connToPlayer[conn] = player
 	usernameToConn[player.User.Username] = conn // Mapping username -> conn
-	playerData[player.User.Username] = player // Mapping username -> player
+	playerData[player.User.Username] = player   // Mapping username -> player
 }
 
 // Remove connection mapping when player disconnects
@@ -102,8 +104,8 @@ func RemoveConnection(conn *websocket.Conn) {
 	player := connToPlayer[conn]
 	if player != nil {
 		delete(usernameToConn, player.User.Username) // Remove username -> conn mapping
-		delete(playerData, player.User.Username)    // Remove username -> player mapping
-		delete(connToPlayer, conn)                  // Remove conn -> player mapping
+		delete(playerData, player.User.Username)     // Remove username -> player mapping
+		delete(connToPlayer, conn)                   // Remove conn -> player mapping
 	}
 }
 
@@ -136,7 +138,7 @@ func GetUsernameByConn(conn *websocket.Conn) string {
 	// Truy tìm player từ conn
 	player := connToPlayer[conn]
 	if player != nil {
-		return player.User.Username 
+		return player.User.Username
 	}
-	return "" 
+	return ""
 }

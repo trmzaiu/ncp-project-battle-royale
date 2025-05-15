@@ -399,7 +399,6 @@
             btn.innerHTML = '<div class="spinner"></div> Finding match...';
 
             if (socket?.readyState === WebSocket.OPEN && user) {
-                showToast("Joining match queue...");
 
                 const payload = {
                     type: "find_match",
@@ -433,6 +432,7 @@
                 case "game_response": handleGameResponse(msg); break;
                 case "attack_response": handleAttackResponse(msg); break;
                 case "game_over_response": handleGameOver(msg); break;
+                case "match_timeout": handleMatchTimeout(msg); break;
             }
 
             if (msg.type === "error" || (msg.type === "find_match_response" && !msg.success)) {
@@ -464,7 +464,6 @@
         function handleMatchFound(msg) {
             if (msg.success) {
                 localStorage.setItem("room_id", msg.data.room_id);
-                addLogEntry("SYSTEM", "Match found! Starting game...");
                 showNotification("Match found! Starting game...");
                 goToGame();
             } else {
@@ -487,18 +486,16 @@
 
         function handleAttackResponse(msg) {
             if (msg.success) {
-                const { attacker, damage, target, remainHp, isDestroyed } = msg.data;
-                const isMe = attacker === player.user.username;
+                const { attacker, defender, damage, target, isDestroyed } = msg.data;
+                const isMe = attacker.user.username === player.user.username;
 
                 const targetSide = isMe ? "opponent" : "player";
                 const targetId = `${targetSide}-${target}`;
                 const targetHealth = isMe ? gameState.opponentHealth : gameState.playerHealth;
+                const targetShield = isMe ? gameState.opponentShield : gameState.playerShield;
 
-                const towerMaxHP = player.towers[target]?.hp;
-
-                targetHealth[target] = remainHp;
-
-                updateTowerHP(targetId, targetHealth[target], towerMaxHP);
+                targetHealth[target] = defender.towers[target].hp;
+                updateTowerHP(targetId, targetHealth[target], targetShield[target]);
 
                 if (isDestroyed) {
                     disableTower(target, isMe);
@@ -506,8 +503,12 @@
                 }
 
                 if (isMe) {
+                    player = attacker;
+                    opponent = defender;
                     addLogEntry("ACTION", `Your ${msg.data.troop || "troop"} dealt ${damage} damage to opponent's ${target}.`);
                 } else {
+                    opponent = attacker;
+                    player = defender;
                     addLogEntry("ACTION", `Opponent's ${msg.data.troop || "troop"} dealt ${damage} damage to your ${target}.`);
                 }
 
@@ -520,7 +521,7 @@
 
                 // Update UI
                 updateTurnDisplay();
-                socket.send(JSON.stringify({type: "game_over", data: { room_id: localStorage.getItem("room_id") }}));
+                socket.send(JSON.stringify({ type: "game_over", data: { room_id: localStorage.getItem("room_id") } }));
             } else {
                 console.error("Attack failed:", msg.error);
             }
@@ -538,14 +539,21 @@
             document.getElementById("exp-gain").innerText = isWinner ? "+100 XP" : "+25 XP";
 
             // Update stats
-            document.getElementById("stats-turns").innerText = msg.data.stats.turns || 0;
-            document.getElementById("stats-damage").innerText = msg.data.stats.damageDealt || 0;
-            document.getElementById("stats-mana").innerText = msg.data.stats.manaSpent || 0;
-            document.getElementById("stats-crits").innerText = msg.data.stats.criticalHits || 0;
+            // document.getElementById("stats-turns").innerText = msg.data.stats.turns || 0;
+            // document.getElementById("stats-damage").innerText = msg.data.stats.damageDealt || 0;
+            // document.getElementById("stats-mana").innerText = msg.data.stats.manaSpent || 0;
+            // document.getElementById("stats-crits").innerText = msg.data.stats.criticalHits || 0;
 
             // Show modal
             document.getElementById("game-over-modal").style.display = "flex";
-            goToLobby();
+        }
+
+        function handleMatchTimeout(msg) {
+            const btn = document.getElementById("startGameBtn");
+            btn.disabled = false;
+            btn.innerHTML = "<span>Start Game</span>";
+            isJoiningGame = false;
+            addLogEntry("SYSTEM", "Match timed out. Please try again.");
         }
 
         // ====== Game Init & Flow ======
@@ -587,7 +595,7 @@
         function updateUserAndOpponentInfo(data) {
             player = data.user;
             opponent = data.opponent;
-            console.log("User and opponent info:", user, opponent);
+            console.log("User info: ", player, " and opponent info: ", opponent);
 
             document.getElementById("user-name").innerText = player.user.username;
             document.getElementById("user-avatar").innerText = player.user.username[0].toUpperCase();
@@ -602,14 +610,6 @@
             initGameState(turn);
             loadTroops(troops);
             initGame();
-
-            const gameMode = selectedMode;
-            const manaContainer = document.getElementById("mana-container");
-            if (gameMode === "simple") {
-                manaContainer.style.display = "none";
-            } else {
-                manaContainer.style.display = "flex";
-            }
 
             addLogEntry("SYSTEM", "Game started.");
             addLogEntry("SYSTEM", gameState.playerTurn === player.user.username ? "Your turn." : "Waiting for opponent's turn...");
@@ -638,7 +638,7 @@
 
         function initGameState(turn) {
             gameState = {
-                playerMana: player.mana,
+                playerMana: 10,
                 maxMana: 10,
                 playerHealth: {
                     king: player.towers.king.max_hp,
@@ -646,6 +646,16 @@
                     guard2: player.towers.guard2.max_hp,
                 },
                 opponentHealth: {
+                    king: opponent.towers.king.max_hp,
+                    guard1: opponent.towers.guard1.max_hp,
+                    guard2: opponent.towers.guard2.max_hp,
+                },
+                playerShield: {
+                    king: player.towers.king.max_hp,
+                    guard1: player.towers.guard1.max_hp,
+                    guard2: player.towers.guard2.max_hp,
+                },
+                opponentShield: {
                     king: opponent.towers.king.max_hp,
                     guard1: opponent.towers.guard1.max_hp,
                     guard2: opponent.towers.guard2.max_hp,
@@ -852,18 +862,6 @@
             notification.textContent = message;
             notification.classList.add("show");
             setTimeout(() => notification.classList.remove("show"), duration);
-        }
-
-        function showToast(message) {
-            const toast = document.createElement("div");
-            toast.className = "toast";
-            toast.innerText = message;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.classList.add("show"), 100);
-            setTimeout(() => {
-                toast.classList.remove("show");
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
         }
 
         function addLogEntry(type, message) {

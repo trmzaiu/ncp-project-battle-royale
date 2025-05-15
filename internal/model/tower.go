@@ -46,9 +46,20 @@ func LoadTower() map[string]*Tower {
 	return towerMap
 }
 
-func (t *Tower) TakeDamage(rawAtk int, attackerLevel int) (actualDamage int, destroyed bool) {
-	def := int(float64(t.DEF) * (1 + 0.1*float64(attackerLevel)))
-	dmg := rawAtk - def
+func (t *Tower) Clone() *Tower {
+	return &Tower{
+		Type:  t.Type,
+		MaxHP: t.MaxHP,
+		HP:    t.HP,
+		ATK:   t.ATK,
+		DEF:   t.DEF,
+		CRIT:  t.CRIT,
+		EXP:   t.EXP,
+	}
+}
+
+func (t *Tower) TakeDamage(rawAtk int, attackerLevel int) (int, bool) {
+	dmg := rawAtk - t.DEF/2
 	if dmg < 0 {
 		dmg = 0
 	}
@@ -82,20 +93,14 @@ func (t *Tower) CounterDamage() int {
 	return baseDamage
 }
 
-func (t *Tower) Reset() {
-	if def, ok := defaultTowers[t.Type]; ok {
+func (t *Tower) Reset(key string) {
+	if def, ok := defaultTowers[key]; 
+	ok {
 		t.MaxHP = def.MaxHP
 		t.HP = def.MaxHP
 		t.ATK = def.ATK
 		t.DEF = def.DEF
 		t.CRIT = def.CRIT
 		t.EXP = def.EXP
-	} else {
-		t.MaxHP = 1000
-		t.HP = 1000
-		t.ATK = 300
-		t.DEF = 100
-		t.CRIT = 0.05
-		t.EXP = 100
 	}
 }

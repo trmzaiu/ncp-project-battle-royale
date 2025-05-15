@@ -17,9 +17,9 @@ func handleRegister(conn *websocket.Conn, data json.RawMessage) {
 	var req utils.RegisterRequest
 
 	if err := json.Unmarshal(data, &req); err != nil {
-		log.Println("[AUTH] Invalid register data:", err)
+		log.Printf("[WARN][AUTH] Invalid register data: %v", err)
 		conn.WriteJSON(utils.Response{
-			Type: "register_response",
+			Type:    "register_response",
 			Success: false,
 			Message: "Invalid register data",
 		})
@@ -28,9 +28,9 @@ func handleRegister(conn *websocket.Conn, data json.RawMessage) {
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		log.Println("[AUTH] Error hashing password for", req.Username, ":", err)
+		log.Printf("[ERROR][AUTH] Password hashing failed for %s: %v", req.Username, err)
 		conn.WriteJSON(utils.Response{
-			Type: "register_response",
+			Type:    "register_response",
 			Success: false,
 			Message: "Error hashing password",
 		})
@@ -39,7 +39,7 @@ func handleRegister(conn *websocket.Conn, data json.RawMessage) {
 
 	err = model.AddUser(*model.NewUser(req.Username, string(hashedPassword)))
 	if err != nil {
-		log.Printf("[AUTH] Registration failed for %s: %s", req.Username, err.Error())
+		log.Printf("[WARN][AUTH] Registration failed for %s: %v", req.Username, err)
 		conn.WriteJSON(utils.Response{
 			Type:    "register_response",
 			Success: false,
@@ -48,7 +48,7 @@ func handleRegister(conn *websocket.Conn, data json.RawMessage) {
 		return
 	}
 
-	log.Printf("[AUTH] User %s registered successfully", req.Username)
+	log.Printf("[INFO][AUTH] User %s registered successfully", req.Username)
 	conn.WriteJSON(utils.Response{
 		Type:    "register_response",
 		Success: true,
@@ -60,9 +60,9 @@ func handleLogin(conn *websocket.Conn, data json.RawMessage) {
 	var req utils.LoginRequest
 
 	if err := json.Unmarshal(data, &req); err != nil {
-		log.Println("[AUTH] Invalid login data:", err)
+		log.Printf("[WARN][AUTH] Invalid login data: %v", err)
 		conn.WriteJSON(utils.Response{
-			Type: "login_response",
+			Type:    "login_response",
 			Success: false,
 			Message: "Invalid login data",
 		})
@@ -71,20 +71,20 @@ func handleLogin(conn *websocket.Conn, data json.RawMessage) {
 
 	u, ok := model.FindUserByUsername(req.Username)
 	if !ok {
-		log.Printf("[AUTH] Login failed: user %s not found", req.Username)
+		log.Printf("[WARN][AUTH] Login failed, user %s not found", req.Username)
 		conn.WriteJSON(utils.Response{
-			Type: "login_response",
-			Success: false, 
+			Type:    "login_response",
+			Success: false,
 			Message: "Invalid credentials",
 		})
 		return
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(req.Password)) != nil {
-		log.Printf("[AUTH] Login failed: incorrect password for %s", req.Username)
+		log.Printf("[WARN][AUTH] Login failed, incorrect password for %s", req.Username)
 		conn.WriteJSON(utils.Response{
-			Type: "login_response",
-			Success: false, 
+			Type:    "login_response",
+			Success: false,
 			Message: "Invalid credentials",
 		})
 		return
@@ -92,14 +92,13 @@ func handleLogin(conn *websocket.Conn, data json.RawMessage) {
 
 	sessionID := uuid.New().String()[:8]
 	session := Session{SessionID: sessionID, Username: req.Username, Authenticated: true}
-	log.Printf("[AUTH] User %s authenticated, session ID: %s", req.Username, sessionID)
-
+	log.Printf("[INFO][AUTH] User %s authenticated, session ID: %s", req.Username, sessionID)
 	sessions, err := ReadSessions()
 	if err != nil {
-		log.Println("[AUTH] Error reading sessions:", err)
+		log.Printf("[ERROR][AUTH] Reading sessions failed: %v", err)
 		conn.WriteJSON(utils.Response{
-			Type: "login_response",
-			Success: false, 
+			Type:    "login_response",
+			Success: false,
 			Message: "Error reading sessions",
 		})
 		return
@@ -107,16 +106,16 @@ func handleLogin(conn *websocket.Conn, data json.RawMessage) {
 
 	sessions = append(sessions, session)
 	if err := WriteSession(sessions); err != nil {
-		log.Println("[AUTH] Error writing session:", err)
+		log.Printf("[ERROR][AUTH] Writing sessions failed: %v", err)
 		conn.WriteJSON(utils.Response{
-			Type: "login_response",
+			Type:    "login_response",
 			Success: false,
 			Message: "Error saving session",
 		})
 		return
 	}
 
-	log.Printf("[AUTH] Session stored for user %s", req.Username)
+	log.Printf("[INFO][AUTH] Session stored for user %s", req.Username)
 	conn.WriteJSON(utils.Response{
 		Type:    "login_response",
 		Success: true,
@@ -129,10 +128,10 @@ func handleGetUser(conn *websocket.Conn, data json.RawMessage) {
 	var req utils.UserRequest
 
 	if err := json.Unmarshal(data, &req); err != nil {
-		log.Println("[AUTH] Invalid session ID in get_user request:", err)
+		log.Printf("[WARN][AUTH] Invalid session ID in get_user: %v", err)
 		conn.WriteJSON(utils.Response{
-			Type: "user_response",
-			Success: false, 
+			Type:    "user_response",
+			Success: false,
 			Message: "Invalid session ID",
 		})
 		return
@@ -140,10 +139,10 @@ func handleGetUser(conn *websocket.Conn, data json.RawMessage) {
 
 	session, err := FindSessionByID(req.SessionID)
 	if err != nil {
-		log.Printf("[AUTH] Session %s not found", req.SessionID)
+		log.Printf("[WARN][AUTH] Session %s not found", req.SessionID)
 		conn.WriteJSON(utils.Response{
-			Type: "user_response",
-			Success: false, 
+			Type:    "user_response",
+			Success: false,
 			Message: "Session not found",
 		})
 		return
@@ -151,21 +150,21 @@ func handleGetUser(conn *websocket.Conn, data json.RawMessage) {
 
 	user, ok := model.FindUserByUsername(session.Username)
 	if !ok {
-		log.Printf("[AUTH] User %s from session not found", session.Username)
+		log.Printf("[WARN][AUTH] User %s from session not found", session.Username)
 		conn.WriteJSON(utils.Response{
-			Type: "user_response",
-			Success: false, 
+			Type:    "user_response",
+			Success: false,
 			Message: "User not found",
 		})
 		return
 	}
 
-	log.Printf("[AUTH] Returning user data for %s from session %s", user.Username, req.SessionID)
+	log.Printf("[INFO][AUTH] Returning user data for %s (session %s)", user.Username, req.SessionID)
 	conn.WriteJSON(utils.Response{
 		Type:    "user_response",
 		Success: true,
 		Data: map[string]interface{}{
-			"user":  user,
+			"user":   user,
 			"maxExp": model.GetMaxExp(user.Level),
 		},
 	})

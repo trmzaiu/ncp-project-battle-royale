@@ -12,7 +12,7 @@ type ClientConnection struct {
 	Conn *websocket.Conn
 	Mu   sync.Mutex
 	IsClosed  bool
-    Username  string 
+    Username  string
 }
 
 func (c *ClientConnection) SafeWrite(data interface{}) error {

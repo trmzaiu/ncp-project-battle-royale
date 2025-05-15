@@ -19,33 +19,33 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-// HandleWS handles WebSocket connections and messages
 func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
-	log.Println("[WS] New WebSocket connection request")
+	log.Println("[WS] Incoming WebSocket request...")
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("[WS] Upgrade error: %v", err)
+		log.Printf("[ERROR][WS] Upgrade failed: %v", err)
 		http.Error(w, "WebSocket upgrade failed", http.StatusInternalServerError)
 		return
 	}
-	defer func() {
-		if err := conn.Close(); err != nil {
-			log.Printf("[WS] Error closing connection: %v", err)
-		}
-		log.Printf("[WS] WebSocket connection for client is closed")
-	}()	
 
+	// Recover panic inside the goroutine safely
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("[WS] Recovered from panic: %v", r)
+			log.Printf("[ERROR][WS] Panic recovered: %v", r)
 		}
+		if err := conn.Close(); err != nil {
+			log.Printf("[ERROR][WS] Connection close failed: %v", err)
+		}
+		log.Println("[WS] Connection closed")
 	}()
 
 	log.Println("[WS] WebSocket connection established")
 
 	for {
-		if !readAndProcessMessage(conn) {
+		ok := readAndProcessMessage(conn)
+		if !ok {
+			log.Println("[WS] Stopping read loop due to error or disconnect")
 			break
 		}
 	}
@@ -58,16 +58,16 @@ func readAndProcessMessage(conn *websocket.Conn) bool {
 		return false
 	}
 
-	log.Printf("[WS] Received raw message: %s", msg)
+	log.Printf("[INFO][WS] Raw message: %s", msg)
 
 	var pdu utils.Message
 	if err := json.Unmarshal(msg, &pdu); err != nil {
-		log.Printf("[WS] JSON unmarshal error: %v", err)
+		log.Printf("[WARN][WS] Invalid JSON: %v", err)
 		sendError(conn, "Invalid message format")
 		return true
 	}
 
-	log.Printf("[WS] Handling message type: %s", pdu.Type)
+	log.Printf("[INFO][WS] Message type: %s", pdu.Type)
 	processMessage(conn, pdu)
 	return true
 }
@@ -89,25 +89,26 @@ func processMessage(conn *websocket.Conn, pdu utils.Message) {
 	case "game_over":
 		game.HandleGameOver(conn, pdu.Data)
 	default:
-		log.Printf("[WS] Unknown message type: %s", pdu.Type)
+		log.Printf("[WARN][WS] Unknown message type: %s", pdu.Type)
 		sendError(conn, "Unknown message type")
 	}
 }
 
 func sendError(conn *websocket.Conn, message string) {
-    if err := conn.WriteJSON(utils.Response{
-        Type:    "error",
-        Success: false,
-        Message: message,
-    }); err != nil {
-        log.Printf("[WS] Error sending error message: %v", err)
-    }
+	err := conn.WriteJSON(utils.Response{
+		Type:    "error",
+		Success: false,
+		Message: message,
+	})
+	if err != nil {
+		log.Printf("[ERROR][WS] Failed to send error response: %v", err)
+	}
 }
 
 func logWebSocketError(err error) {
 	if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-		log.Printf("[WS] Unexpected WebSocket closure: %v", err)
+		log.Printf("[ERROR][WS] Unexpected closure: %v", err)
 	} else {
-		log.Printf("[WS] Error reading message: %v", err)
+		log.Printf("[WARN][WS] Client disconnected: %v", err)
 	}
 }

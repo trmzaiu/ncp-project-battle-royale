@@ -61,119 +61,38 @@ func (g *Game) Opponent(p *model.Player) *model.Player {
 }
 
 // AttackTower simulates an attack on a tower by a troop.
-func (g *Game) AttackTower(p *model.Player, troop *model.Troop, target *model.Tower, critEnabled bool) (int, bool, string) {
-	atk := troop.CalculateDamage(p.User.Level, critEnabled)
-	dmgToTower, destroyed := target.TakeDamage(atk, p.User.Level)
+func (g *Game) AttackTower(player *model.Player, troop *model.Troop, tower *model.Tower) (int, bool, bool) {
+	atk, isCrit := troop.CalculateDamage(player.User.Level)
+	damageDealt, destroyed := tower.TakeDamage(atk, player.User.Level)
 
-	if target.HP > 0 {
-		counterDmg := target.CounterDamage()
-		troop.HP -= counterDmg
-		if troop.HP < 0 {
-			troop.HP = 0
-		}
-		log := fmt.Sprintf("Tower retaliated for %d damage.", counterDmg)
-		if troop.HP == 0 {
-			log += " Troop was defeated!"
-		}
-		return dmgToTower, destroyed, log
-	}
-
-	return dmgToTower, destroyed, ""
+	return damageDealt, isCrit, destroyed
 }
 
-// PlayTurn - handles one attack turn (Simple Mode only)
-func (g *Game) PlayTurn(p *model.Player, troop *model.Troop, towerType string) (string, int) {
-	if g.Enhanced && time.Since(g.StartTime) > g.MaxTime {
-		return "Time is up!", 0
-	}
+func (g *Game) PlayTurnSimple(player *model.Player, troop *model.Troop, tower string) (int, bool, string) {
+	// if player.Mana < troop.MANA {
+	// 	return 0, 0, false, "Not enough mana!"
+	// }
+	// player.Mana -= troop.MANA
 
-	// Queen action (heals)
-	if troop.Name == "Queen" {
-		var lowest *model.Tower
-		for _, tower := range p.Towers {
-			if lowest == nil || tower.HP < lowest.HP {
-				lowest = tower
-			}
-		}
-		if lowest != nil {
-			lowest.Heal(300)
-			msg := "Queen healed " + lowest.Type + " tower by 300 HP!"
-			if !g.Enhanced {
-				g.SwitchTurn()
-			}
-			return msg, 0
-		}
-		return "Queen could not find a tower to heal.", 0
-	}
+	targetTower, err := g.getTargetTower(player, tower)
+    if err != nil {
+        return 0, false, "Invalid tower target"
+    }
 
-	// Enhanced mode special skill logic
-	if g.Enhanced && troop.Special != "" {
-		switch troop.Special {
-		case "Shield":
-			p.ApplyDefenseBoost(0.2)
-			return "Shield applied! Defense increased for all towers.", 0
-		case "Attack Boost":
-			p.BoostAllTroops()
-			return "Attack Boost applied! Damage increased for all troops.", 0
-		case "Fortify":
-			troop.FortifyHP(50)
-			return "Fortify applied! Troop's HP increased.", 0
-		case "Double Strike":
-			opTowers := g.Opponent(p).Towers
-			var target *model.Tower
-			if opTowers["guard1"].HP > 0 {
-				target = opTowers["guard1"]
-			} else if opTowers["guard2"].HP > 0 {
-				target = opTowers["guard2"]
-			} else {
-				target = opTowers["king"]
-			}
-			dmg1, _, _ := g.AttackTower(p, troop, target, false)
-			dmg2, _, _ := g.AttackTower(p, troop, target, false)
-			totalDmg := dmg1 + dmg2
-			return "Double Strike applied! Troop attacks " + target.Type + " twice!", totalDmg
-		case "Charge":
-			p.FullyChargeMana()
-			return "Charge applied! Mana fully restored.", 0
-		case "Heal":
-			var lowest *model.Tower
-			for _, tower := range p.Towers {
-				if lowest == nil || tower.HP < lowest.HP {
-					lowest = tower
-				}
-			}
-			if lowest != nil {
-				lowest.Heal(300)
-				return "Heal applied! " + lowest.Type + " tower HP restored.", 0
-			}
-		}
-		return "Invalid special skill.", 0
-	}
+	damage, isCrit, destroyed := g.AttackTower(player, troop, targetTower)
 
-	// Simple or Enhanced: normal attack logic
-	if g.Enhanced {
-		if p.Mana < troop.MANA {
-			return "Not enough mana!", 0
-		}
-		p.Mana -= troop.MANA
+	// Build message
+	message := troop.Name + " dealt " + utils.Itoa(damage) + " damage to " + targetTower.Type
+	if isCrit {
+		message += " (Critical hit!)"
 	}
-
-	target, err := g.getTargetTower(p, towerType)
-	if err != nil {
-		return err.Error(), 0
-	}
-
-	dmg, destroyed, _ := g.AttackTower(p, troop, target, g.Enhanced)
-	result := troop.Name + " dealt " + utils.Itoa(dmg) + " damage to " + towerType
 	if destroyed {
-		result += " and destroyed it!"
+		message += " and destroyed it!"
 	}
 
-	if !g.Enhanced {
-		g.SwitchTurn()
-	}
+	g.SwitchTurn()
 
-	return result, dmg
+	return damage, isCrit, message
 }
 
 func (g *Game) SwitchTurn() {
@@ -198,57 +117,57 @@ func (g *Game) getTargetTower(p *model.Player, towerType string) (*model.Tower, 
 	}
 }
 
-func (g *Game) ApplySpecialSkill(p *model.Player, t *model.Troop) string {
-	if !g.Enhanced || time.Since(g.StartTime) > g.MaxTime {
-		return "Special skills are only available in Enhanced mode."
-	}
+// func (g *Game) ApplySpecialSkill(p *model.Player, t *model.Troop) string {
+// 	if !g.Enhanced || time.Since(g.StartTime) > g.MaxTime {
+// 		return "Special skills are only available in Enhanced mode."
+// 	}
 
-	switch t.Special {
-	case "Shield":
-		// Apply shield to all towers
-		p.ApplyDefenseBoost(0.2)
-		return "Shield applied! Defense increased for all towers."
-	case "Attack Boost":
-		// Apply attack boost to all troops
-		p.BoostAllTroops()
-		return "Attack Boost applied! Damage increased for all troops."
-	case "Fortify":
-		// Apply fortify to all troops
-		t.FortifyHP(50)
-		return "Fortify applied! Troop's HP increased."
-	case "Double Strike":
-		// Attack twice
-		var target *model.Tower
-		opponentTowers := g.Opponent(p).Towers
+// 	switch t.Special {
+// 	case "Shield":
+// 		// Apply shield to all towers
+// 		p.ApplyDefenseBoost(0.2)
+// 		return "Shield applied! Defense increased for all towers."
+// 	case "Attack Boost":
+// 		// Apply attack boost to all troops
+// 		p.BoostAllTroops()
+// 		return "Attack Boost applied! Damage increased for all troops."
+// 	case "Fortify":
+// 		// Apply fortify to all troops
+// 		t.FortifyHP(50)
+// 		return "Fortify applied! Troop's HP increased."
+// 	case "Double Strike":
+// 		// Attack twice
+// 		var target *model.Tower
+// 		opponentTowers := g.Opponent(p).Towers
 
-		if opponentTowers["guard1"].HP > 0 {
-			target = opponentTowers["guard1"]
-		} else if opponentTowers["guard2"].HP > 0 {
-			target = opponentTowers["guard2"]
-		} else {
-			target = opponentTowers["king"]
-		}
-		g.AttackTower(p, t, target, false)
-		g.AttackTower(p, t, target, false)
-		return "Double Strike applied! Troop attacks " + target.Type + " twice!"
-	case "Charge":
-		// Charge mana
-		p.FullyChargeMana()
-		return "Charge applied! Mana fully restored."
-	case "Heal":
-		var lowest *model.Tower
-		for _, tower := range p.Towers {
-			if lowest == nil || tower.HP < lowest.HP {
-				lowest = tower
-			}
-		}
-		if lowest != nil {
-			lowest.Heal(300)
-			return "Heal applied! " + lowest.Type + " tower HP restored."
-		}
-	}
-	return "Invalid special skill."
-}
+// 		if opponentTowers["guard1"].HP > 0 {
+// 			target = opponentTowers["guard1"]
+// 		} else if opponentTowers["guard2"].HP > 0 {
+// 			target = opponentTowers["guard2"]
+// 		} else {
+// 			target = opponentTowers["king"]
+// 		}
+// 		g.AttackTower(p, t, target, false)
+// 		g.AttackTower(p, t, target, false)
+// 		return "Double Strike applied! Troop attacks " + target.Type + " twice!"
+// 	case "Charge":
+// 		// Charge mana
+// 		p.FullyChargeMana()
+// 		return "Charge applied! Mana fully restored."
+// 	case "Heal":
+// 		var lowest *model.Tower
+// 		for _, tower := range p.Towers {
+// 			if lowest == nil || tower.HP < lowest.HP {
+// 				lowest = tower
+// 			}
+// 		}
+// 		if lowest != nil {
+// 			lowest.Heal(300)
+// 			return "Heal applied! " + lowest.Type + " tower HP restored."
+// 		}
+// 	}
+// 	return "Invalid special skill."
+// }
 
 // CheckWinner returns result string if winner is found
 func (g *Game) CheckWinner() string {
