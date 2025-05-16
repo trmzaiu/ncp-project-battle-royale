@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import useWebSocket from "../hooks/useWebSocket";
+import useWebSocket from "../utils/useWebSocket";
 
 export default function Auth() {
     const navigate = useNavigate();
