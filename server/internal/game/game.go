@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"royaka/internal/model"
-	"royaka/internal/utils"
 	"time"
 )
 
@@ -69,20 +68,19 @@ func (g *Game) AttackTower(player *model.Player, troop *model.Troop, tower *mode
 }
 
 func (g *Game) PlayTurnSimple(player *model.Player, troop *model.Troop, tower string) (int, bool, string) {
-	// if player.Mana < troop.MANA {
-	// 	return 0, 0, false, "Not enough mana!"
-	// }
-	// player.Mana -= troop.MANA
+	if player.Mana < troop.MANA {
+		return 0, false, "Not enough mana!"
+	}
+	player.Mana -= troop.MANA
 
 	targetTower, err := g.getTargetTower(player, tower)
-    if err != nil {
-        return 0, false, "Invalid tower target"
-    }
+	if err != nil {
+		return 0, false, "Invalid tower target"
+	}
 
 	damage, isCrit, destroyed := g.AttackTower(player, troop, targetTower)
 
-	// Build message
-	message := troop.Name + " dealt " + utils.Itoa(damage) + " damage to " + targetTower.Type
+	message := fmt.Sprintf("%s dealt %d damage to %s", troop.Name, damage, targetTower.Type)
 	if isCrit {
 		message += " (Critical hit!)"
 	}
@@ -90,6 +88,9 @@ func (g *Game) PlayTurnSimple(player *model.Player, troop *model.Troop, tower st
 		message += " and destroyed it!"
 	}
 
+	player.Turn++
+
+	// 👉 SwitchTurn trước khi hồi mana
 	g.SwitchTurn()
 
 	return damage, isCrit, message
@@ -98,8 +99,17 @@ func (g *Game) PlayTurnSimple(player *model.Player, troop *model.Troop, tower st
 func (g *Game) SwitchTurn() {
 	if g.Turn == g.Player1.User.Username {
 		g.Turn = g.Player2.User.Username
+
 	} else {
 		g.Turn = g.Player1.User.Username
+	}
+
+	nextPlayer := g.CurrentPlayer()
+	if nextPlayer.Turn > 0 {
+		nextPlayer.Mana += 3
+		if nextPlayer.Mana > 10 {
+			nextPlayer.Mana = 10
+		}
 	}
 }
 

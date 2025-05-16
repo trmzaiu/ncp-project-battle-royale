@@ -15,6 +15,7 @@ type Player struct {
 	Active  bool              `json:"active"`
 	User    *User             `json:"user"`
 	Matched chan bool         `json:"-"`
+	Turn    int               `json:"turn"`
 }
 
 var (
@@ -48,6 +49,7 @@ func NewPlayer(user *User, mode string) *Player {
 		Active:  true,
 		User:    user,
 		Matched: make(chan bool, 1),
+		Turn: 0,
 	}
 }
 
@@ -74,6 +76,7 @@ func (p *Player) Reset() {
 	p.Towers["guard2"].Reset("guard2")
 	p.Troops = getRandomTroops(4)
 	p.Active = false
+	p.Turn = 0
 }
 
 func (p *Player) DestroyedCount() int {

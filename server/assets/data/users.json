@@ -8,7 +8,7 @@
     "isActive": true,
     "exp": 60,
     "level": 3,
-    "gamesPlayed": 20,
+    "gamesPlayed": 22,
     "gamesWon": 12
   },
   {
@@ -42,9 +42,9 @@
     "createdAt": "2025-05-13T11:15:21.3595435+07:00",
     "lastLogin": "2025-05-13T11:15:21.3595435+07:00",
     "isActive": true,
-    "exp": 140,
-    "level": 2,
-    "gamesPlayed": 20,
-    "gamesWon": 8
+    "exp": 0,
+    "level": 3,
+    "gamesPlayed": 22,
+    "gamesWon": 10
   }
 ]

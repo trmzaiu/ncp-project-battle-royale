@@ -7,7 +7,7 @@
     "def": 60,
     "mana": 3,
     "exp": 5,
-    "crit": 0.05,
+    "crit": 5,
     "special": "Shield",
     "icon": "♙",
     "description": "A basic unit with strong defense. Uses Shield to protect itself from attacks."
@@ -20,7 +20,7 @@
     "def": 80,
     "mana": 4,
     "exp": 10,
-    "crit": 0.1,
+    "crit": 10,
     "special": "Attack Boost",
     "icon": "♗",
     "description": "A strategic unit with a powerful attack boost ability. Boosts the damage of allies around."
@@ -33,7 +33,7 @@
     "def": 150,
     "mana": 5,
     "exp": 25,
-    "crit": 0.1,
+    "crit": 10,
     "special": "Fortify",
     "icon": "♖",
     "description": "A powerful tank with high defense and fortification abilities. Fortifies the team’s defenses."
@@ -46,7 +46,7 @@
     "def": 120,
     "mana": 5,
     "exp": 25,
-    "crit": 0.15,
+    "crit": 15,
     "special": "Double Strike",
     "icon": "♘",
     "description": "A highly mobile unit with the ability to attack twice in one turn, dealing massive damage."
@@ -59,7 +59,7 @@
     "def": 200,
     "mana": 6,
     "exp": 50,
-    "crit": 0.2,
+    "crit": 20,
     "special": "Charge",
     "icon": "♔",
     "description": "A royal warrior with massive health and powerful charge attacks. Can break through enemy defenses."
@@ -72,7 +72,7 @@
     "def": 80,
     "mana": 5,
     "exp": 30,
-    "crit": 0.05,
+    "crit": 5,
     "special": "Heal",
     "icon": "♕",
     "description": "A versatile unit with the ability to heal allies. Provides support to the team with her healing ability."

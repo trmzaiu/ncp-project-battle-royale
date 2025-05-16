@@ -112,6 +112,7 @@
 
             <div class="stat turn-display">
                 <div class="stat-label">Your Turn</div>
+                <button id="skip-btn" class="skip-btn">Skip Turn</button>
             </div>
 
             <div class="player-stats">
@@ -403,7 +404,6 @@
                 const payload = {
                     type: "find_match",
                     data: { user: user, mode: selectedMode }
-
                 };
                 socket.send(JSON.stringify(payload));
                 console.log("Sending find_match request:", payload);
@@ -505,10 +505,12 @@
                 if (isMe) {
                     player = attacker;
                     opponent = defender;
+                    gameState.playerMana = player.mana;
                     addLogEntry("ACTION", `Your ${msg.data.troop || "troop"} dealt ${damage} damage to opponent's ${target}.`);
                 } else {
                     opponent = attacker;
                     player = defender;
+                    gameState.playerMana = defender.mana;
                     addLogEntry("ACTION", `Opponent's ${msg.data.troop || "troop"} dealt ${damage} damage to your ${target}.`);
                 }
 
@@ -521,6 +523,7 @@
 
                 // Update UI
                 updateTurnDisplay();
+                updateManaDisplay();
                 socket.send(JSON.stringify({ type: "game_over", data: { room_id: localStorage.getItem("room_id") } }));
             } else {
                 console.error("Attack failed:", msg.error);
@@ -631,15 +634,13 @@
 
         function initGame() {
             updateManaDisplay();
-            const gameMode = selectedMode;
-            if (gameMode === "enhanced") {
-                setInterval(() => {
-                    if (gameState.playerMana < gameState.maxMana) {
-                        gameState.playerMana++;
-                        updateManaDisplay();
-                    }
-                }, 3000);
-            }
+            // const gameMode = selectedMode;
+            // setInterval(() => {
+            //     if (gameState.playerMana < gameState.maxMana) {
+            //         gameState.playerMana++;
+            //         updateManaDisplay();
+            //     }
+            // }, 3000);
 
             document.querySelectorAll(".tower[data-target]").forEach(tower =>
                 tower.addEventListener("click", () => selectTarget(tower))
@@ -648,7 +649,7 @@
 
         function initGameState(turn) {
             gameState = {
-                playerMana: 10,
+                playerMana: player.mana,
                 maxMana: 10,
                 playerHealth: {
                     king: player.towers.king.max_hp,
@@ -684,8 +685,8 @@
             manaContainer.innerHTML = "";
             for (let i = 0; i < gameState.maxMana; i++) {
                 const segment = document.createElement("div");
-                segment.className = "mana-segment";
-                if (i < gameState.playerMana) segment.classList.add("filled");
+                segment.className = "mana-segment";              // ô mana trống
+                if (i < gameState.playerMana) segment.classList.add("filled");  // nếu có mana thì tô đầy
                 manaContainer.appendChild(segment);
             }
             updateTroopAvailability();
@@ -693,12 +694,10 @@
 
         function updateTroopAvailability() {
             // Only update troop availability based on mana if in enhanced mode
-            if (selectedMode === "enhanced") {
-                document.querySelectorAll(".troop").forEach(troopDiv => {
-                    const cost = parseInt(troopDiv.dataset.cost);
-                    troopDiv.classList.toggle("disabled", gameState.playerMana < cost);
-                });
-            }
+            document.querySelectorAll(".troop").forEach(troopDiv => {
+                const cost = parseInt(troopDiv.dataset.cost);
+                troopDiv.classList.toggle("disabled", gameState.playerMana < cost);
+            });
         }
 
         function updateTurnDisplay() {
@@ -743,9 +742,7 @@
             }
 
             // Only check for mana constraint in enhanced mode
-            if (selectedMode === "enhanced" && troopDiv.classList.contains("disabled")) {
-                return showNotification("Not enough mana.");
-            }
+            // showNotification("Not enough mana.");
 
             document.querySelectorAll(".troop.selected").forEach(div => div.classList.remove("selected"));
             troopDiv.classList.add("selected");
@@ -761,7 +758,7 @@
             }
 
             // Only check for mana constraint in enhanced mode
-            if (selectedMode === "enhanced" && gameState.playerMana < gameState.selectedTroop.mana) {
+            if (gameState.playerMana < gameState.selectedTroop.mana) {
                 return showNotification("Not enough mana.");
             }
 
@@ -776,10 +773,8 @@
             };
 
             // Only consume mana in enhanced mode
-            if (selectedMode === "enhanced") {
-                gameState.playerMana -= gameState.selectedTroop.mana;
-                updateManaDisplay();
-            }
+            gameState.playerMana -= gameState.selectedTroop.mana;
+            updateManaDisplay();
 
             if (socket.readyState === WebSocket.OPEN) {
                 socket.send(JSON.stringify(payload));
