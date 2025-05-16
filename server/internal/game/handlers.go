@@ -62,7 +62,7 @@ func HandleGetGame(conn *websocket.Conn, data json.RawMessage) {
 		Data: map[string]interface{}{
 			"user":      currentUser,
 			"opponent":  opponent,
-			"your_turn": room.Game.Turn,
+			"turn": room.Game.Turn,
 		},
 	})
 

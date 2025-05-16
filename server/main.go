@@ -12,11 +12,6 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
-	// // Serve static HTML
-	// fs := http.FileServer(http.Dir("static"))
-	// http.Handle("/", fs)
-
-	// WebSocket endpoint
 	http.HandleFunc("/ws", network.HandleWebSocket)
 
 	log.Println("Server running at http://localhost" + cfg.ServerPort)

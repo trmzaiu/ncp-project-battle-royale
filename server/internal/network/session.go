@@ -48,7 +48,6 @@ func ReadSessions() ([]Session, error) {
 }
 
 // ReadSession reads the session data from the file
-
 func ReadSession(sessionID string) (Session, error) {
 	sessions, err := ReadSessions()
 	if err != nil {
@@ -90,7 +89,6 @@ func WriteSession(sessions []Session) error {
 		return err
 	}
 
-	log.Printf("[INFO][SESSION] Wrote %d unique sessions", len(uniqueSessions))
 	return nil
 }
 

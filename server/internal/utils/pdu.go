@@ -4,7 +4,6 @@ package utils
 
 import (
 	"encoding/json"
-	"royaka/internal/model"
 )
 
 type Message struct {
@@ -34,8 +33,8 @@ type UserRequest struct {
 }
 
 type FindMatchRequest struct {
-	User *model.User `json:"user"`
-	Mode string      `json:"mode"`
+	Username string `json:"username"`
+	Mode     string `json:"mode"`
 }
 
 type GameRequest struct {

@@ -1086,34 +1086,58 @@
         let gameState;
         let isGameInitialized = false;
 
-        function gameConnectWebSocket() {
+         function connectWebSocket() {
+            socket = new WebSocket("ws://localhost:8080/ws");
 
-            socket.onopen = () => {
-                const room_id = localStorage.getItem("room_id");
-                const username = localStorage.getItem("username");
-                console.log("Room ID:", room_id);
+            socket.onopen = function () {
+                console.log("WebSocket connected");
+            };
 
-                if (socket.readyState === WebSocket.OPEN) {
-                    socket.send(
-                        JSON.stringify({
-                            type: "get_game",
-                            data: { room_id: room_id, username: username },
-                        })
-                    );
+            socket.onmessage = function (event) {
+                const res = JSON.parse(event.data);
+
+                if (res.type === "login_response") {
+                    if (res.success) {
+                        showNotification(res.message, "success");
+                        const sessionId = res.data.session_id;
+                        if (sessionId) {
+                            localStorage.setItem("session_id", sessionId);
+                            console.log("Session ID saved:", sessionId);
+                        }
+
+                        // Show loading animation before redirect
+                        document.querySelector(".action-button").innerHTML =
+                            '<div class="spinner"></div>';
+                        setTimeout(() => {
+                            window.location.href = "/home.html";
+                        }, 1000);
+                    } else {
+                        showNotification(res.message, "error");
+                    }
+                } else if (res.type === "register_response") {
+                    if (res.success) {
+                        showNotification(res.message, "success");
+                        setTimeout(() => {
+                            switchTab("login");
+                        }, 1500);
+                    } else {
+                        showNotification(res.message, "error");
+                    }
+                } else if (res.message) {
+                    showNotification(res.message, "info");
                 }
             };
 
-            socket.onmessage = handleSocketMessage;
-
-            socket.onclose = () => {
-                console.log(
-                    "WebSocket connection closed. Attempting to reconnect..."
+            socket.onerror = function (err) {
+                console.error("WebSocket error:", err);
+                showNotification(
+                    "Connection error. Please try again later.",
+                    "error"
                 );
-                setTimeout(connectWebSocket, 3000);
             };
 
-            socket.onerror = () => {
-                console.error("WebSocket error. Attempting to reconnect...");
+            socket.onclose = function () {
+                console.warn("WebSocket closed. Attempting to reconnect...");
                 setTimeout(connectWebSocket, 3000);
             };
         }

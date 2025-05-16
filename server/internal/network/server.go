@@ -20,8 +20,6 @@ var upgrader = websocket.Upgrader{
 }
 
 func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
-	log.Println("[WS] Incoming WebSocket request...")
-
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Printf("[ERROR][WS] Upgrade failed: %v", err)
@@ -43,9 +41,7 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	log.Println("[WS] WebSocket connection established")
 
 	for {
-		ok := readAndProcessMessage(conn)
-		if !ok {
-			log.Println("[WS] Stopping read loop due to error or disconnect")
+		if !readAndProcessMessage(conn) {
 			break
 		}
 	}

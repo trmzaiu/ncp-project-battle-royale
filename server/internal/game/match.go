@@ -14,7 +14,7 @@ func HandleFindMatch(conn *websocket.Conn, data json.RawMessage) {
 	var req utils.FindMatchRequest
 
 	// Parse & validate request data
-	if err := json.Unmarshal(data, &req); err != nil || req.User == nil || req.Mode == "" {
+	if err := json.Unmarshal(data, &req); err != nil || req.Username == "" || req.Mode == "" {
 		log.Printf("[WARN][MATCH] invalid request: %v", err)
 		conn.WriteJSON(utils.Response{
 			Type:    "find_match_response",
@@ -24,7 +24,7 @@ func HandleFindMatch(conn *websocket.Conn, data json.RawMessage) {
 		return
 	}
 
-	username := req.User.Username
+	username := req.Username
 	log.Printf("[INFO][MATCH] matchmaking request: user=%s, mode=%s", username, req.Mode)
 
 	// Check if user already in matchmaking queue
@@ -49,7 +49,10 @@ func HandleFindMatch(conn *websocket.Conn, data json.RawMessage) {
 	clientsMu.Unlock()
 
 	// Create Player instance and register
-	player := model.NewPlayer(req.User, req.Mode)
+
+	user, _ := model.FindUserByUsername(req.Username)
+
+	player := model.NewPlayer(&user, req.Mode)
 	model.RegisterConnection(conn, player)
 
 	// Send response to client confirming queue entry
