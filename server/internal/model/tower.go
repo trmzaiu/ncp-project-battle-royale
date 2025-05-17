@@ -93,6 +93,19 @@ func (t *Tower) CounterDamage() int {
 	return baseDamage
 }
 
+func GetLowestHPTower(player *Player) *Tower {
+	var lowest *Tower
+	for _, tower := range player.Towers {
+		if tower.HP <= 0 {
+			continue
+		}
+		if lowest == nil || tower.HP < lowest.HP {
+			lowest = tower
+		}
+	}
+	return lowest
+}
+
 func (t *Tower) Reset(key string) {
 	if def, ok := defaultTowers[key]; 
 	ok {

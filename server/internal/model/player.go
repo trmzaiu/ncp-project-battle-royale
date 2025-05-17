@@ -41,15 +41,27 @@ func NewPlayer(user *User, mode string) *Player {
 	return &Player{
 		Mana: 5,
 		Towers: map[string]*Tower{
-			"king":   towers["King Tower"].Clone(),
-			"guard1": towers["Guard Tower"].Clone(),
-			"guard2": towers["Guard Tower"].Clone(),
+			"king": func() *Tower {
+				t := towers["King Tower"].Clone()
+				t.Type = "king"
+				return t
+			}(),
+			"guard1": func() *Tower {
+				t := towers["Guard Tower"].Clone()
+				t.Type = "guard1"
+				return t
+			}(),
+			"guard2": func() *Tower {
+				t := towers["Guard Tower"].Clone()
+				t.Type = "guard2"
+				return t
+			}(),
 		},
 		Troops:  troops,
 		Active:  true,
 		User:    user,
 		Matched: make(chan bool, 1),
-		Turn: 0,
+		Turn:    0,
 	}
 }
 

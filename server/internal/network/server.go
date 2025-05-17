@@ -82,6 +82,8 @@ func processMessage(conn *websocket.Conn, pdu utils.Message) {
 		game.HandleGetGame(conn, pdu.Data)
 	case "attack":
 		game.HandleAttack(conn, pdu.Data)
+	case "heal":
+		game.HandleHeal(conn, pdu.Data)
 	case "skip_turn":
 		game.HandleSkipTurn(conn, pdu.Data)
 	case "game_over":

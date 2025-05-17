@@ -69,17 +69,7 @@ export default function Game() {
             case "game_response":
                 console.log("Game Response:", res);
                 if (res.success) {
-                    setUser(res.data.user);
-                    setOpponent(res.data.opponent);
-
-                    if (!isGameInitialized) {
-                        initializeGame(
-                            res.data.turn,
-                            res.data.user.troops,
-                            res.data.user,
-                            res.data.opponent
-                        );
-                    }
+                    handleSetGameState(res.data);
                 } else {
                     showNotification(res.error || "Failed to get game data");
                 }
@@ -91,6 +81,13 @@ export default function Game() {
                     handleAttack(res);
                 } else if (!res.success && res.data.attacker.user.username === localStorage.getItem("username")) {
                     showNotification(res.message);
+                }
+                break;
+
+            case "heal_response":
+                console.log("Heal Response:", res);
+                if (res.success) {
+                    handleHeal(res);
                 }
                 break;
 
@@ -167,6 +164,19 @@ export default function Game() {
         if (game.playerMana < troop.mana)
             return showNotification("Not enough mana.");
 
+        if (troop.name === "Queen") {
+            sendMessage({
+                type: "heal",
+                data: {
+                    troop: troop.name,
+                    room_id: localStorage.getItem("room_id"),
+                    username: user.user?.username,
+                },
+            });
+
+            return;
+        }
+
         setGame((prev) => ({ ...prev, selectedTroop: troop }));
     };
 
@@ -192,6 +202,22 @@ export default function Game() {
 
         setGame((prev) => ({ ...prev, selectedTroop: null }));
     };
+
+    // === Handle Set Game Response ===
+    const handleSetGameState = (msg) => {
+        const { turn, user, opponent } = msg;
+        setUser(user);
+        setOpponent(opponent);
+
+        if (!isGameInitialized) {
+            initializeGame(
+                turn,
+                user.troops,
+                user,
+                opponent
+            );
+        }
+    }
 
     // === Handle Attack Response ===
     const handleAttack = (msg) => {
@@ -238,6 +264,51 @@ export default function Game() {
             },
         });
     };
+
+    // === Handle Heal Response ===
+    const handleHeal = (msg) => {
+        const { turn, player, opponent, troop, healedTower, healAmount } = msg.data;
+        const isMe = player.user.username === localStorage.getItem("username");
+
+        setGame((prev) => {
+            const newState = { ...prev };
+
+            if (isMe) {
+                setUser(player);
+                setOpponent(opponent);
+                newState.playerMana = player.mana;
+                newState.playerHealth[healedTower.type] = healedTower.hp;
+                showNotification(
+                    `Your ${troop} healed your ${healedTower.type} for ${healAmount} HP.`
+                );
+            } else {
+                setUser(opponent);
+                setOpponent(player);
+                newState.playerMana = opponent.mana;
+                newState.opponentHealth[healedTower.type] = healedTower.hp;
+                showNotification(
+                    `Opponent's ${troop} healed their ${healedTower.type} for ${healAmount} HP.`
+                );
+            }
+
+            newState.playerTurn = turn;
+            return newState;
+        });
+
+        showNotification(
+            turn === localStorage.getItem("username")
+                ? "Your turn."
+                : "Waiting for opponent's turn..."
+        );
+
+        sendMessage({
+            type: "game_over",
+            data: {
+                room_id: localStorage.getItem("room_id"),
+            },
+        });
+    };
+
 
     // === Handle Skip Turn Response
     const handleSkipTurn = (msg) => {

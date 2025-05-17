@@ -52,7 +52,7 @@ export default function Entry() {
                 <div className="relative flex justify-center mb-8">
                     <div
                         className={`transition-all duration-1000 ease-out transform
-                      ${animationComplete ? 'translate-y-0 opacity-100' : '-translate-y-24 opacity-0'}`}
+                        ${animationComplete ? 'translate-y-0 opacity-100' : '-translate-y-24 opacity-0'}`}
                     >
                         <svg
                             className="w-36 h-36 sm:w-48 sm:h-48 md:w-56 md:h-56 lg:w-64 lg:h-64"

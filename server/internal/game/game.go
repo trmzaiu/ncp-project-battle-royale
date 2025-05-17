@@ -97,8 +97,78 @@ func (g *Game) PlayTurnSimple(player *model.Player, troop *model.Troop, tower st
 	}
 
 	player.Turn++
-
 	g.SwitchTurn()
+
+	return damage, isCrit, message
+}
+
+func (g *Game) HealTower(player *model.Player, troop *model.Troop) (int, *model.Tower, string) {
+	if player.Mana < troop.MANA {
+		return 0, nil, "Not enough mana!"
+	}
+	player.Mana -= troop.MANA
+
+	if troop.Name != "Queen" {
+		return 0, nil, "Only Queen can heal towers"
+	}
+
+	lowest := model.GetLowestHPTower(player)
+	if lowest == nil {
+		return 0, nil, "No tower found to heal"
+	}
+
+	healAmount, isCrit := troop.CalculateDamage(player.User.Level)
+
+	if isCrit {
+		bonus := int(float64(healAmount) * 0.10)
+		healAmount += bonus
+	}
+
+	// Apply healing
+	lowest.HP += healAmount
+	if lowest.HP > lowest.MaxHP {
+		lowest.HP = lowest.MaxHP
+	}
+
+	message := fmt.Sprintf("Queen healed %s tower for %d HP", lowest.Type, healAmount)
+	if isCrit {
+		message += " (Critical heal!)"
+	}
+
+	player.Turn++
+	g.SwitchTurn()
+
+	return healAmount, lowest, message
+}
+
+func (g *Game) PlayTurnEnhanced(player *model.Player, troop *model.Troop, tower string) (int, bool, string) {
+	if player.Mana < troop.MANA {
+		return 0, false, "Not enough mana!"
+	}
+	player.Mana -= troop.MANA
+
+	if tower == "king" {
+		op := g.Opponent(player)
+		if op.Towers["guard1"].HP > 0 || op.Towers["guard2"].HP > 0 {
+			player.Mana += troop.MANA
+			return 0, false, "You must destroy both guard towers before attacking the king!"
+		}
+	}
+
+	targetTower, err := g.getTargetTower(player, tower)
+	if err != nil {
+		return 0, false, "Invalid tower target"
+	}
+
+	damage, isCrit, destroyed := g.AttackTower(player, troop, targetTower)
+
+	message := fmt.Sprintf("%s dealt %d damage to %s", troop.Name, damage, targetTower.Type)
+	if isCrit {
+		message += " (Critical hit!)"
+	}
+	if destroyed {
+		message += " and destroyed it!"
+	}
 
 	return damage, isCrit, message
 }
