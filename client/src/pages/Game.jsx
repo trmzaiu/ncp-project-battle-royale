@@ -67,8 +67,6 @@ export default function Game() {
                 if (res.success) {
                     setUser(res.data.user);
                     setOpponent(res.data.opponent);
-                    console.log("User:", user);
-                    console.log("Opponent:", opponent);
 
                     if (!isGameInitialized) {
                         initializeGame(res.data.turn, res.data.user.troops, res.data.user, res.data.opponent);
@@ -79,6 +77,7 @@ export default function Game() {
                 break;
 
             case "attack_response":
+                console.log("Attack Response:", res);
                 res.success ? handleAttackResponse(res) : showNotification(res.error || "Attack failed");
                 break;
 
@@ -94,7 +93,7 @@ export default function Game() {
     // === Game Initialization ===
     const initializeGame = (turn, troops, userData, opponentData) => {
         setGame({
-            playerMana: user.mana,
+            playerMana: userData.mana,
             maxMana: 10,
             playerHealth: extractHP(userData.towers),
             opponentHealth: extractHP(opponentData.towers),
@@ -111,7 +110,7 @@ export default function Game() {
         });
 
         addLog("SYSTEM", "Game started.");
-        addLog("SYSTEM", turn === user?.user?.username ? "Your turn." : "Waiting for opponent's turn...");
+        addLog("SYSTEM", turn === userData?.user?.username ? "Your turn." : "Waiting for opponent's turn...");
         setIsGameInitialized(true);
     };
 
@@ -166,27 +165,27 @@ export default function Game() {
             },
         });
 
-        setGame((prev) => ({
-            ...prev,
-            playerMana: prev.playerMana - selectedTroop.mana,
-            selectedTroop: null,
-        }));
-
-        addLog("ACTION", `${selectedTroop.name} deployed to attack ${target}.`);
+        setGame((prev) => ({ ...prev, selectedTroop: null }));
     };
 
     // === Handle Attack Response ===
     const handleAttackResponse = (msg) => {
         const { attacker, defender, damage, target, isDestroyed, turn, troop } = msg.data;
-        const isMe = attacker.user.username === user.user.username;
+        const isMe = attacker.user.username === localStorage.getItem("username");
 
         setGame((prev) => {
             const newState = { ...prev };
 
             if (isMe) {
+                setUser(attacker);
+                setOpponent(defender);
+                newState.playerMana = attacker.mana;
                 newState.opponentHealth[target] = defender.towers[target].hp;
                 addLog("ACTION", `Your ${troop} dealt ${damage} damage to opponent's ${target}.`);
             } else {
+                setUser(defender);
+                setOpponent(attacker);
+                newState.playerMana = defender.mana;
                 newState.playerHealth[target] = defender.towers[target].hp;
                 addLog("ACTION", `Opponent's ${troop} dealt ${damage} damage to your ${target}.`);
             }
@@ -195,11 +194,8 @@ export default function Game() {
             return newState;
         });
 
-        setUser(isMe ? attacker : defender);
-        setOpponent(isMe ? defender : attacker);
-
         if (isDestroyed) addLog("TOWER", `Tower ${target} has been destroyed!`);
-        addLog("SYSTEM", turn === user.user.username ? "Your turn." : "Waiting for opponent's turn...");
+        addLog("SYSTEM", turn === user?.user?.username ? "Your turn." : "Waiting for opponent's turn...");
 
         sendMessage({
             type: "game_over",

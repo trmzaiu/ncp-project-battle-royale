@@ -33,6 +33,7 @@ export default function Lobby() {
                     if (res.success) {
                         setUser(res.data.user);
                         setExpMax(res.data.maxExp);
+                        localStorage.setItem("username", res.data.user.username);
                         addLog("SYSTEM", "Fetched user data successfully!");
                     } else {
                         addLog("ERROR", res.message || "Failed to fetch user data");
@@ -89,7 +90,6 @@ export default function Lobby() {
         }
 
         setIsJoiningGame(true);
-        localStorage.setItem("username", user.username);
         sendMessage({
             type: "find_match",
             data: { username: user.username, mode: selectedMode },
