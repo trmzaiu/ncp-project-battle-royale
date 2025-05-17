@@ -80,7 +80,7 @@ export default function Auth() {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen w-full bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 overflow-hidden relative">
+        <div className="flex flex-col items-center justify-center min-h-screen w-full bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 overflow-hidden relative" style={{ fontFamily: "'ClashDisplay', sans-serif" }}>
             {/* Animated Background Elements */}
             <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute top-10 left-10 w-24 h-24 bg-pink-400 rounded-full opacity-50 animate-pulse"></div>
@@ -132,9 +132,8 @@ export default function Auth() {
 
                     {/* Flash effect when crown lands - responsive sizing */}
                     <div
-                        className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
-                      transition-all duration-500 delay-800
-                      ${animationComplete ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}
+                        className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-500 delay-800
+                        ${animationComplete ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}
                     >
                         <div className="animate-ping opacity-70 duration-300">
                             <svg
@@ -192,7 +191,7 @@ export default function Auth() {
                         <div className="p-6 animate-fadeIn bg-gradient-to-b from-blue-800 to-blue-900">
                             <div className="text-center mb-6">
                                 <h2 className="text-3xl font-bold text-yellow-300 mb-2">Welcome Back, Warrior!</h2>
-                                <p className="text-cyan-200 text-base">Enter your credentials to continue the battle</p>
+                                <p className="text-cyan-200 text-base">Enter your credentials to join the battle</p>
                             </div>
 
                             <div className="relative mb-5 group">

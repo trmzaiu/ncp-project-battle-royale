@@ -24,7 +24,7 @@ export default function Entry() {
     }, []);
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen w-full bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 overflow-hidden relative">
+        <div className="flex flex-col items-center justify-center min-h-screen w-full bg-gradient-to-b from-blue-900 via-blue-800 to-blue-900 overflow-hidden relative" style={{ fontFamily: "'ClashDisplay', sans-serif" }}>
             {/* Animated background elements - with better positioning */}
             <div className="absolute inset-0 overflow-hidden">
                 {/* Background particles */}

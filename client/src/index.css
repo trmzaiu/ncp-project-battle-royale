@@ -109,3 +109,12 @@
 .animate-clash-heal-burst {
     animation: clashHealBurst 0.8s ease-out forwards;
 }
+
+@font-face {
+    font-family: 'ClashDisplay';
+    src: url('/fonts/Clash-Regular.otf') format('truetype');
+}
+
+.font-clash {
+    font-family: 'ClashDisplay', sans-serif;
+}

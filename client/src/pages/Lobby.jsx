@@ -127,7 +127,7 @@ export default function Lobby() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-sky-500 to-blue-600 p-4 md:p-8 font-sans" style={{ fontFamily: "'Supercell-Magic', Arial, sans-serif" }}>
+        <div className="min-h-screen bg-gradient-to-br from-sky-500 to-blue-600 p-4 md:p-8 font-sans" style={{ fontFamily: "'ClashDisplay', sans-serif" }}>
             {/* Gold and Gems Bar */}
             <div className="flex justify-end mb-4 space-x-2">
                 <div className="bg-blue-900 px-3 py-1 rounded-full border-2 border-yellow-400 flex items-center shadow-lg">

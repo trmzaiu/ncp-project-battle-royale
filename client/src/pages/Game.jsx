@@ -413,44 +413,29 @@ export default function Game() {
 
     // Tower component for reusability 
     const Tower = ({ id, type, health, maxHealth, isOpponent, onClick, disabled }) => {
-        const towerIcon = type === "king" ? "👑" : "🛡️";
-        const towerSize = type === "king" ? "text-4xl" : "text-3xl";
-        const borderWidth = type === "king" ? "border-4" : "border-3";
-        const borderColor = isOpponent ? "border-red-700" : "border-blue-700";
-
-        let bgGradient;
-        if (isOpponent) {
-            bgGradient = type === "king"
-                ? "bg-gradient-to-b from-red-400 to-red-600"
-                : "bg-gradient-to-b from-red-300 to-red-500";
-        } else {
-            bgGradient = type === "king"
-                ? "bg-gradient-to-b from-blue-400 to-blue-600"
-                : "bg-gradient-to-b from-blue-300 to-blue-500";
-        }
+        const towerImage = type === "king"
+            ? (isOpponent ? "/assets/King_Tower_Red.png" : "/assets/King_Tower_Blue.png")
+            : (isOpponent ? "/assets/Guard_Tower_Red.png" : "/assets/Guard_Tower_Blue.png");
 
         return (
             <div
-                className={`relative tower ${type} ${health <= 0 ? "grayscale" : ""} w-full h-full flex items-center justify-center ${!disabled ? "cursor-pointer" : ""}`}
+                className={`relative tower ${type} ${health <= 0 ? "grayscale" : ""} w-full h-full flex flex-col items-center justify-end ${!disabled ? "cursor-pointer" : ""}`}
                 onClick={disabled ? undefined : onClick}
+                style={{ fontFamily: "'ClashDisplay', sans-serif" }}
             >
+                {/* Damage Popup */}
                 {damagePopup?.visible && damagePopup.targetId === id && (
-                    <div
-                        className={`absolute ${isOpponent ? "-bottom-10" : "-top-10"} pointer-events-none`}
-                    >
+                    <div className={`absolute ${isOpponent ? "-bottom-10" : "-top-10"} pointer-events-none`}>
                         <div className={`
                         flex justify-center items-center
-                        ${damagePopup.crit
-                                ? "text-yellow-300 animate-clash-crit-popup"
-                                : "text-red-500 animate-clash-damage-popup"}
+                        ${damagePopup.crit ? "text-yellow-300 animate-clash-crit-popup" : "text-red-500 animate-clash-damage-popup"}
                     `}>
-                            {/* Clash Royale style outline effect */}
                             <div className="relative">
-                                <span className={`absolute font-extrabold ${damagePopup.crit ? "text-4xl" : "text-3xl"} text-white opacity-25 -left-0.5`}>-{damagePopup.amount}</span>
-                                <span className={`absolute font-extrabold ${damagePopup.crit ? "text-4xl" : "text-3xl"} text-white opacity-25 -right-0.5`}>-{damagePopup.amount}</span>
-                                <span className={`absolute font-extrabold ${damagePopup.crit ? "text-4xl" : "text-3xl"} text-white opacity-25 -top-0.5`}>-{damagePopup.amount}</span>
-                                <span className={`absolute font-extrabold ${damagePopup.crit ? "text-4xl" : "text-3xl"} text-white opacity-25 -bottom-0.5`}>-{damagePopup.amount}</span>
-                                {/* Actual text */}
+                                {["-left-0.5", "-right-0.5", "-top-0.5", "-bottom-0.5"].map((pos, i) => (
+                                    <span key={i} className={`absolute font-extrabold ${damagePopup.crit ? "text-4xl" : "text-3xl"} text-white opacity-25 ${pos}`}>
+                                        -{damagePopup.amount}
+                                    </span>
+                                ))}
                                 <span className={`relative font-extrabold ${damagePopup.crit ? "text-4xl" : "text-3xl"}`}>
                                     -{damagePopup.amount}
                                 </span>
@@ -462,19 +447,16 @@ export default function Game() {
                     </div>
                 )}
 
-                {/* Clash Royale Style Heal Popup */}
+                {/* Heal Popup */}
                 {healPopup?.visible && healPopup.targetId === id && (
-                    <div
-                        className={`absolute ${isOpponent ? "-bottom-10" : "-top-10"} pointer-events-none`}
-                    >
+                    <div className={`absolute ${isOpponent ? "-bottom-10" : "-top-10"} pointer-events-none`}>
                         <div className="flex justify-center items-center text-green-700 animate-clash-heal-popup">
-                            {/* Clash Royale style outline effect */}
                             <div className="relative">
-                                <span className="absolute font-extrabold text-3xl text-white opacity-25 -left-0.5">+{healPopup.amount}</span>
-                                <span className="absolute font-extrabold text-3xl text-white opacity-25 -right-0.5">+{healPopup.amount}</span>
-                                <span className="absolute font-extrabold text-3xl text-white opacity-25 -top-0.5">+{healPopup.amount}</span>
-                                <span className="absolute font-extrabold text-3xl text-white opacity-25 -bottom-0.5">+{healPopup.amount}</span>
-                                {/* Actual text */}
+                                {["-left-0.5", "-right-0.5", "-top-0.5", "-bottom-0.5"].map((pos, i) => (
+                                    <span key={i} className={`absolute font-extrabold text-3xl text-white opacity-25 ${pos}`}>
+                                        +{healPopup.amount}
+                                    </span>
+                                ))}
                                 <span className="relative font-extrabold text-3xl">
                                     +{healPopup.amount}
                                 </span>
@@ -484,20 +466,51 @@ export default function Game() {
                     </div>
                 )}
 
-                <div className={`tower-content ${bgGradient} p-2 rounded-lg ${borderWidth} ${borderColor} shadow-lg ${!disabled ? "transform hover:scale-105 transition-transform" : ""} w-full h-full flex flex-col items-center justify-center`}>
-                    <div className={`tower-icon text-center ${towerSize} drop-shadow-md`}>
-                        {towerIcon}
-                    </div>
-                    <div className="tower-hp mt-2 w-full">
-                        <div className="hp-bar bg-gray-700 w-full h-3 rounded-full shadow-inner overflow-hidden border border-gray-800">
-                            <div
-                                className={`hp-fill bg-gradient-to-r ${health <= maxHealth / 3 ? "from-red-500 to-red-400" : "from-green-500 to-green-400"} h-full rounded-full transition-all duration-500`}
-                                style={{
-                                    width: `${Math.max(0, (health / maxHealth) * 100)}%`,
-                                }}
+                <div className="w-full h-full flex flex-col items-center justify-end relative">
+                    {/* Opponent: HP bar goes under the image */}
+                    {isOpponent ? (
+                        <>
+                            <img
+                                src={towerImage}
+                                alt={type}
+                                className="relative -bottom-3 w-full h-full object-contain px-1 py-1 drop-shadow-lg transition-transform duration-200 hover:scale-105"
                             />
-                        </div>
-                    </div>
+                            <div className="relative -bottom-5 tower-hp w-5/6">
+                                <div className="hp-bar bg-gray-700 w-full h-3 rounded-full shadow-inner overflow-hidden border border-gray-800">
+                                    <div
+                                        className={`hp-fill bg-gradient-to-r ${health <= maxHealth / 3
+                                                ? "from-red-500 to-red-400"
+                                                : "from-green-500 to-green-400"
+                                            } h-full rounded-full transition-all duration-500`}
+                                        style={{
+                                            width: `${Math.max(0, (health / maxHealth) * 100)}%`,
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div className="relative -top-3 tower-hp w-5/6">
+                                <div className="hp-bar bg-gray-700 w-full h-3 rounded-full shadow-inner overflow-hidden border border-gray-800">
+                                    <div
+                                        className={`hp-fill bg-gradient-to-r ${health <= maxHealth / 3
+                                                ? "from-red-500 to-red-400"
+                                                : "from-green-500 to-green-400"
+                                            } h-full rounded-full transition-all duration-500`}
+                                        style={{
+                                            width: `${Math.max(0, (health / maxHealth) * 100)}%`,
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                            <img
+                                src={towerImage}
+                                alt={type}
+                                className="relative w-full h-full object-contain px-1 py-1 drop-shadow-lg transition-transform duration-200 hover:scale-105"
+                            />
+                        </>
+                    )}
                 </div>
             </div>
         );
@@ -505,14 +518,14 @@ export default function Game() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-500 to-blue-900">
-            <div className="game-container bg-gradient-to-b from-blue-400 to-blue-600 p-2 rounded-lg shadow-xl max-w-4xl mx-auto font-sans relative overflow-hidden border-4 border-yellow-500">
+            <div className="game-container bg-gradient-to-b from-blue-400 to-blue-600 p-2 rounded-lg shadow-xl max-w-4xl mx-auto font-sans relative overflow-hidden border-4 border-yellow-500" style={{ fontFamily: "'ClashDisplay', sans-serif" }}>
                 {/* Decorative elements */}
                 <div className="absolute -top-16 -left-16 w-32 h-32 bg-yellow-300 rounded-full opacity-20"></div>
                 <div className="absolute -bottom-16 -right-16 w-32 h-32 bg-yellow-300 rounded-full opacity-20"></div>
 
                 {/* Game title */}
                 <div className="text-center mb-2">
-                    <h1 className="text-3xl font-bold text-yellow-300 drop-shadow-md transform rotate-2 mb-1">
+                    <h1 className="text-3xl text-yellow-400 drop-shadow-md transform rotate-2 mb-1">
                         ROYAKA
                     </h1>
                     <div className="w-32 h-1 bg-yellow-400 mx-auto rounded-full mb-2"></div>
@@ -534,7 +547,7 @@ export default function Game() {
                         </div>
                         <div className="stat-column ml-2">
                             <div className="stat">
-                                <div className="stat-value name text-yellow-300 font-bold text-lg drop-shadow-md">
+                                <div className="stat-value name text-yellow-500 text-lg drop-shadow-md">
                                     {opponent.user?.username || "Waiting..."}
                                 </div>
                             </div>
@@ -544,7 +557,7 @@ export default function Game() {
                     {/* TURN DISPLAY */}
                     <div className="turn-display text-center transform hover:scale-105 transition-transform">
                         <div
-                            className={`font-bold text-lg px-4 py-1 rounded-full ${game.playerTurn === user.user?.username
+                            className={`text-lg px-4 py-1 rounded-full ${game.playerTurn === user.user?.username
                                 ? "bg-green-600 text-white animate-pulse"
                                 : "bg-red-600 text-white"
                                 }`}
@@ -557,10 +570,10 @@ export default function Game() {
                 </div>
 
                 {/* BATTLEFIELD - GRID LAYOUT */}
-                <div className="battle-container bg-gradient-to-b from-green-500 to-green-600 rounded-lg shadow-inner border-2 border-green-700 overflow-hidden relative">
+                <div className="battle-container bg-gradient-to-b from-green-500 to-green-600 rounded-lg shadow-inner border-2 border-green-700 overflow-hidden relative w-full aspect-[10/8]">
                     {/* Grid background */}
-                    <div className="absolute inset-0 grid grid-cols-10 grid-rows-6">
-                        {Array.from({ length: 60 }).map((_, i) => {
+                    <div className="absolute inset-0 grid grid-cols-10 grid-rows-8">
+                        {Array.from({ length: 80 }).map((_, i) => {
                             const row = Math.floor(i / 10);
                             const col = i % 10;
                             // If row + col is even, color A; else color B
@@ -568,7 +581,7 @@ export default function Game() {
                             return (
                                 <div
                                     key={i}
-                                    className={`border border-green-500 aspect-square ${isEven ? "bg-green-400 bg-opacity-20" : "bg-green-500 bg-opacity-30"
+                                    className={`border border-emerald-500 aspect-square ${isEven ? "bg-emerald-400 bg-opacity-20" : "bg-emerald-500 bg-opacity-40"
                                         }`}
                                 ></div>
                             );
@@ -577,9 +590,9 @@ export default function Game() {
 
 
                     {/* Battlefield grid layout - 10 columns x 6 rows */}
-                    <div className="grid-battlefield grid grid-cols-10 grid-rows-6 relative">
+                    <div className="grid-battlefield grid grid-cols-10 grid-rows-8 relative w-full aspect-[10/8]">
                         {/* Row 1 - Opponent King (spans 2 columns) */}
-                        <div className="col-start-5 col-span-2 relative ">
+                        <div className="col-start-5 col-span-2 row-start-1 row-span-2 relative">
                             {" "}
                             {/* Starts at column 5, spans 2 columns */}
                             <Tower
@@ -594,9 +607,13 @@ export default function Game() {
                             />
                         </div>
 
-                        {[...Array(4)].map((_, i) => (
-                            <div key={`r1-fill-${i}`} className="cell"></div>
-                        ))}
+                        {Array.from({ length: 2 }).map((rowOffset) =>
+                            Array.from({ length: 10 }).map((_, col) => {
+                                // skip columns 5 and 6 for rows 1 and 2
+                                if (col === 4 || col === 5) return null;
+                                return <div key={`r${rowOffset + 1}-fill-${col}`} className="cell"></div>;
+                            })
+                        )}
 
                         {/* Row 2 - Opponent guards */}
                         {Array.from({ length: 10 }).map((_, i) => (
@@ -663,7 +680,7 @@ export default function Game() {
                         ))}
 
                         {/* Row 6 - Player King (spans 2 columns) */}
-                        <div className="col-start-5 col-span-2 relative">
+                        <div className="col-start-5 col-span-2 row-start-7 row-span-2 relative">
                             {" "}
                             {/* Starts at column 5, spans 2 columns */}
                             <Tower
@@ -673,7 +690,7 @@ export default function Game() {
                                 maxHealth={game.playerShield.king}
                                 isOpponent={false}
                                 disabled={true}
-                                className="w-[calc(200%+8px)] h-full -ml-1" /* 200% + gap */
+                                className="w-full h-full"
                             />
                         </div>
 
@@ -686,7 +703,7 @@ export default function Game() {
                     {/* Target indicators */}
                     {game.selectedTroop && (
                         <div className="target-indicators absolute top-0 left-0 w-full h-full pointer-events-none">
-                            <div className="text-center text-white font-bold text-lg absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-800 bg-opacity-70 px-4 py-2 rounded-full">
+                            <div className="text-center text-white text-lg absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-800 bg-opacity-70 px-4 py-2 rounded-full">
                                 🎯 Pick a Target!
                             </div>
                         </div>
@@ -696,7 +713,7 @@ export default function Game() {
                 {/* MANA BAR */}
                 <div className="mana-container bg-gradient-to-r from-blue-900 to-blue-800 p-2 rounded-lg border-2 border-blue-700 my-2 shadow-md">
                     <div className="flex items-center justify-between mb-1">
-                        <div className="text-lg text-yellow-400 font-bold flex items-center">
+                        <div className="text-lg text-yellow-400 flex items-center">
                             <span className="text-xl mr-1">⚡</span> MANA
                         </div>
                         <div className="text-white font-bold">
@@ -719,7 +736,7 @@ export default function Game() {
                 {/* TROOP SELECTION */}
                 <div className="troops-container bg-gradient-to-r from-blue-900 to-blue-800 p-4 rounded-lg mt-2 shadow-md border-2 border-blue-700">
                     <div className="section-header flex justify-between items-center mb-3">
-                        <h3 className="text-xl font-bold text-yellow-400 drop-shadow-md">
+                        <h3 className="text-xl text-yellow-400 drop-shadow-md">
                             TROOPS
                         </h3>
 
@@ -749,17 +766,17 @@ export default function Game() {
                                 onClick={() => selectTroop(troopName)}
                             >
                                 <div className="troop-banner bg-gradient-to-r from-blue-600 to-blue-500 rounded-t-md px-2 py-1 -mt-2 -mx-2 mb-1 text-center">
-                                    <div className="troop-name text-white font-bold drop-shadow-md truncate">
+                                    <div className="troop-name text-white drop-shadow-md truncate">
                                         {troopName}
                                     </div>
                                 </div>
                                 <div className="flex justify-between items-center mb-1">
-                                    <div className="troop-mana-cost bg-blue-500 text-white font-bold flex items-center rounded-full px-2 border-2 border-blue-600">
+                                    <div className="troop-mana-cost bg-blue-500 text-white flex items-center rounded-full px-2 border-2 border-blue-600">
                                         <span className="text-yellow-300 mr-1">⚡</span>{" "}
                                         {troop.mana}
                                     </div>
                                     {troop.atk && (
-                                        <div className="troop-damage bg-red-500 text-white font-bold flex items-center rounded-full px-2 border-2 border-red-600">
+                                        <div className="troop-damage bg-red-500 text-white flex items-center rounded-full px-2 border-2 border-red-600">
                                             <span className="text-yellow-300 mr-1">💥</span>{" "}
                                             {troop.atk}
                                         </div>
@@ -775,7 +792,7 @@ export default function Game() {
                 {/* NOTIFICATION */}
                 {notification.show && (
                     <div className="notification fixed top-5 left-0 right-0 mx-auto max-w-md bg-yellow-400 px-4 py-2 text-center rounded-full shadow-lg border-2 border-yellow-500 animate-bounce">
-                        <span className="font-bold text-blue-900">
+                        <span className="text-blue-900">
                             {notification.message}
                         </span>
                     </div>
@@ -791,7 +808,7 @@ export default function Game() {
                             </div>
 
                             <h2
-                                className={`modal-title text-3xl font-bold mb-4 text-center ${game.winner === user.user?.username
+                                className={`modal-title text-3xl mb-4 text-center ${game.winner === user.user?.username
                                     ? "text-yellow-400"
                                     : "text-red-400"
                                     }`}
@@ -805,14 +822,14 @@ export default function Game() {
                                         ? "You have conquered your opponent's kingdom!"
                                         : "Your kingdom has fallen to the enemy!"}
                                 </p>
-                                <div className="exp-gain text-yellow-300 font-bold text-2xl mt-3 animate-pulse">
+                                <div className="exp-gain text-yellow-300 text-2xl mt-3 animate-pulse">
                                     {game.winner === user.user?.username ? "+50 XP" : "+5 XP"}
                                 </div>
                             </div>
 
                             <div className="modal-buttons mt-6 text-center">
                                 <button
-                                    className="play-again-btn bg-gradient-to-r from-yellow-400 to-yellow-500 text-blue-900 px-8 py-3 rounded-full font-bold text-lg border-4 border-yellow-600 shadow-lg transform hover:scale-105 transition-transform"
+                                    className="play-again-btn bg-gradient-to-r from-yellow-400 to-yellow-500 text-blue-900 px-8 py-3 rounded-full text-lg border-4 border-yellow-600 shadow-lg transform hover:scale-105 transition-transform"
                                     onClick={handlePlayAgain}
                                 >
                                     PLAY AGAIN
