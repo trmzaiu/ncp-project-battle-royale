@@ -5,7 +5,6 @@ import (
 	"log"
 	"royaka/internal/model"
 	"royaka/internal/utils"
-	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -116,6 +115,15 @@ func HandleAttack(conn *websocket.Conn, data json.RawMessage) {
 		return
 	}
 
+	if room.Game.CurrentPlayer().User.Username != attacker.User.Username {
+		sendToClient(attacker.User.Username, utils.Response{
+			Type:    "attack_response",
+			Success: false,
+			Message: "It's not your turn!",
+		})
+		return
+	}
+
 	// Find the troop being used for attack
 	var troop *model.Troop
 	for i := range attacker.Troops {
@@ -139,7 +147,25 @@ func HandleAttack(conn *websocket.Conn, data json.RawMessage) {
 	damage, isCrit, message := room.Game.PlayTurnSimple(attacker, troop, req.Target)
 	isDestroyed := defender.Towers[req.Target].HP <= 0
 
-	success := damage > 0 || isCrit || isDestroyed
+	if defender.Towers["king"].HP <= 0  {
+		winner, result := room.Game.CheckWinner()
+		if result == "" {
+			return
+		}
+		payload := utils.Response{
+			Type:    "game_over_response",
+			Success: true,
+			Message: result,
+			Data: map[string]interface{}{
+				"winner": winner,
+			},
+		}
+		sendToClient(room.Player1.User.Username, payload)
+		sendToClient(room.Player2.User.Username, payload)
+		return
+	}
+
+	success := damage > 0 || isDestroyed
 
 	payload := utils.Response{
 		Type:    "attack_response",
@@ -273,20 +299,6 @@ func sendToClient(username string, payload utils.Response) {
 	}()
 }
 
-func NotifyGameConclusion(room *Room, winner *model.Player) {
-	log.Printf("[INFO][GAME_OVER] Winner: %s in room %s", winner.User.Username, room.ID)
-	message := utils.Response{
-		Type:    "game_over_response",
-		Success: true,
-		Message: "Game over! " + winner.User.Username + " wins!",
-		Data: map[string]interface{}{
-			"winner": winner.User.Username,
-		},
-	}
-	sendToClient(room.Player1.User.Username, message)
-	sendToClient(room.Player2.User.Username, message)
-}
-
 func HandleSkipTurn(conn *websocket.Conn, data json.RawMessage) {
 	var req utils.GameRequest
 	if err := json.Unmarshal(data, &req); err != nil || req.RoomID == "" || req.Username == "" {
@@ -341,67 +353,6 @@ func HandleSkipTurn(conn *websocket.Conn, data json.RawMessage) {
 
 	sendToClient(room.Player1.User.Username, payload)
 	sendToClient(room.Player2.User.Username, payload)
-}
-
-func HandleGameOver(conn *websocket.Conn, data json.RawMessage) {
-	var req utils.GameOverRequest
-
-	if err := json.Unmarshal(data, &req); err != nil || req.RoomID == "" {
-		log.Printf("[WARN][GAME_OVER] Invalid request: %v", err)
-		conn.WriteJSON(utils.Response{
-			Type:    "game_over_response",
-			Success: false,
-			Message: invalidRequestMessage,
-		})
-		return
-	}
-
-	roomsMu.RLock()
-	room, exists := rooms[req.RoomID]
-	roomsMu.RUnlock()
-	if !exists {
-		log.Printf("[WARN][GAME_OVER] Room %s not found", req.RoomID)
-		conn.WriteJSON(utils.Response{
-			Type:    "game_over_response",
-			Success: false,
-			Message: roomRequestMessage,
-		})
-		return
-	}
-
-	if result := room.Game.CheckWinner(); result == "" {
-		log.Printf("[INFO][GAME_OVER] Game still in progress in room %s", req.RoomID)
-		return
-	}
-
-	var winner *model.Player
-	p1, p2 := room.Game.Player1, room.Game.Player2
-
-	switch {
-	case p1.Towers["king"].HP <= 0:
-		winner = p2
-	case p2.Towers["king"].HP <= 0:
-		winner = p1
-	case room.Game.Enhanced && time.Since(room.Game.StartTime) > room.Game.MaxTime:
-		if p1.DestroyedCount() > p2.DestroyedCount() {
-			winner = p1
-		} else if p2.DestroyedCount() > p1.DestroyedCount() {
-			winner = p2
-		}
-	}
-
-	if winner != nil {
-		NotifyGameConclusion(room, winner)
-	} else {
-		msg := utils.Response{
-			Type:    "game_over_response",
-			Success: true,
-			Message: "Game over! It's a draw!",
-		}
-		sendToClient(p1.User.Username, msg)
-		sendToClient(p2.User.Username, msg)
-		log.Printf("[INFO][GAME_OVER] Room %s ended in draw", room.ID)
-	}
 }
 
 func HandlePlayAgain(conn *websocket.Conn, data json.RawMessage) {

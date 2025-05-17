@@ -1,14 +1,31 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWebSocketContext } from "../context/WebSocketContext";
 
 export default function Game() {
     const navigate = useNavigate();
     const { sendMessage, subscribe } = useWebSocketContext();
+    const damageTimeoutRef = useRef(null);
+    const healTimeoutRef = useRef(null);
 
     const [user, setUser] = useState({});
     const [opponent, setOpponent] = useState({});
     const [isGameInitialized, setIsGameInitialized] = useState(false);
+
+    const [damagePopup, setDamagePopup] = useState({
+        targetId: null,
+        amount: 0,
+        isOpponent: false,
+        visible: false,
+        isCrit: false,
+    });
+
+    const [healPopup, setHealPopup] = useState({
+        target: null,
+        amount: 0,
+        isOpponent: false,
+        visible: false,
+    });
 
     const [game, setGame] = useState(getInitialGameState());
     const [notification, setNotification] = useState({
@@ -51,6 +68,12 @@ export default function Game() {
             return;
         }
 
+        if (!localStorage.getItem("room_id")) {
+            showNotification("Room not found. Redirecting to lobby...");
+            setTimeout(() => navigate("/lobby"), 1500);
+            return;
+        }
+
         const unsubscribe = subscribe(handleMessage);
         sendMessage({
             type: "get_game",
@@ -60,7 +83,12 @@ export default function Game() {
             },
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribe();
+            if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
+            if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
+        };
+
     }, [subscribe, sendMessage, navigate]);
 
     // === Message Handler ===
@@ -124,7 +152,12 @@ export default function Game() {
             winner: null
         });
 
-        showNotification("Game started.");
+        if (turn === localStorage.getItem("username")) {
+            showNotification("Your turn.");
+        } else {
+            showNotification("Opponent's turn.");
+        }
+
         setIsGameInitialized(true);
     };
 
@@ -221,9 +254,16 @@ export default function Game() {
 
     // === Handle Attack Response ===
     const handleAttack = (msg) => {
-        const { attacker, defender, damage, target, isDestroyed, turn, troop } =
+        const { attacker, defender, damage, target, isDestroyed, turn, troop, isCrit } =
             msg.data;
         const isMe = attacker.user.username === localStorage.getItem("username");
+        const targetId = (isMe ? "opponent-" : "player-") + target;
+
+        if (damageTimeoutRef.current) {
+            clearTimeout(damageTimeoutRef.current);
+            // Immediately hide any existing popup before showing the new one
+            setDamagePopup(prev => ({ ...prev, visible: false }));
+        }
 
         setGame((prev) => {
             const newState = { ...prev };
@@ -250,25 +290,41 @@ export default function Game() {
             return newState;
         });
 
+        setTimeout(() => {
+            setDamagePopup({
+                targetId,
+                amount: damage,
+                isOpponent: isMe,
+                visible: true,
+                crit: isCrit
+            });
+
+            // Set new timeout and store its ID
+            damageTimeoutRef.current = setTimeout(() => {
+                setDamagePopup(prev => ({ ...prev, visible: false }));
+                damageTimeoutRef.current = null;
+            }, 2000);
+        }, 50);
+
         if (isDestroyed) showNotification(`Tower ${target} has been destroyed!`);
         showNotification(
             turn === user?.user?.username
                 ? "Your turn."
                 : "Waiting for opponent's turn..."
         );
-
-        sendMessage({
-            type: "game_over",
-            data: {
-                room_id: localStorage.getItem("room_id"),
-            },
-        });
     };
 
     // === Handle Heal Response ===
     const handleHeal = (msg) => {
         const { turn, player, opponent, troop, healedTower, healAmount } = msg.data;
         const isMe = player.user.username === localStorage.getItem("username");
+        const targetId = (isMe ? "player-" : "opponent-") + healedTower.type;
+
+        if (healTimeoutRef.current) {
+            clearTimeout(healTimeoutRef.current);
+            // Immediately hide any existing popup before showing the new one
+            setHealPopup(prev => ({ ...prev, visible: false }));
+        }
 
         setGame((prev) => {
             const newState = { ...prev };
@@ -295,18 +351,26 @@ export default function Game() {
             return newState;
         });
 
+        setTimeout(() => {
+            setHealPopup({
+                targetId,
+                amount: healAmount,
+                isOpponent: !isMe,
+                visible: true,
+            });
+
+            // Set new timeout and store its ID
+            healTimeoutRef.current = setTimeout(() => {
+                setHealPopup(prev => ({ ...prev, visible: false }));
+                healTimeoutRef.current = null;
+            }, 2000);
+        }, 50);
+
         showNotification(
             turn === localStorage.getItem("username")
                 ? "Your turn."
                 : "Waiting for opponent's turn..."
         );
-
-        sendMessage({
-            type: "game_over",
-            data: {
-                room_id: localStorage.getItem("room_id"),
-            },
-        });
     };
 
 
@@ -343,24 +407,83 @@ export default function Game() {
                 session_id: localStorage.getItem("session_id"),
             },
         });
-        navigate("/lobby");
+        localStorage.removeItem("room_id");
+        setTimeout(() => navigate("/lobby"), 1500);
     };
 
     // Tower component for reusability 
-    const Tower = ({ type, health, maxHealth, isOpponent, onClick, disabled }) => {
+    const Tower = ({ id, type, health, maxHealth, isOpponent, onClick, disabled }) => {
         const towerIcon = type === "king" ? "👑" : "🛡️";
         const towerSize = type === "king" ? "text-4xl" : "text-3xl";
         const borderWidth = type === "king" ? "border-4" : "border-3";
         const borderColor = isOpponent ? "border-red-700" : "border-blue-700";
-        const bgGradient = isOpponent
-            ? type === "king" ? "bg-gradient-to-b from-red-400 to-red-600" : "bg-gradient-to-b from-red-300 to-red-500"
-            : type === "king" ? "bg-gradient-to-b from-blue-400 to-blue-600" : "bg-gradient-to-b from-blue-300 to-blue-500";
+
+        let bgGradient;
+        if (isOpponent) {
+            bgGradient = type === "king"
+                ? "bg-gradient-to-b from-red-400 to-red-600"
+                : "bg-gradient-to-b from-red-300 to-red-500";
+        } else {
+            bgGradient = type === "king"
+                ? "bg-gradient-to-b from-blue-400 to-blue-600"
+                : "bg-gradient-to-b from-blue-300 to-blue-500";
+        }
 
         return (
             <div
-                className={`tower ${type} ${health <= 0 ? "grayscale" : ""} w-full h-full flex items-center justify-center ${!disabled ? "cursor-pointer" : ""}`}
+                className={`relative tower ${type} ${health <= 0 ? "grayscale" : ""} w-full h-full flex items-center justify-center ${!disabled ? "cursor-pointer" : ""}`}
                 onClick={disabled ? undefined : onClick}
             >
+                {damagePopup?.visible && damagePopup.targetId === id && (
+                    <div
+                        className={`absolute ${isOpponent ? "-bottom-10" : "-top-10"} pointer-events-none`}
+                    >
+                        <div className={`
+                        flex justify-center items-center
+                        ${damagePopup.crit
+                                ? "text-yellow-300 animate-clash-crit-popup"
+                                : "text-red-500 animate-clash-damage-popup"}
+                    `}>
+                            {/* Clash Royale style outline effect */}
+                            <div className="relative">
+                                <span className={`absolute font-extrabold ${damagePopup.crit ? "text-4xl" : "text-3xl"} text-white opacity-25 -left-0.5`}>-{damagePopup.amount}</span>
+                                <span className={`absolute font-extrabold ${damagePopup.crit ? "text-4xl" : "text-3xl"} text-white opacity-25 -right-0.5`}>-{damagePopup.amount}</span>
+                                <span className={`absolute font-extrabold ${damagePopup.crit ? "text-4xl" : "text-3xl"} text-white opacity-25 -top-0.5`}>-{damagePopup.amount}</span>
+                                <span className={`absolute font-extrabold ${damagePopup.crit ? "text-4xl" : "text-3xl"} text-white opacity-25 -bottom-0.5`}>-{damagePopup.amount}</span>
+                                {/* Actual text */}
+                                <span className={`relative font-extrabold ${damagePopup.crit ? "text-4xl" : "text-3xl"}`}>
+                                    -{damagePopup.amount}
+                                </span>
+                            </div>
+                            {damagePopup.crit && (
+                                <div className="absolute w-16 h-16 bg-yellow-400 rounded-full opacity-20 animate-clash-crit-burst" />
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Clash Royale Style Heal Popup */}
+                {healPopup?.visible && healPopup.targetId === id && (
+                    <div
+                        className={`absolute ${isOpponent ? "-bottom-10" : "-top-10"} pointer-events-none`}
+                    >
+                        <div className="flex justify-center items-center text-green-700 animate-clash-heal-popup">
+                            {/* Clash Royale style outline effect */}
+                            <div className="relative">
+                                <span className="absolute font-extrabold text-3xl text-white opacity-25 -left-0.5">+{healPopup.amount}</span>
+                                <span className="absolute font-extrabold text-3xl text-white opacity-25 -right-0.5">+{healPopup.amount}</span>
+                                <span className="absolute font-extrabold text-3xl text-white opacity-25 -top-0.5">+{healPopup.amount}</span>
+                                <span className="absolute font-extrabold text-3xl text-white opacity-25 -bottom-0.5">+{healPopup.amount}</span>
+                                {/* Actual text */}
+                                <span className="relative font-extrabold text-3xl">
+                                    +{healPopup.amount}
+                                </span>
+                            </div>
+                            <div className="absolute w-12 h-12 bg-green-400 rounded-full opacity-20 animate-clash-heal-burst" />
+                        </div>
+                    </div>
+                )}
+
                 <div className={`tower-content ${bgGradient} p-2 rounded-lg ${borderWidth} ${borderColor} shadow-lg ${!disabled ? "transform hover:scale-105 transition-transform" : ""} w-full h-full flex flex-col items-center justify-center`}>
                     <div className={`tower-icon text-center ${towerSize} drop-shadow-md`}>
                         {towerIcon}
@@ -368,7 +491,7 @@ export default function Game() {
                     <div className="tower-hp mt-2 w-full">
                         <div className="hp-bar bg-gray-700 w-full h-3 rounded-full shadow-inner overflow-hidden border border-gray-800">
                             <div
-                                className="hp-fill bg-gradient-to-r from-green-500 to-green-400 h-full rounded-full transition-all duration-500"
+                                className={`hp-fill bg-gradient-to-r ${health <= maxHealth / 3 ? "from-red-500 to-red-400" : "from-green-500 to-green-400"} h-full rounded-full transition-all duration-500`}
                                 style={{
                                     width: `${Math.max(0, (health / maxHealth) * 100)}%`,
                                 }}
@@ -437,23 +560,37 @@ export default function Game() {
                 <div className="battle-container bg-gradient-to-b from-green-500 to-green-600 rounded-lg shadow-inner border-2 border-green-700 overflow-hidden relative">
                     {/* Grid background */}
                     <div className="absolute inset-0 grid grid-cols-10 grid-rows-6">
-                        {Array.from({ length: 60 }).map((_, i) => (
-                            <div key={i} className="border border-green-600 bg-green-500 bg-opacity-20 aspect-square"></div>
-                        ))}
+                        {Array.from({ length: 60 }).map((_, i) => {
+                            const row = Math.floor(i / 10);
+                            const col = i % 10;
+                            // If row + col is even, color A; else color B
+                            const isEven = (row + col) % 2 === 0;
+                            return (
+                                <div
+                                    key={i}
+                                    className={`border border-green-500 aspect-square ${isEven ? "bg-green-400 bg-opacity-20" : "bg-green-500 bg-opacity-30"
+                                        }`}
+                                ></div>
+                            );
+                        })}
                     </div>
+
 
                     {/* Battlefield grid layout - 10 columns x 6 rows */}
                     <div className="grid-battlefield grid grid-cols-10 grid-rows-6 relative">
                         {/* Row 1 - Opponent King (spans 2 columns) */}
-                        <div className="col-start-5 col-span-2 relative"> {/* Starts at column 5, spans 2 columns */}
+                        <div className="col-start-5 col-span-2 relative ">
+                            {" "}
+                            {/* Starts at column 5, spans 2 columns */}
                             <Tower
                                 type="king"
+                                id="opponent-king"
                                 health={game.opponentHealth.king}
                                 maxHealth={game.opponentShield.king}
                                 isOpponent={true}
                                 onClick={() => selectTarget("king")}
                                 disabled={!game.selectedTroop}
-                                className="w-full h-full" 
+                                className="w-full h-full"
                             />
                         </div>
 
@@ -467,6 +604,7 @@ export default function Game() {
                                 {i === 2 && (
                                     <Tower
                                         type="guard"
+                                        id="opponent-guard1"
                                         health={game.opponentHealth.guard1}
                                         maxHealth={game.opponentShield.guard1}
                                         isOpponent={true}
@@ -477,6 +615,7 @@ export default function Game() {
                                 {i === 7 && (
                                     <Tower
                                         type="guard"
+                                        id="opponent-guard2"
                                         health={game.opponentHealth.guard2}
                                         maxHealth={game.opponentShield.guard2}
                                         isOpponent={true}
@@ -488,11 +627,14 @@ export default function Game() {
                         ))}
 
                         {/* Rows 3-4 - Middle empty rows */}
-                        {Array.from({ length: 2 }).map((_, rowIndex) => (
+                        {Array.from({ length: 2 }).map((_, rowIndex) =>
                             Array.from({ length: 10 }).map((_, colIndex) => (
-                                <div key={`r${rowIndex + 3}-${colIndex}`} className="cell"></div>
+                                <div
+                                    key={`r${rowIndex + 3}-${colIndex}`}
+                                    className="cell"
+                                ></div>
                             ))
-                        ))}
+                        )}
 
                         {/* Row 5 - Player guards */}
                         {Array.from({ length: 10 }).map((_, i) => (
@@ -500,6 +642,7 @@ export default function Game() {
                                 {i === 2 && (
                                     <Tower
                                         type="guard"
+                                        id="player-guard1"
                                         health={game.playerHealth.guard1}
                                         maxHealth={game.playerShield.guard1}
                                         isOpponent={false}
@@ -509,6 +652,7 @@ export default function Game() {
                                 {i === 7 && (
                                     <Tower
                                         type="guard"
+                                        id="player-guard2"
                                         health={game.playerHealth.guard2}
                                         maxHealth={game.playerShield.guard2}
                                         isOpponent={false}
@@ -519,9 +663,12 @@ export default function Game() {
                         ))}
 
                         {/* Row 6 - Player King (spans 2 columns) */}
-                        <div className="col-start-5 col-span-2 relative"> {/* Starts at column 5, spans 2 columns */}
+                        <div className="col-start-5 col-span-2 relative">
+                            {" "}
+                            {/* Starts at column 5, spans 2 columns */}
                             <Tower
                                 type="king"
+                                id="player-king"
                                 health={game.playerHealth.king}
                                 maxHealth={game.playerShield.king}
                                 isOpponent={false}
@@ -540,7 +687,7 @@ export default function Game() {
                     {game.selectedTroop && (
                         <div className="target-indicators absolute top-0 left-0 w-full h-full pointer-events-none">
                             <div className="text-center text-white font-bold text-lg absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-800 bg-opacity-70 px-4 py-2 rounded-full">
-                                Select a target
+                                🎯 Pick a Target!
                             </div>
                         </div>
                     )}
@@ -561,7 +708,7 @@ export default function Game() {
                             <div
                                 key={i}
                                 className={`mana-segment flex-1 h-full border-r border-gray-700 last:border-r-0 transition-all ${i < game.playerMana
-                                    ? "bg-gradient-to-r from-blue-500 to-blue-400"
+                                    ? "bg-gradient-to-r from-blue-400 to-blue-400"
                                     : ""
                                     }`}
                             />
@@ -588,14 +735,13 @@ export default function Game() {
                         </button>
                     </div>
 
-
                     <div className="troop-selection flex flex-wrap justify-center gap-3">
                         {Object.entries(game.troops).map(([troopName, troop], index) => (
                             <div
                                 key={index}
                                 className={`troop w-50 ${game.selectedTroop?.name === troopName
-                                    ? 'border-4 border-yellow-400 bg-yellow-100 transform scale-105'
-                                    : 'border-2 border-gray-400 bg-white'
+                                    ? "border-4 border-yellow-400 bg-yellow-100 transform scale-105"
+                                    : "border-2 border-gray-400 bg-white"
                                     } ${game.playerMana < troop.mana
                                         ? "opacity-50 grayscale"
                                         : "hover:scale-105"
@@ -603,15 +749,19 @@ export default function Game() {
                                 onClick={() => selectTroop(troopName)}
                             >
                                 <div className="troop-banner bg-gradient-to-r from-blue-600 to-blue-500 rounded-t-md px-2 py-1 -mt-2 -mx-2 mb-1 text-center">
-                                    <div className="troop-name text-white font-bold drop-shadow-md truncate">{troopName}</div>
+                                    <div className="troop-name text-white font-bold drop-shadow-md truncate">
+                                        {troopName}
+                                    </div>
                                 </div>
                                 <div className="flex justify-between items-center mb-1">
                                     <div className="troop-mana-cost bg-blue-500 text-white font-bold flex items-center rounded-full px-2 border-2 border-blue-600">
-                                        <span className="text-yellow-300 mr-1">⚡</span> {troop.mana}
+                                        <span className="text-yellow-300 mr-1">⚡</span>{" "}
+                                        {troop.mana}
                                     </div>
                                     {troop.atk && (
                                         <div className="troop-damage bg-red-500 text-white font-bold flex items-center rounded-full px-2 border-2 border-red-600">
-                                            <span className="text-yellow-300 mr-1">💥</span> {troop.atk}
+                                            <span className="text-yellow-300 mr-1">💥</span>{" "}
+                                            {troop.atk}
                                         </div>
                                     )}
                                 </div>
@@ -656,7 +806,7 @@ export default function Game() {
                                         : "Your kingdom has fallen to the enemy!"}
                                 </p>
                                 <div className="exp-gain text-yellow-300 font-bold text-2xl mt-3 animate-pulse">
-                                    {game.winner === user.user?.username ? "+100 XP" : "+25 XP"}
+                                    {game.winner === user.user?.username ? "+50 XP" : "+5 XP"}
                                 </div>
                             </div>
 

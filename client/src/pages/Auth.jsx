@@ -97,7 +97,7 @@ export default function Auth() {
                 <div className="relative flex justify-center mb-2 sm:mb-4">
                     <div
                         className={`transition-all duration-1000 ease-out transform
-                      ${animationComplete ? 'translate-y-0 opacity-100' : '-translate-y-24 opacity-0'}`}
+                        ${animationComplete ? 'translate-y-0 opacity-100' : '-translate-y-24 opacity-0'}`}
                     >
                         <svg
                             className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40"

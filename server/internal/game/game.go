@@ -261,14 +261,14 @@ func (g *Game) getTargetTower(p *model.Player, towerType string) (*model.Tower, 
 // }
 
 // CheckWinner returns result string if winner is found
-func (g *Game) CheckWinner() string {
+func (g *Game) CheckWinner() (*model.Player, string) {
 	if g.Player1.Towers["king"].HP <= 0 {
 		AwardEXP(g.Player2.User, g.Player1.User, false)
-		return g.Player2.User.Username + " wins!"
+		return g.Player2 ,g.Player2.User.Username + " wins!"
 	}
 	if g.Player2.Towers["king"].HP <= 0 {
 		AwardEXP(g.Player1.User, g.Player2.User, false)
-		return g.Player1.User.Username + " wins!"
+		return g.Player1, g.Player1.User.Username + " wins!"
 	}
 	if g.Enhanced && time.Since(g.StartTime) > g.MaxTime {
 		// Compare destroyed towers
@@ -276,16 +276,16 @@ func (g *Game) CheckWinner() string {
 		p2Score := g.Player2.DestroyedCount()
 		if p1Score > p2Score {
 			AwardEXP(g.Player1.User, g.Player2.User, false)
-			return g.Player1.User.Username + " wins by score!"
+			return g.Player1, g.Player1.User.Username + " wins by score!"
 		}
 		if p2Score > p1Score {
 			AwardEXP(g.Player2.User, g.Player1.User, false)
-			return g.Player2.User.Username + " wins by score!"
+			return g.Player2, g.Player2.User.Username + " wins by score!"
 		}
 		AwardEXP(g.Player1.User, g.Player2.User, true)
-		return "It's a draw!"
+		return nil, "It's a draw!"
 	}
-	return ""
+	return nil, ""
 }
 
 // AwardEXP updates the user's EXP, level, and match records
@@ -298,7 +298,8 @@ func AwardEXP(winner, loser *model.User, isDraw bool) {
 		loser.AddExp(10)
 	} else {
 		winner.GamesWon++
-		winner.AddExp(30)
+		winner.AddExp(50)
+		loser.AddExp(5)
 	}
 
 	model.SaveUser(*winner)

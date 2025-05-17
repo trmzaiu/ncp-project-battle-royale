@@ -86,8 +86,6 @@ func processMessage(conn *websocket.Conn, pdu utils.Message) {
 		game.HandleHeal(conn, pdu.Data)
 	case "skip_turn":
 		game.HandleSkipTurn(conn, pdu.Data)
-	case "game_over":
-		game.HandleGameOver(conn, pdu.Data)
 	case "play_again":
 		game.HandlePlayAgain(conn, pdu.Data)
 	default:

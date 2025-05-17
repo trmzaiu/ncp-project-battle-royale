@@ -7,7 +7,6 @@ export default function Entry() {
     const [showButton, setShowButton] = useState(false);
     const navigate = useNavigate();
     const handlePlay = () => {
-        console.log("Navigating to auth page...");
         setTimeout(() => navigate("/auth"), 1500);
     };
 

@@ -10,7 +10,7 @@
     "level": 3,
     "gamesPlayed": 28,
     "gamesWon": 18,
-    "avatar": "/assets/ArchersCard.png"
+    "avatar": "/assets/Avatar1.png"
   },
   {
     "id": "20250509232011abcdefgh",
@@ -23,7 +23,7 @@
     "level": 1,
     "gamesPlayed": 8,
     "gamesWon": 0,
-    "avatar": "/assets/KnightCard.png"
+    "avatar": "/assets/Avatar4.png"
   },
   {
     "id": "20250510015315abcdefgh",
@@ -36,7 +36,7 @@
     "level": 1,
     "gamesPlayed": 2,
     "gamesWon": 2,
-    "avatar": "/assets/BarbariansCard.png"
+    "avatar": "/assets/Avatar14.png"
   },
   {
     "id": "20250513111521abcdefgh",
@@ -49,6 +49,6 @@
     "level": 3,
     "gamesPlayed": 22,
     "gamesWon": 10,
-    "avatar": "/assets/SkeletonsCard.png"
+    "avatar": "/assets/Avatar5.png"
   }
 ]

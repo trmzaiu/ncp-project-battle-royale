@@ -1,1 +1,111 @@
 @import "tailwindcss";
+
+@keyframes clashDamagePopup {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    20% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+
+    80% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+}
+
+@keyframes clashCritPopup {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    20% {
+        transform: scale(1.4);
+        opacity: 1;
+    }
+
+    80% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+}
+
+@keyframes clashHealPopup {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+
+    20% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+
+    80% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+}
+
+@keyframes clashCritBurst {
+    0% {
+        transform: scale(0.5);
+        opacity: 0.3;
+    }
+
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+@keyframes clashHealBurst {
+    0% {
+        transform: scale(0.5);
+        opacity: 0.3;
+    }
+
+    100% {
+        transform: scale(1.8);
+        opacity: 0;
+    }
+}
+
+.animate-clash-damage-popup {
+    animation: clashDamagePopup 1s ease-out forwards;
+}
+
+.animate-clash-crit-popup {
+    animation: clashCritPopup 1.2s ease-out forwards;
+}
+
+.animate-clash-heal-popup {
+    animation: clashHealPopup 1s ease-out forwards;
+}
+
+.animate-clash-crit-burst {
+    animation: clashCritBurst 0.8s ease-out forwards;
+}
+
+.animate-clash-heal-burst {
+    animation: clashHealBurst 0.8s ease-out forwards;
+}
