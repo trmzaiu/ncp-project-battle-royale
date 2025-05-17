@@ -11,10 +11,10 @@ export default function Game() {
     const [isGameInitialized, setIsGameInitialized] = useState(false);
 
     const [game, setGame] = useState(getInitialGameState());
-    const [notification, setNotification] = useState({ show: false, message: "" });
-    const [logs, setLogs] = useState([
-        { timestamp: getCurrentTimestamp(), type: "SYSTEM", message: "Welcome to Royaka!" },
-    ]);
+    const [notification, setNotification] = useState({
+        show: false,
+        message: "",
+    });
 
     // === Initial Game State ===
     function getInitialGameState() {
@@ -36,7 +36,10 @@ export default function Game() {
     // === Notification Helper ===
     const showNotification = (message) => {
         setNotification({ show: true, message });
-        setTimeout(() => setNotification((prev) => ({ ...prev, show: false })), 4000);
+        setTimeout(
+            () => setNotification((prev) => ({ ...prev, show: false })),
+            4000
+        );
     };
 
     // === Effect: Initial Setup & WebSocket Subscription ===
@@ -69,7 +72,12 @@ export default function Game() {
                     setOpponent(res.data.opponent);
 
                     if (!isGameInitialized) {
-                        initializeGame(res.data.turn, res.data.user.troops, res.data.user, res.data.opponent);
+                        initializeGame(
+                            res.data.turn,
+                            res.data.user.troops,
+                            res.data.user,
+                            res.data.opponent
+                        );
                     }
                 } else {
                     showNotification(res.error || "Failed to get game data");
@@ -78,7 +86,15 @@ export default function Game() {
 
             case "attack_response":
                 console.log("Attack Response:", res);
-                res.success ? handleAttackResponse(res) : showNotification(res.error || "Attack failed");
+                if (res.success) {
+                    handleAttack(res);
+                } else if (!res.success && res.data.attacker.user.username === localStorage.getItem("username")) {
+                    showNotification(res.message);
+                }
+                break;
+
+            case "skip_turn_response":
+                res.success && handleSkipTurn(res);
                 break;
 
             case "game_over_response":
@@ -97,8 +113,8 @@ export default function Game() {
             maxMana: 10,
             playerHealth: extractHP(userData.towers),
             opponentHealth: extractHP(opponentData.towers),
-            playerShield: extractHP(userData.towers),
-            opponentShield: extractHP(opponentData.towers),
+            playerShield: extractMaxHP(userData.towers),
+            opponentShield: extractMaxHP(opponentData.towers),
             troops: troops.reduce((acc, troop) => {
                 acc[troop.name] = troop;
                 return acc;
@@ -109,19 +125,24 @@ export default function Game() {
             gameOver: false,
         });
 
-        addLog("SYSTEM", "Game started.");
-        addLog("SYSTEM", turn === userData?.user?.username ? "Your turn." : "Waiting for opponent's turn...");
+        showNotification("Game started.");
         setIsGameInitialized(true);
     };
 
-    const extractHP = (towers) => ({
+    const extractMaxHP = (towers) => ({
         king: towers.king.max_hp,
         guard1: towers.guard1.max_hp,
         guard2: towers.guard2.max_hp,
     });
 
+    const extractHP = (towers) => ({
+        king: towers.king.hp,
+        guard1: towers.guard1.hp,
+        guard2: towers.guard2.hp,
+    });
+
     // === Skip Turn ===
-    const handleSkipTurn = () => {
+    const skipTurn = () => {
         if (game.playerTurn !== user.user?.username) {
             return showNotification("Not your turn.");
         }
@@ -133,16 +154,16 @@ export default function Game() {
                 username: localStorage.getItem("username"),
             },
         });
-
-        addLog("ACTION", "Turn skipped.");
     };
 
     // === Select Troop ===
     const selectTroop = (troopName) => {
-        if (game.playerTurn !== user.user?.username) return showNotification("Not your turn.");
+        if (game.playerTurn !== user.user?.username)
+            return showNotification("Not your turn.");
 
         const troop = game.troops[troopName];
-        if (game.playerMana < troop.mana) return showNotification("Not enough mana.");
+        if (game.playerMana < troop.mana)
+            return showNotification("Not enough mana.");
 
         setGame((prev) => ({ ...prev, selectedTroop: troop }));
     };
@@ -152,8 +173,10 @@ export default function Game() {
         const { selectedTroop, playerMana, playerTurn } = game;
         const currentUser = user.user?.username;
 
-        if (playerTurn !== currentUser || !selectedTroop) return showNotification("Invalid action.");
-        if (playerMana < selectedTroop.mana) return showNotification("Not enough mana.");
+        if (playerTurn !== currentUser || !selectedTroop)
+            return showNotification("Invalid action.");
+        if (playerMana < selectedTroop.mana)
+            return showNotification("Not enough mana.");
 
         sendMessage({
             type: "attack",
@@ -169,8 +192,9 @@ export default function Game() {
     };
 
     // === Handle Attack Response ===
-    const handleAttackResponse = (msg) => {
-        const { attacker, defender, damage, target, isDestroyed, turn, troop } = msg.data;
+    const handleAttack = (msg) => {
+        const { attacker, defender, damage, target, isDestroyed, turn, troop } =
+            msg.data;
         const isMe = attacker.user.username === localStorage.getItem("username");
 
         setGame((prev) => {
@@ -181,21 +205,29 @@ export default function Game() {
                 setOpponent(defender);
                 newState.playerMana = attacker.mana;
                 newState.opponentHealth[target] = defender.towers[target].hp;
-                addLog("ACTION", `Your ${troop} dealt ${damage} damage to opponent's ${target}.`);
+                showNotification(
+                    `Your ${troop} dealt ${damage} damage to opponent's ${target}.`
+                );
             } else {
                 setUser(defender);
                 setOpponent(attacker);
                 newState.playerMana = defender.mana;
                 newState.playerHealth[target] = defender.towers[target].hp;
-                addLog("ACTION", `Opponent's ${troop} dealt ${damage} damage to your ${target}.`);
+                showNotification(
+                    `Opponent's ${troop} dealt ${damage} damage to your ${target}.`
+                );
             }
 
             newState.playerTurn = turn;
             return newState;
         });
 
-        if (isDestroyed) addLog("TOWER", `Tower ${target} has been destroyed!`);
-        addLog("SYSTEM", turn === user?.user?.username ? "Your turn." : "Waiting for opponent's turn...");
+        if (isDestroyed) showNotification(`Tower ${target} has been destroyed!`);
+        showNotification(
+            turn === user?.user?.username
+                ? "Your turn."
+                : "Waiting for opponent's turn..."
+        );
 
         sendMessage({
             type: "game_over",
@@ -204,6 +236,23 @@ export default function Game() {
             },
         });
     };
+
+    // === Handle Skip Turn Response
+    const handleSkipTurn = (msg) => {
+        const { turn, player1, player2 } = msg.data;
+
+        const currentUsername = localStorage.getItem("username");
+        const updatedSelf = player1?.user?.username === currentUsername ? player1 : player2;
+
+        setGame((prev) => ({
+            ...prev,
+            playerTurn: turn,
+            playerMana: updatedSelf?.mana ?? prev.playerMana,
+        }));
+
+        showNotification("Turn skipped.");
+    };
+
 
     // === Handle Game Over ===
     const handleGameOver = () => {
@@ -223,22 +272,6 @@ export default function Game() {
         });
     };
 
-    // === Logging Utility ===
-    function addLog(type, message) {
-        setLogs((prev) => [
-            ...prev,
-            { timestamp: getCurrentTimestamp(), type, message },
-        ]);
-    }
-
-    function getCurrentTimestamp() {
-        return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    }
-
-    function getUserInitial(avatar) {
-        return avatar?.username?.charAt(0)?.toUpperCase() || "?";
-    }
-
     return (
         <div className="game-container bg-gradient-to-b from-blue-400 to-blue-600 p-2 rounded-lg shadow-xl max-w-4xl mx-auto font-sans relative overflow-hidden border-4 border-yellow-500">
             {/* Decorative elements */}
@@ -247,7 +280,9 @@ export default function Game() {
 
             {/* Game title */}
             <div className="text-center mb-2">
-                <h1 className="text-3xl font-bold text-yellow-300 drop-shadow-md transform rotate-2 mb-1">Tower Clash</h1>
+                <h1 className="text-3xl font-bold text-yellow-300 drop-shadow-md transform rotate-2 mb-1">
+                    Tower Clash
+                </h1>
                 <div className="w-32 h-1 bg-yellow-400 mx-auto rounded-full mb-2"></div>
             </div>
 
@@ -256,9 +291,11 @@ export default function Game() {
                 {/* OPPONENT STATS */}
                 <div className="opponent-stats flex items-center">
                     <div className="opponent-avatar relative">
-                        <div className="bg-red-500 rounded-full w-12 h-12 flex items-center justify-center text-white font-bold border-2 border-red-700 shadow-md transform hover:scale-105 transition-transform">
-                            {getUserInitial(opponent.user)}
-                        </div>
+                        <img
+                            src={opponent.user?.avatar}
+                            alt="avatar"
+                            className="w-12 h-12 rounded-full border-2 border-red-700 shadow-md transform hover:scale-105 transition-transform object-cover"
+                        />
                         <div className="absolute -bottom-1 -right-1 bg-red-700 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center border border-yellow-400">
                             {opponent.user?.level || 0}
                         </div>
@@ -274,40 +311,15 @@ export default function Game() {
 
                 {/* TURN DISPLAY */}
                 <div className="turn-display text-center transform hover:scale-105 transition-transform">
-                    <div className={`font-bold text-lg px-4 py-1 rounded-full ${game.playerTurn === user.user?.username
-                        ? "bg-green-600 text-white animate-pulse"
-                        : "bg-red-600 text-white"
-                        }`}>
-                        {game.playerTurn === user.user?.username ? "YOUR TURN" : "OPPONENT'S TURN"}
-                    </div>
-                    <button
-                        className={`skip-btn mt-1 px-4 py-1 rounded-full font-semibold transition-all transform hover:scale-105 ${game.playerTurn === user.user?.username
-                            ? "bg-yellow-400 text-blue-900 border-2 border-yellow-500"
-                            : "bg-gray-500 text-white opacity-50 cursor-not-allowed"
+                    <div
+                        className={`font-bold text-lg px-4 py-1 rounded-full ${game.playerTurn === user.user?.username
+                            ? "bg-green-600 text-white animate-pulse"
+                            : "bg-red-600 text-white"
                             }`}
-                        disabled={game.playerTurn !== user.user?.username}
-                        onClick={handleSkipTurn}
                     >
-                        Skip + 2 Mana
-                    </button>
-                </div>
-
-                {/* PLAYER STATS */}
-                <div className="player-stats flex items-center">
-                    <div className="user-avatar relative">
-                        <div className="bg-blue-500 rounded-full w-12 h-12 flex items-center justify-center text-white font-bold border-2 border-blue-700 shadow-md transform hover:scale-105 transition-transform">
-                            {getUserInitial(user.user)}
-                        </div>
-                        <div className="absolute -bottom-1 -right-1 bg-blue-700 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center border border-yellow-400">
-                            {user.user?.level || 0}
-                        </div>
-                    </div>
-                    <div className="stat-column ml-2">
-                        <div className="stat">
-                            <div className="stat-value name text-yellow-300 font-bold text-lg drop-shadow-md">
-                                {user.user?.username || "Loading..."}
-                            </div>
-                        </div>
+                        {game.playerTurn === user.user?.username
+                            ? "YOUR TURN"
+                            : "OPPONENT'S TURN"}
                     </div>
                 </div>
             </div>
@@ -322,19 +334,32 @@ export default function Game() {
                     {/* Opponent Side */}
                     <div className="player-side opponent p-4 relative">
                         {/* King Tower */}
-                        <div className={`tower king mx-auto mb-6 relative ${game.opponentHealth.king <= 0 ? 'grayscale' : ''
-                            }`} onClick={() => selectTarget("king")}>
-                            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-red-500 font-bold text-lg opacity-0 animate-bounce transition-opacity" id="damage-indicator-king">
+                        <div
+                            className={`tower king mx-auto mb-6 relative ${game.opponentHealth.king <= 0 ? "grayscale" : ""
+                                }`}
+                            onClick={() => selectTarget("king")}
+                        >
+                            <div
+                                className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-red-500 font-bold text-lg opacity-0 animate-bounce transition-opacity"
+                                id="damage-indicator-king"
+                            >
                                 -{game.selectedTroop?.atk || 0}
                             </div>
                             <div className="tower-content bg-gradient-to-b from-red-400 to-red-600 p-3 rounded-lg border-4 border-red-700 shadow-lg transform hover:scale-105 transition-transform cursor-pointer">
-                                <div className="tower-icon text-center text-4xl drop-shadow-md">👑</div>
+                                <div className="tower-icon text-center text-4xl drop-shadow-md">
+                                    👑
+                                </div>
                                 <div className="tower-hp mt-2">
                                     <div className="hp-bar bg-gray-700 w-full h-4 rounded-full shadow-inner overflow-hidden border border-gray-800">
                                         <div
                                             className="hp-fill bg-gradient-to-r from-green-500 to-green-400 h-full rounded-full transition-all duration-500"
                                             style={{
-                                                width: `${Math.max(0, (game.opponentHealth.king / game.opponentShield.king) * 100)}%`
+                                                width: `${Math.max(
+                                                    0,
+                                                    (game.opponentHealth.king /
+                                                        game.opponentShield.king) *
+                                                    100
+                                                )}%`,
                                             }}
                                         />
                                     </div>
@@ -345,20 +370,31 @@ export default function Game() {
                         {/* Guard Towers */}
                         <div className="tower-container flex justify-center space-x-12">
                             <div
-                                className={`tower guard ${game.opponentHealth.guard1 <= 0 ? 'grayscale' : ''}`}
+                                className={`tower guard ${game.opponentHealth.guard1 <= 0 ? "grayscale" : ""
+}`}
                                 onClick={() => selectTarget("guard1")}
                             >
-                                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-red-500 font-bold text-lg opacity-0 animate-bounce transition-opacity" id="damage-indicator-guard1">
+                                <div
+                                    className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-red-500 font-bold text-lg opacity-0 animate-bounce transition-opacity"
+                                    id="damage-indicator-guard1"
+                                >
                                     -{game.selectedTroop?.atk || 0}
                                 </div>
                                 <div className="tower-content bg-gradient-to-b from-red-300 to-red-500 p-2 rounded-lg border-3 border-red-600 shadow-lg transform hover:scale-105 transition-transform cursor-pointer">
-                                    <div className="tower-icon text-center text-3xl drop-shadow-md">🛡️</div>
+                                    <div className="tower-icon text-center text-3xl drop-shadow-md">
+                                        🛡️
+                                    </div>
                                     <div className="tower-hp mt-2">
                                         <div className="hp-bar bg-gray-700 w-full h-3 rounded-full shadow-inner overflow-hidden border border-gray-800">
                                             <div
                                                 className="hp-fill bg-gradient-to-r from-green-500 to-green-400 h-full rounded-full transition-all duration-500"
                                                 style={{
-                                                    width: `${Math.max(0, (game.opponentHealth.guard1 / game.opponentShield.guard1) * 100)}%`
+                                                    width: `${Math.max(
+                                                        0,
+                                                        (game.opponentHealth.guard1 /
+                                                            game.opponentShield.guard1) *
+                                                        100
+                                                    )}%`,
                                                 }}
                                             />
                                         </div>
@@ -367,20 +403,31 @@ export default function Game() {
                             </div>
 
                             <div
-                                className={`tower guard ${game.opponentHealth.guard2 <= 0 ? 'grayscale' : ''}`}
+                                className={`tower guard ${game.opponentHealth.guard2 <= 0 ? "grayscale" : ""
+                                    }`}
                                 onClick={() => selectTarget("guard2")}
                             >
-                                <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-red-500 font-bold text-lg opacity-0 animate-bounce transition-opacity" id="damage-indicator-guard2">
+                                <div
+                                    className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-red-500 font-bold text-lg opacity-0 animate-bounce transition-opacity"
+                                    id="damage-indicator-guard2"
+                                >
                                     -{game.selectedTroop?.atk || 0}
                                 </div>
                                 <div className="tower-content bg-gradient-to-b from-red-300 to-red-500 p-2 rounded-lg border-3 border-red-600 shadow-lg transform hover:scale-105 transition-transform cursor-pointer">
-                                    <div className="tower-icon text-center text-3xl drop-shadow-md">🛡️</div>
+                                    <div className="tower-icon text-center text-3xl drop-shadow-md">
+                                        🛡️
+                                    </div>
                                     <div className="tower-hp mt-2">
                                         <div className="hp-bar bg-gray-700 w-full h-3 rounded-full shadow-inner overflow-hidden border border-gray-800">
                                             <div
                                                 className="hp-fill bg-gradient-to-r from-green-500 to-green-400 h-full rounded-full transition-all duration-500"
                                                 style={{
-                                                    width: `${Math.max(0, (game.opponentHealth.guard2 / game.opponentShield.guard2) * 100)}%`
+                                                    width: `${Math.max(
+                                                        0,
+                                                        (game.opponentHealth.guard2 /
+                                                            game.opponentShield.guard2) *
+                                                        100
+                                                    )}%`,
                                                 }}
                                             />
                                         </div>
@@ -394,15 +441,25 @@ export default function Game() {
                     <div className="player-side p-4 mt-4 relative">
                         {/* Guard Towers */}
                         <div className="tower-container flex justify-center space-x-12">
-                            <div className={`tower guard ${game.playerHealth.guard1 <= 0 ? 'grayscale' : ''}`}>
+                            <div
+                                className={`tower guard ${game.playerHealth.guard1 <= 0 ? "grayscale" : ""
+                                    }`}
+                            >
                                 <div className="tower-content bg-gradient-to-b from-blue-300 to-blue-500 p-2 rounded-lg border-3 border-blue-600 shadow-lg">
-                                    <div className="tower-icon text-center text-3xl drop-shadow-md">🛡️</div>
+                                    <div className="tower-icon text-center text-3xl drop-shadow-md">
+                                        🛡️
+                                    </div>
                                     <div className="tower-hp mt-2">
                                         <div className="hp-bar bg-gray-700 w-full h-3 rounded-full shadow-inner overflow-hidden border border-gray-800">
                                             <div
                                                 className="hp-fill bg-gradient-to-r from-green-500 to-green-400 h-full rounded-full transition-all duration-500"
                                                 style={{
-                                                    width: `${Math.max(0, (game.playerHealth.guard1 / game.playerShield.guard1) * 100)}%`
+                                                    width: `${Math.max(
+                                                        0,
+                                                        (game.playerHealth.guard1 /
+                                                            game.playerShield.guard1) *
+                                                        100
+                                                    )}%`,
                                                 }}
                                             />
                                         </div>
@@ -410,15 +467,25 @@ export default function Game() {
                                 </div>
                             </div>
 
-                            <div className={`tower guard ${game.playerHealth.guard2 <= 0 ? 'grayscale' : ''}`}>
+                            <div
+                                className={`tower guard ${game.playerHealth.guard2 <= 0 ? "grayscale" : ""
+                                    }`}
+                            >
                                 <div className="tower-content bg-gradient-to-b from-blue-300 to-blue-500 p-2 rounded-lg border-3 border-blue-600 shadow-lg">
-                                    <div className="tower-icon text-center text-3xl drop-shadow-md">🛡️</div>
+                                    <div className="tower-icon text-center text-3xl drop-shadow-md">
+                                        🛡️
+                                    </div>
                                     <div className="tower-hp mt-2">
                                         <div className="hp-bar bg-gray-700 w-full h-3 rounded-full shadow-inner overflow-hidden border border-gray-800">
                                             <div
                                                 className="hp-fill bg-gradient-to-r from-green-500 to-green-400 h-full rounded-full transition-all duration-500"
                                                 style={{
-                                                    width: `${Math.max(0, (game.playerHealth.guard2 / game.playerShield.guard2) * 100)}%`
+                                                    width: `${Math.max(
+                                                        0,
+                                                        (game.playerHealth.guard2 /
+                                                            game.playerShield.guard2) *
+                                                        100
+                                                    )}%`,
                                                 }}
                                             />
                                         </div>
@@ -428,15 +495,24 @@ export default function Game() {
                         </div>
 
                         {/* King Tower */}
-                        <div className={`tower king mx-auto mt-6 ${game.playerHealth.king <= 0 ? 'grayscale' : ''}`}>
+                        <div
+                            className={`tower king mx-auto mt-6 ${game.playerHealth.king <= 0 ? "grayscale" : ""
+                                }`}
+                        >
                             <div className="tower-content bg-gradient-to-b from-blue-400 to-blue-600 p-3 rounded-lg border-4 border-blue-700 shadow-lg">
-                                <div className="tower-icon text-center text-4xl drop-shadow-md">👑</div>
+                                <div className="tower-icon text-center text-4xl drop-shadow-md">
+                                    👑
+                                </div>
                                 <div className="tower-hp mt-2">
                                     <div className="hp-bar bg-gray-700 w-full h-4 rounded-full shadow-inner overflow-hidden border border-gray-800">
                                         <div
                                             className="hp-fill bg-gradient-to-r from-green-500 to-green-400 h-full rounded-full transition-all duration-500"
                                             style={{
-                                                width: `${Math.max(0, (game.playerHealth.king / game.playerShield.king) * 100)}%`
+                                                width: `${Math.max(
+                                                    0,
+                                                    (game.playerHealth.king / game.playerShield.king) *
+                                                    100
+                                                )}%`,
                                             }}
                                         />
                                     </div>
@@ -453,15 +529,17 @@ export default function Game() {
                     <div className="text-lg text-yellow-400 font-bold flex items-center">
                         <span className="text-xl mr-1">⚡</span> MANA
                     </div>
-                    <div className="text-white font-bold">{game.playerMana}/{game.maxMana}</div>
+                    <div className="text-white font-bold">
+                        {game.playerMana}/{game.maxMana}
+                    </div>
                 </div>
                 <div className="mana-bar bg-gray-800 h-6 rounded-full shadow-inner overflow-hidden border border-gray-900 flex">
                     {Array.from({ length: game.maxMana }).map((_, i) => (
                         <div
                             key={i}
                             className={`mana-segment flex-1 h-full border-r border-gray-700 last:border-r-0 transition-all ${i < game.playerMana
-                                ? 'bg-gradient-to-r from-blue-500 to-blue-400'
-                                : ''
+                                ? "bg-gradient-to-r from-blue-500 to-blue-400"
+                                : ""
                                 }`}
                         />
                     ))}
@@ -470,27 +548,40 @@ export default function Game() {
 
             {/* TROOP SELECTION */}
             <div className="troops-container bg-gradient-to-r from-blue-900 to-blue-800 p-4 rounded-lg mt-2 shadow-md border-2 border-blue-700">
-                <div className="section-header">
-                    <h3 className="text-xl font-bold text-center mb-3 text-yellow-400 drop-shadow-md">TROOPS</h3>
+                <div className="section-header flex justify-between items-center mb-3">
+                    <h3 className="text-xl font-bold text-yellow-400 drop-shadow-md">
+                        TROOPS
+                    </h3>
+
+                    <button
+                        className={`skip-btn px-4 py-1 rounded-full font-semibold transition-all transform hover:scale-105 ${game.playerTurn === user.user?.username
+                            ? "bg-yellow-400 text-blue-900 border-2 border-yellow-500"
+                            : "bg-gray-500 text-white opacity-50 cursor-not-allowed"
+                            }`}
+                        disabled={game.playerTurn !== user.user?.username}
+                        onClick={skipTurn}
+                    >
+                        Skip
+                    </button>
                 </div>
+
 
                 <div className="troop-selection flex flex-wrap justify-center gap-3">
                     {Object.entries(game.troops).map(([troopName, troop], index) => (
                         <div
                             key={index}
                             className={`troop w-50 ${game.selectedTroop?.name === troopName
-                                    ? 'border-4 border-yellow-400 bg-yellow-100 transform scale-105'
-                                    : 'border-2 border-gray-400 bg-white'
+                                ? 'border-4 border-yellow-400 bg-yellow-100 transform scale-105'
+                                : 'border-2 border-gray-400 bg-white'
                                 } ${game.playerMana < troop.mana
-                                    ? 'opacity-50 grayscale'
-                                    : 'hover:scale-105'
+                                    ? "opacity-50 grayscale"
+                                    : "hover:scale-105"
                                 } rounded-lg shadow-lg p-2 cursor-pointer transition-all duration-200`}
                             onClick={() => selectTroop(troopName)}
                         >
                             <div className="troop-banner bg-gradient-to-r from-blue-600 to-blue-500 rounded-t-md px-2 py-1 -mt-2 -mx-2 mb-1 text-center">
                                 <div className="troop-name text-white font-bold drop-shadow-md truncate">{troopName}</div>
                             </div>
-                            <div className="troop-icon text-center text-4xl mb-1">{troop.icon}</div>
                             <div className="flex justify-between items-center mb-1">
                                 <div className="troop-mana-cost bg-blue-500 text-white font-bold flex items-center rounded-full px-2 border-2 border-blue-600">
                                     <span className="text-yellow-300 mr-1">⚡</span> {troop.mana}
@@ -509,28 +600,12 @@ export default function Game() {
                 </div>
             </div>
 
-            {/* GAME LOG */}
-            <div className="log-container p-2 bg-gradient-to-r from-gray-900 to-gray-800 max-h-28 overflow-y-auto mt-2 rounded-lg border-2 border-gray-700 shadow-inner">
-                <h4 className="text-center text-yellow-400 font-bold mb-1 text-sm">BATTLE LOG</h4>
-                {logs.map((log, index) => (
-                    <div
-                        className={`log-entry text-sm mb-1 px-2 py-1 rounded ${index === 0 ? 'bg-gray-800 animate-pulse' : ''}`}
-                        key={index}
-                    >
-                        <span className="timestamp font-mono text-gray-400">[{log.timestamp}]</span>
-                        <span className={`type font-bold ${log.type === "SYSTEM" ? "text-blue-400" :
-                            log.type === "ACTION" ? "text-green-400" :
-                                log.type === "TOWER" ? "text-red-400" : ""
-                            }`}> {log.type}:</span>
-                        <span className="message text-white"> {log.message}</span>
-                    </div>
-                ))}
-            </div>
-
             {/* NOTIFICATION */}
             {notification.show && (
                 <div className="notification fixed top-5 left-0 right-0 mx-auto max-w-md bg-yellow-400 px-4 py-2 text-center rounded-full shadow-lg border-2 border-yellow-500 animate-bounce">
-                    <span className="font-bold text-blue-900">{notification.message}</span>
+                    <span className="font-bold text-blue-900">
+                        {notification.message}
+                    </span>
                 </div>
             )}
 
@@ -543,8 +618,12 @@ export default function Game() {
                             {game.winner === user.user?.username ? "👑" : "☠️"}
                         </div>
 
-                        <h2 className={`modal-title text-3xl font-bold mb-4 text-center ${game.winner === user.user?.username ? "text-yellow-400" : "text-red-400"
-                            }`}>
+                        <h2
+                            className={`modal-title text-3xl font-bold mb-4 text-center ${game.winner === user.user?.username
+                                ? "text-yellow-400"
+                                : "text-red-400"
+                                }`}
+                        >
                             {game.winner === user.user?.username ? "VICTORY!" : "DEFEAT"}
                         </h2>
 
@@ -559,11 +638,15 @@ export default function Game() {
                             </div>
 
                             <div className="stats-summary mt-6 bg-blue-950 p-4 rounded-lg border-2 border-blue-700">
-                                <h3 className="text-yellow-400 font-bold text-lg mb-2 text-center">BATTLE STATS</h3>
+                                <h3 className="text-yellow-400 font-bold text-lg mb-2 text-center">
+                                    BATTLE STATS
+                                </h3>
                                 <div className="stats-grid grid grid-cols-2 gap-3">
                                     <div className="stat-item bg-blue-800 p-2 rounded-lg border border-blue-600">
                                         <div className="stat-icon text-center text-2xl">⏱️</div>
-                                        <div className="stat-label text-center text-white text-sm">Turns Played</div>
+                                        <div className="stat-label text-center text-white text-sm">
+                                            Turns Played
+                                        </div>
                                         <div className="stat-value text-center text-yellow-300 font-bold text-xl">
                                             {game.stats?.turns || 0}
                                         </div>
@@ -571,7 +654,9 @@ export default function Game() {
 
                                     <div className="stat-item bg-blue-800 p-2 rounded-lg border border-blue-600">
                                         <div className="stat-icon text-center text-2xl">💥</div>
-                                        <div className="stat-label text-center text-white text-sm">Damage Dealt</div>
+                                        <div className="stat-label text-center text-white text-sm">
+                                            Damage Dealt
+                                        </div>
                                         <div className="stat-value text-center text-yellow-300 font-bold text-xl">
                                             {game.stats?.damageDealt || 0}
                                         </div>
@@ -579,7 +664,9 @@ export default function Game() {
 
                                     <div className="stat-item bg-blue-800 p-2 rounded-lg border border-blue-600">
                                         <div className="stat-icon text-center text-2xl">⚡</div>
-                                        <div className="stat-label text-center text-white text-sm">Mana Spent</div>
+                                        <div className="stat-label text-center text-white text-sm">
+                                            Mana Spent
+                                        </div>
                                         <div className="stat-value text-center text-yellow-300 font-bold text-xl">
                                             {game.stats?.manaSpent || 0}
                                         </div>
@@ -587,7 +674,9 @@ export default function Game() {
 
                                     <div className="stat-item bg-blue-800 p-2 rounded-lg border border-blue-600">
                                         <div className="stat-icon text-center text-2xl">✨</div>
-                                        <div className="stat-label text-center text-white text-sm">Critical Hits</div>
+                                        <div className="stat-label text-center text-white text-sm">
+                                            Critical Hits
+                                        </div>
                                         <div className="stat-value text-center text-yellow-300 font-bold text-xl">
                                             {game.stats?.criticalHits || 0}
                                         </div>
@@ -607,7 +696,6 @@ export default function Game() {
                     </div>
                 </div>
             )}
-
         </div>
     );
 }

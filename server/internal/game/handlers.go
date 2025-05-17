@@ -60,9 +60,9 @@ func HandleGetGame(conn *websocket.Conn, data json.RawMessage) {
 		Success: true,
 		Message: "Game info loaded",
 		Data: map[string]interface{}{
-			"user":      currentUser,
-			"opponent":  opponent,
-			"turn": room.Game.Turn,
+			"user":     currentUser,
+			"opponent": opponent,
+			"turn":     room.Game.Turn,
 		},
 	})
 
@@ -137,19 +137,13 @@ func HandleAttack(conn *websocket.Conn, data json.RawMessage) {
 	// Process the attack via game logic
 	log.Printf("[INFO][ATTACK] %s attacking with %s targeting %s in room %s", attacker.User.Username, troop.Name, req.Target, req.RoomID)
 	damage, isCrit, message := room.Game.PlayTurnSimple(attacker, troop, req.Target)
-	if message == "" {
-		log.Printf("[WARN][ATTACK] Attack failed: no result")
-		conn.WriteJSON(utils.Response{
-			Type:    "attack_response",
-			Success: false,
-			Message: "Attack failed",
-		})
-		return
-	}
+	isDestroyed := defender.Towers[req.Target].HP <= 0
+
+	success := damage > 0 || isCrit || isDestroyed
 
 	payload := utils.Response{
 		Type:    "attack_response",
-		Success: true,
+		Success: success,
 		Message: message,
 		Data: map[string]interface{}{
 			"attacker":    attacker,
@@ -158,7 +152,7 @@ func HandleAttack(conn *websocket.Conn, data json.RawMessage) {
 			"target":      req.Target,
 			"damage":      damage,
 			"isCrit":      isCrit,
-			"isDestroyed": defender.Towers[req.Target].HP <= 0,
+			"isDestroyed": isDestroyed,
 			"turn":        room.Game.Turn,
 		},
 	}
@@ -196,6 +190,62 @@ func NotifyGameConclusion(room *Room, winner *model.Player) {
 	}
 	sendToClient(room.Player1.User.Username, message)
 	sendToClient(room.Player2.User.Username, message)
+}
+
+func HandleSkipTurn(conn *websocket.Conn, data json.RawMessage) {
+	var req utils.SkipTurnRequest
+	if err := json.Unmarshal(data, &req); err != nil || req.RoomID == "" || req.Username == "" {
+		log.Printf("[WARN][SKIP_TURN] Invalid request from conn %v: %v | Data: %s", conn.RemoteAddr(), err, string(data))
+		conn.WriteJSON(utils.Response{
+			Type:    "skip_turn_response",
+			Success: false,
+			Message: "Invalid skip turn request",
+		})
+		return
+	}
+
+	roomsMu.RLock()
+	room, exists := rooms[req.RoomID]
+	roomsMu.RUnlock()
+
+	if !exists {
+		log.Printf("[WARN][SKIP_TURN] Room not found: %s by user %s", req.RoomID, req.Username)
+		conn.WriteJSON(utils.Response{
+			Type:    "skip_turn_response",
+			Success: false,
+			Message: "Room not found",
+		})
+		return
+	}
+
+	current := room.Game.CurrentPlayer()
+	if current.User.Username != req.Username {
+		log.Printf("[WARN][SKIP_TURN] Not %s's turn in room %s", req.Username, req.RoomID)
+		conn.WriteJSON(utils.Response{
+			Type:    "skip_turn_response",
+			Success: false,
+			Message: "It's not your turn!",
+		})
+		return
+	}
+
+	room.Game.SkipTurn(current)
+
+	log.Printf("[DEBUG][SKIP_TURN] Turn switched to: %s", room.Game.Turn)
+
+	payload := utils.Response{
+		Type:    "skip_turn_response",
+		Success: true,
+		Message: "Turn skipped",
+		Data: map[string]interface{}{
+			"turn":    room.Game.Turn,
+			"player1": room.Game.Player1,
+			"player2": room.Game.Player2,
+		},
+	}
+
+	sendToClient(room.Player1.User.Username, payload)
+	sendToClient(room.Player2.User.Username, payload)
 }
 
 func HandleGameOver(conn *websocket.Conn, data json.RawMessage) {

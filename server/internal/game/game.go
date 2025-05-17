@@ -98,7 +98,6 @@ func (g *Game) PlayTurnSimple(player *model.Player, troop *model.Troop, tower st
 
 	player.Turn++
 
-	// 👉 SwitchTurn trước khi hồi mana
 	g.SwitchTurn()
 
 	return damage, isCrit, message
@@ -107,7 +106,6 @@ func (g *Game) PlayTurnSimple(player *model.Player, troop *model.Troop, tower st
 func (g *Game) SwitchTurn() {
 	if g.Turn == g.Player1.User.Username {
 		g.Turn = g.Player2.User.Username
-
 	} else {
 		g.Turn = g.Player1.User.Username
 	}
@@ -119,6 +117,11 @@ func (g *Game) SwitchTurn() {
 			nextPlayer.Mana = 10
 		}
 	}
+}
+
+func (g *Game) SkipTurn(player *model.Player) {
+	player.Turn++
+	g.SwitchTurn()
 }
 
 func (g *Game) getTargetTower(p *model.Player, towerType string) (*model.Tower, error) {

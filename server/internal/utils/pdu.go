@@ -49,6 +49,11 @@ type AttackRequest struct {
 	Target   string `json:"target"`
 }
 
+type SkipTurnRequest struct {
+	RoomID   string `json:"room_id"`
+	Username string `json:"username"`
+}
+
 type GameOverRequest struct {
 	RoomID string `json:"room_id"`
 }

@@ -4,7 +4,9 @@ package model
 
 import (
 	"crypto/rand"
+	"encoding/json"
 	"math/big"
+	"os"
 	"time"
 )
 
@@ -19,11 +21,14 @@ type User struct {
 	Level       int       `json:"level"`
 	GamesPlayed int       `json:"gamesPlayed"` // Track number of games played
 	GamesWon    int       `json:"gamesWon"`    // Track number of games won
+	Avatar      string    `json:"avatar"`
 }
 
 func NewUser(username, password string) *User {
+	avatar := getRandomAvatar()
+
 	return &User{
-		ID:          generateID(), // Implement your ID generation function
+		ID:          generateID(),
 		Username:    username,
 		Password:    password, // Should be hashed in actual implementation
 		CreatedAt:   time.Now(),
@@ -33,6 +38,7 @@ func NewUser(username, password string) *User {
 		Level:       1,
 		GamesPlayed: 0,
 		GamesWon:    0,
+		Avatar:      avatar,
 	}
 }
 
@@ -100,4 +106,28 @@ func GetMaxExp(level int) int {
 		return last.MaxExp + 500*(level-len(Levels))
 	}
 	return Levels[level-1].MaxExp
+}
+
+func getRandomAvatar() string {
+	file, err := os.Open("assets/data/avatars.json")
+	if err != nil {
+		return ""
+	}
+	defer file.Close()
+
+	var avatars []string
+	if err := json.NewDecoder(file).Decode(&avatars); err != nil {
+		return ""
+	}
+
+	if len(avatars) == 0 {
+		return ""
+	}
+
+	index, err := rand.Int(rand.Reader, big.NewInt(int64(len(avatars))))
+	if err != nil {
+		return ""
+	}
+
+	return avatars[index.Int64()]
 }

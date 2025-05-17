@@ -126,10 +126,6 @@ export default function Lobby() {
         ]);
     }
 
-    function getUserInitial() {
-        return user?.username?.charAt(0)?.toUpperCase() || "?";
-    }
-
     return (
         <div className="min-h-screen bg-gradient-to-br from-sky-500 to-blue-600 p-4 md:p-8 font-sans" style={{ fontFamily: "'Supercell-Magic', Arial, sans-serif" }}>
             {/* Gold and Gems Bar */}
@@ -168,10 +164,18 @@ export default function Lobby() {
                     <div className="bg-gradient-to-b from-blue-800 to-blue-900 rounded-xl shadow-lg p-6 flex-1 border-4 border-yellow-400 relative overflow-hidden">
                         <div className="absolute -right-6 -bottom-6 text-yellow-400/20 text-8xl">👑</div>
                         <div className="flex flex-col items-center">
-                            <div className="w-28 h-28 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white text-4xl font-bold mb-4 border-4 border-yellow-400 shadow-lg relative">
-                                {getUserInitial()}
-                                <div className="absolute -bottom-1 -right-1 bg-red-500 w-8 h-8 rounded-full border-2 border-white flex items-center justify-center">
-                                    <span className="text-white font-bold text-xl">{user.level}</span>
+                            <div className="relative w-28 h-28 mb-4">
+                                <div className="w-full h-full rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 border-4 border-yellow-400 shadow-lg overflow-hidden relative">
+                                    <img
+                                        src={user.avatar}
+                                        alt="avatar"
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+
+                                {/* Level Badge - overlaps bottom-right */}
+                                <div className="absolute -bottom-1 -right-1 bg-red-500 w-9 h-9 rounded-full border-2 border-white flex items-center justify-center z-10 shadow-md">
+                                    <span className="text-white font-bold text-base">{user.level}</span>
                                 </div>
                             </div>
 
