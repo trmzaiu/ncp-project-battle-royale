@@ -73,6 +73,14 @@ func (g *Game) PlayTurnSimple(player *model.Player, troop *model.Troop, tower st
 	}
 	player.Mana -= troop.MANA
 
+	if tower == "king" {
+		op := g.Opponent(player)
+		if op.Towers["guard1"].HP > 0 || op.Towers["guard2"].HP > 0 {
+			player.Mana += troop.MANA
+			return 0, false, "You must destroy both guard towers before attacking the king!"
+		}
+	}
+
 	targetTower, err := g.getTargetTower(player, tower)
 	if err != nil {
 		return 0, false, "Invalid tower target"
