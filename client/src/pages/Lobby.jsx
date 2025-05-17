@@ -145,7 +145,7 @@ export default function Lobby() {
                 <div className="text-center mb-8">
                     <div className="relative inline-block">
                         <h1 className="text-5xl md:text-6xl font-black text-white mb-2 drop-shadow-lg" style={{ textShadow: "3px 3px 0 #2563eb, 6px 6px 0 #1d4ed8" }}>
-                            <span className="text-yellow-600">ROY</span>
+                            <span className="text-yellow-400">ROY</span>
                             <span className="text-red-500">AKA</span>
                         </h1>
                         <div className="absolute -top-4 -right-4 transform rotate-12 text-2xl">✨</div>
@@ -185,7 +185,7 @@ export default function Lobby() {
 
                             <div className="w-full space-y-4">
                                 {/* Trophy Count */}
-                                <div className="bg-gradient-to-r from-yellow-600 to-amber-700 p-3 rounded-xl border-4 border-yellow-300 shadow-md flex items-center justify-between">
+                                <div className="bg-gradient-to-r from-yellow-500 to-amber-600 p-3 rounded-xl border-4 border-yellow-300 shadow-md flex items-center justify-between">
                                     <div className="flex items-center">
                                         <span className="text-3xl mr-2">🏆</span>
                                         <span className="text-white font-bold">Trophies</span>

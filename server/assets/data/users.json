@@ -1,54 +1,54 @@
 [
-    {
-        "id": "20250508233831abcdefgh",
-        "username": "tramy",
-        "password": "$2a$10$yPumXB7n4oF4Pd6XlH0/9.WIR7V4MRIW4LyVLG7DZzI/AdKz.kwhi",
-        "createdAt": "2025-05-08T23:38:31.6110692+07:00",
-        "lastLogin": "2025-05-08T23:38:31.6110692+07:00",
-        "isActive": true,
-        "exp": 60,
-        "level": 3,
-        "gamesPlayed": 22,
-        "gamesWon": 12,
-        "avatar": "/assets/ArchersCard.png"
-    },
-    {
-        "id": "20250509232011abcdefgh",
-        "username": "giang",
-        "password": "$2a$10$OhN.hcpA/s4S6QCts1mP5OtPlwW8zz0GVoh2tJIywmv0nPMBTpa8O",
-        "createdAt": "2025-05-09T23:20:11.7080491+07:00",
-        "lastLogin": "2025-05-09T23:20:11.7080491+07:00",
-        "isActive": true,
-        "exp": 0,
-        "level": 1,
-        "gamesPlayed": 0,
-        "gamesWon": 0,
-        "avatar": "/assets/KnightCard.png"
-    },
-    {
-        "id": "20250510015315abcdefgh",
-        "username": "tragiang",
-        "password": "$2a$10$FjM5mVEP/FVQ6FVXN4kyuOEc0DfISOnNF6U0HBVrG.mC1Dof2G27O",
-        "createdAt": "2025-05-10T01:53:15.2001063+07:00",
-        "lastLogin": "2025-05-10T01:53:15.2001063+07:00",
-        "isActive": true,
-        "exp": 0,
-        "level": 1,
-        "gamesPlayed": 0,
-        "gamesWon": 0,
-        "avatar": "/assets/BarbarianCard.png"
-    },
-    {
-        "id": "20250513111521abcdefgh",
-        "username": "admin",
-        "password": "$2a$10$G0p109pZOrkTvYqmu44XV.JLMYK72ma76rdoCCelnL3RKa2oeRblC",
-        "createdAt": "2025-05-13T11:15:21.3595435+07:00",
-        "lastLogin": "2025-05-13T11:15:21.3595435+07:00",
-        "isActive": true,
-        "exp": 0,
-        "level": 3,
-        "gamesPlayed": 22,
-        "gamesWon": 10,
-        "avatar": "/assets/SkeletonsCard.png"
-    }
+  {
+    "id": "20250508233831abcdefgh",
+    "username": "tramy",
+    "password": "$2a$10$yPumXB7n4oF4Pd6XlH0/9.WIR7V4MRIW4LyVLG7DZzI/AdKz.kwhi",
+    "createdAt": "2025-05-08T23:38:31.6110692+07:00",
+    "lastLogin": "2025-05-08T23:38:31.6110692+07:00",
+    "isActive": true,
+    "exp": 240,
+    "level": 3,
+    "gamesPlayed": 28,
+    "gamesWon": 18,
+    "avatar": "/assets/ArchersCard.png"
+  },
+  {
+    "id": "20250509232011abcdefgh",
+    "username": "giang",
+    "password": "$2a$10$OhN.hcpA/s4S6QCts1mP5OtPlwW8zz0GVoh2tJIywmv0nPMBTpa8O",
+    "createdAt": "2025-05-09T23:20:11.7080491+07:00",
+    "lastLogin": "2025-05-09T23:20:11.7080491+07:00",
+    "isActive": true,
+    "exp": 0,
+    "level": 1,
+    "gamesPlayed": 8,
+    "gamesWon": 0,
+    "avatar": "/assets/KnightCard.png"
+  },
+  {
+    "id": "20250510015315abcdefgh",
+    "username": "tragiang",
+    "password": "$2a$10$FjM5mVEP/FVQ6FVXN4kyuOEc0DfISOnNF6U0HBVrG.mC1Dof2G27O",
+    "createdAt": "2025-05-10T01:53:15.2001063+07:00",
+    "lastLogin": "2025-05-10T01:53:15.2001063+07:00",
+    "isActive": true,
+    "exp": 60,
+    "level": 1,
+    "gamesPlayed": 2,
+    "gamesWon": 2,
+    "avatar": "/assets/BarbariansCard.png"
+  },
+  {
+    "id": "20250513111521abcdefgh",
+    "username": "admin",
+    "password": "$2a$10$G0p109pZOrkTvYqmu44XV.JLMYK72ma76rdoCCelnL3RKa2oeRblC",
+    "createdAt": "2025-05-13T11:15:21.3595435+07:00",
+    "lastLogin": "2025-05-13T11:15:21.3595435+07:00",
+    "isActive": true,
+    "exp": 0,
+    "level": 3,
+    "gamesPlayed": 22,
+    "gamesWon": 10,
+    "avatar": "/assets/SkeletonsCard.png"
+  }
 ]
