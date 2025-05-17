@@ -474,13 +474,13 @@ export default function Game() {
                     <h3 className="text-xl font-bold text-center mb-3 text-yellow-400 drop-shadow-md">TROOPS</h3>
                 </div>
 
-                <div className="troop-selection flex justify-center space-x-4">
+                <div className="troop-selection flex flex-wrap justify-center gap-3">
                     {Object.entries(game.troops).map(([troopName, troop], index) => (
                         <div
                             key={index}
-                            className={`troop ${game.selectedTroop?.name === troopName
-                                ? 'border-4 border-yellow-400 bg-yellow-100 transform scale-105'
-                                : 'border-2 border-gray-400 bg-white'
+                            className={`troop w-50 ${game.selectedTroop?.name === troopName
+                                    ? 'border-4 border-yellow-400 bg-yellow-100 transform scale-105'
+                                    : 'border-2 border-gray-400 bg-white'
                                 } ${game.playerMana < troop.mana
                                     ? 'opacity-50 grayscale'
                                     : 'hover:scale-105'
@@ -488,7 +488,7 @@ export default function Game() {
                             onClick={() => selectTroop(troopName)}
                         >
                             <div className="troop-banner bg-gradient-to-r from-blue-600 to-blue-500 rounded-t-md px-2 py-1 -mt-2 -mx-2 mb-1 text-center">
-                                <div className="troop-name text-white font-bold drop-shadow-md">{troopName}</div>
+                                <div className="troop-name text-white font-bold drop-shadow-md truncate">{troopName}</div>
                             </div>
                             <div className="troop-icon text-center text-4xl mb-1">{troop.icon}</div>
                             <div className="flex justify-between items-center mb-1">
