@@ -19,9 +19,9 @@
     "createdAt": "2025-05-09T23:20:11.7080491+07:00",
     "lastLogin": "2025-05-09T23:20:11.7080491+07:00",
     "isActive": true,
-    "exp": 0,
+    "exp": 10,
     "level": 1,
-    "gamesPlayed": 8,
+    "gamesPlayed": 10,
     "gamesWon": 0,
     "avatar": "/assets/Avatar4.png"
   },
@@ -33,9 +33,9 @@
     "lastLogin": "2025-05-10T01:53:15.2001063+07:00",
     "isActive": true,
     "exp": 60,
-    "level": 1,
-    "gamesPlayed": 2,
-    "gamesWon": 2,
+    "level": 2,
+    "gamesPlayed": 4,
+    "gamesWon": 4,
     "avatar": "/assets/Avatar14.png"
   },
   {

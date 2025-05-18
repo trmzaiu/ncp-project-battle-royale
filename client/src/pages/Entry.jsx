@@ -48,40 +48,16 @@ export default function Entry() {
             {/* Main content container - ENLARGED and centered */}
             <div className="z-10 relative w-full min-h-screen flex flex-col items-center justify-center">
                 {/* Crown animation that comes from top - ENLARGED */}
-                <div className="relative flex justify-center mb-8">
+                <div className="relative flex justify-center mb-10">
                     <div
                         className={`transition-all duration-1000 ease-out transform
                         ${animationComplete ? 'translate-y-0 opacity-100' : '-translate-y-24 opacity-0'}`}
                     >
-                        <svg
-                            className="w-36 h-36 sm:w-48 sm:h-48 md:w-56 md:h-56 lg:w-64 lg:h-64"
-                            viewBox="0 0 512 512"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            {/* Crown base */}
-                            <path d="M76 352L128 208L216 272L256 176L296 272L384 208L436 352H76Z" fill="#FFC107" />
-                            <path d="M96 352L144 224L216 280L256 192L296 280L368 224L416 352H96Z" fill="#FFD54F" />
-
-                            {/* Crown bottom band */}
-                            <path d="M76 352H436V392H76V352Z" fill="#FFA000" />
-                            <path d="M96 352H416V382H96V352Z" fill="#FFB300" />
-
-                            {/* Crown spikes */}
-                            <path d="M116 352V312L144 336L172 312V352H116Z" fill="#FFD54F" />
-                            <path d="M172 352V312L200 336L228 312V352H172Z" fill="#FFD54F" />
-                            <path d="M228 352V312L256 336L284 312V352H228Z" fill="#FFD54F" />
-                            <path d="M284 352V312L312 336L340 312V352H284Z" fill="#FFD54F" />
-                            <path d="M340 352V312L368 336L396 312V352H340Z" fill="#FFD54F" />
-
-                            {/* Crown jewels */}
-                            <circle cx="144" cy="244" r="12" fill="#F44336" />
-                            <circle cx="256" cy="208" r="16" fill="#2196F3" />
-                            <circle cx="368" cy="244" r="12" fill="#4CAF50" />
-
-                            {/* Crown highlights */}
-                            <path d="M200 280L216 288L256 200L296 288L312 280L256 180L200 280Z" fill="#FFECB3" />
-                        </svg>
+                        <img
+                            className="w-60 pointer-events-none"
+                            src="/assets/icon_crown.png"
+                            alt=""
+                        />
                     </div>
 
                     {/* Flash effect when crown lands - ENLARGED */}
@@ -115,7 +91,7 @@ export default function Entry() {
 
                 {/* ROYAKA logo text with animated reveal - ENLARGED text */}
                 <div className={`relative transition-all duration-700 ${showTitle ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-                    <div className="text-center">
+                    <div className="text-center mt-10">
                         {/* Main title with blue-to-yellow gradient similar to Clash Royale */}
                         <h1 className="text-6xl sm:text-7xl md:text-8xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-blue-200 via-blue-100 to-yellow-200 mb-4 tracking-wide select-none drop-shadow-lg">
                             ROYAKA

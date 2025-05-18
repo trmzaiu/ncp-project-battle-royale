@@ -99,35 +99,11 @@ export default function Auth() {
                         className={`transition-all duration-1000 ease-out transform
                         ${animationComplete ? 'translate-y-0 opacity-100' : '-translate-y-24 opacity-0'}`}
                     >
-                        <svg
-                            className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40"
-                            viewBox="0 0 512 512"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                        >
-                            {/* Crown base */}
-                            <path d="M76 352L128 208L216 272L256 176L296 272L384 208L436 352H76Z" fill="#FFC107" />
-                            <path d="M96 352L144 224L216 280L256 192L296 280L368 224L416 352H96Z" fill="#FFD54F" />
-
-                            {/* Crown bottom band */}
-                            <path d="M76 352H436V392H76V352Z" fill="#FFA000" />
-                            <path d="M96 352H416V382H96V352Z" fill="#FFB300" />
-
-                            {/* Crown spikes */}
-                            <path d="M116 352V312L144 336L172 312V352H116Z" fill="#FFD54F" />
-                            <path d="M172 352V312L200 336L228 312V352H172Z" fill="#FFD54F" />
-                            <path d="M228 352V312L256 336L284 312V352H228Z" fill="#FFD54F" />
-                            <path d="M284 352V312L312 336L340 312V352H284Z" fill="#FFD54F" />
-                            <path d="M340 352V312L368 336L396 312V352H340Z" fill="#FFD54F" />
-
-                            {/* Crown jewels */}
-                            <circle cx="144" cy="244" r="12" fill="#F44336" />
-                            <circle cx="256" cy="208" r="16" fill="#2196F3" />
-                            <circle cx="368" cy="244" r="12" fill="#4CAF50" />
-
-                            {/* Crown highlights */}
-                            <path d="M200 280L216 288L256 200L296 288L312 280L256 180L200 280Z" fill="#FFECB3" />
-                        </svg>
+                        <img
+                            className="w-45 pointer-events-none"
+                            src="/assets/icon_crown.png"
+                            alt=""
+                        />
                     </div>
 
                     {/* Flash effect when crown lands - responsive sizing */}

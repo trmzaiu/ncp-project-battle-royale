@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWebSocketContext } from "../context/WebSocketContext";
 
@@ -11,6 +11,7 @@ export default function Game() {
     const [user, setUser] = useState({});
     const [opponent, setOpponent] = useState({});
     const [isGameInitialized, setIsGameInitialized] = useState(false);
+    const [showLargeAnimation, setShowLargeAnimation] = useState(false);
 
     const [damagePopup, setDamagePopup] = useState({
         targetId: null,
@@ -64,13 +65,13 @@ export default function Game() {
     useEffect(() => {
         if (!localStorage.getItem("session_id")) {
             showNotification("Session expired. Redirecting to login...");
-            setTimeout(() => navigate("/auth"), 1500);
+            navigate("/auth")
             return;
         }
 
         if (!localStorage.getItem("room_id")) {
             showNotification("Room not found. Redirecting to lobby...");
-            setTimeout(() => navigate("/lobby"), 1500);
+            navigate("/lobby")
             return;
         }
 
@@ -149,16 +150,15 @@ export default function Game() {
             selectedTarget: null,
             playerTurn: turn,
             gameOver: false,
-            winner: null
+            winner: ""
         });
 
-        if (turn === localStorage.getItem("username")) {
-            showNotification("Your turn.");
-        } else {
-            showNotification("Opponent's turn.");
-        }
-
         setIsGameInitialized(true);
+
+        setShowLargeAnimation(true);
+        setTimeout(() => {
+            setShowLargeAnimation(false);
+        }, 2000);
     };
 
     const extractMaxHP = (towers) => ({
@@ -254,14 +254,15 @@ export default function Game() {
 
     // === Handle Attack Response ===
     const handleAttack = (msg) => {
-        const { attacker, defender, damage, target, isDestroyed, turn, troop, isCrit } =
+        const { attacker, defender, damage, target, isDestroyed, turn, isCrit } =
             msg.data;
         const isMe = attacker.user.username === localStorage.getItem("username");
         const targetId = (isMe ? "opponent-" : "player-") + target;
 
         if (damageTimeoutRef.current) {
             clearTimeout(damageTimeoutRef.current);
-            // Immediately hide any existing popup before showing the new one
+            damageTimeoutRef.current = null;
+            // Hide the current popup
             setDamagePopup(prev => ({ ...prev, visible: false }));
         }
 
@@ -273,20 +274,13 @@ export default function Game() {
                 setOpponent(defender);
                 newState.playerMana = attacker.mana;
                 newState.opponentHealth[target] = defender.towers[target].hp;
-                showNotification(
-                    `Your ${troop} dealt ${damage} damage to opponent's ${target}.`
-                );
             } else {
                 setUser(defender);
                 setOpponent(attacker);
                 newState.playerMana = defender.mana;
                 newState.playerHealth[target] = defender.towers[target].hp;
-                showNotification(
-                    `Opponent's ${troop} dealt ${damage} damage to your ${target}.`
-                );
             }
 
-            newState.playerTurn = turn;
             return newState;
         });
 
@@ -296,35 +290,50 @@ export default function Game() {
                 amount: damage,
                 isOpponent: isMe,
                 visible: true,
-                crit: isCrit
+                crit: isCrit,
             });
 
-            // Set new timeout and store its ID
+            // Hide damage popup after 1.5 seconds
             damageTimeoutRef.current = setTimeout(() => {
                 setDamagePopup(prev => ({ ...prev, visible: false }));
                 damageTimeoutRef.current = null;
-            }, 2000);
+
+                // AFTER damage popup is hidden, update turn and show turn animation
+                setTimeout(() => {
+                    // Update the turn
+                    setGame(prev => ({
+                        ...prev,
+                        playerTurn: turn
+                    }));
+
+                    // Only show turn animation if it's the player's turn now
+                    setShowLargeAnimation(true);
+
+                    // Hide turn animation after 2 seconds
+                    setTimeout(() => {
+                        setShowLargeAnimation(false);
+                    }, 2000);
+                }, 300); // Small delay after damage popup disappears
+
+            }, 1500);
         }, 50);
 
         if (isDestroyed) showNotification(`Tower ${target} has been destroyed!`);
-        showNotification(
-            turn === user?.user?.username
-                ? "Your turn."
-                : "Waiting for opponent's turn..."
-        );
     };
 
     // === Handle Heal Response ===
     const handleHeal = (msg) => {
-        const { turn, player, opponent, troop, healedTower, healAmount } = msg.data;
+        const { turn, player, opponent, healedTower, healAmount } = msg.data;
         const isMe = player.user.username === localStorage.getItem("username");
         const targetId = (isMe ? "player-" : "opponent-") + healedTower.type;
 
         if (healTimeoutRef.current) {
             clearTimeout(healTimeoutRef.current);
-            // Immediately hide any existing popup before showing the new one
+            healTimeoutRef.current = null;
+            // Hide the current popup
             setHealPopup(prev => ({ ...prev, visible: false }));
         }
+
 
         setGame((prev) => {
             const newState = { ...prev };
@@ -334,21 +343,15 @@ export default function Game() {
                 setOpponent(opponent);
                 newState.playerMana = player.mana;
                 newState.playerHealth[healedTower.type] = healedTower.hp;
-                showNotification(
-                    `Your ${troop} healed your ${healedTower.type} for ${healAmount} HP.`
-                );
             } else {
                 setUser(opponent);
                 setOpponent(player);
                 newState.playerMana = opponent.mana;
                 newState.opponentHealth[healedTower.type] = healedTower.hp;
-                showNotification(
-                    `Opponent's ${troop} healed their ${healedTower.type} for ${healAmount} HP.`
-                );
             }
 
-            newState.playerTurn = turn;
             return newState;
+
         });
 
         setTimeout(() => {
@@ -359,18 +362,30 @@ export default function Game() {
                 visible: true,
             });
 
-            // Set new timeout and store its ID
+            // Hide damage popup after 1.5 seconds
             healTimeoutRef.current = setTimeout(() => {
                 setHealPopup(prev => ({ ...prev, visible: false }));
                 healTimeoutRef.current = null;
-            }, 2000);
-        }, 50);
 
-        showNotification(
-            turn === localStorage.getItem("username")
-                ? "Your turn."
-                : "Waiting for opponent's turn..."
-        );
+                // AFTER damage popup is hidden, update turn and show turn animation
+                setTimeout(() => {
+                    // Update the turn
+                    setGame(prev => ({
+                        ...prev,
+                        playerTurn: turn
+                    }));
+
+                    // Only show turn animation if it's the player's turn now
+                    setShowLargeAnimation(true);
+
+                    // Hide turn animation after 2 seconds
+                    setTimeout(() => {
+                        setShowLargeAnimation(false);
+                    }, 2000);
+                }, 300); // Small delay after damage popup disappears
+
+            }, 1500);
+        }, 50);
     };
 
 
@@ -385,15 +400,20 @@ export default function Game() {
             ...prev,
             playerTurn: turn,
             playerMana: updatedSelf?.mana ?? prev.playerMana,
+            selectedTroop: null
         }));
 
-        showNotification("Turn skipped.");
+        setShowLargeAnimation(true);
+
+        setTimeout(() => {
+            setShowLargeAnimation(false);
+        }, 2000);
     };
 
 
     // === Handle Game Over ===
     const handleGameOver = (res) => {
-        setGame((prev) => ({ ...prev, gameOver: true, winner: res.data.winner }));
+        setGame((prev) => ({ ...prev, gameOver: true, winner: res.data.winner.user.username }));
     };
 
     // === Play Again ===
@@ -408,7 +428,7 @@ export default function Game() {
             },
         });
         localStorage.removeItem("room_id");
-        setTimeout(() => navigate("/lobby"), 1500);
+        navigate("/lobby");
     };
 
     // Tower component for reusability 
@@ -425,13 +445,13 @@ export default function Game() {
             >
                 {/* Damage Popup */}
                 {damagePopup?.visible && damagePopup.targetId === id && (
-                    <div className={`absolute ${isOpponent ? "-bottom-10" : "-top-10"} pointer-events-none`}>
+                    <div className={`absolute z-50 ${isOpponent ? "-bottom-15" : "-top-15"} -right-4 transform rotate-10 pointer-events-none`}>
                         <div className={`
                         flex justify-center items-center
-                        ${damagePopup.crit ? "text-yellow-300 animate-clash-crit-popup" : "text-red-500 animate-clash-damage-popup"}
+                        ${damagePopup.crit ? "text-yellow-500 animate-clash-crit-popup" : "text-red-500 animate-clash-damage-popup"}
                     `}>
                             <div className="relative">
-                                {["-left-0.5", "-right-0.5", "-top-0.5", "-bottom-0.5"].map((pos, i) => (
+                                {["-left-1", "-right-1", "-top-1", "-bottom-1"].map((pos, i) => (
                                     <span key={i} className={`absolute font-extrabold ${damagePopup.crit ? "text-4xl" : "text-3xl"} text-white opacity-25 ${pos}`}>
                                         -{damagePopup.amount}
                                     </span>
@@ -449,7 +469,7 @@ export default function Game() {
 
                 {/* Heal Popup */}
                 {healPopup?.visible && healPopup.targetId === id && (
-                    <div className={`absolute ${isOpponent ? "-bottom-10" : "-top-10"} pointer-events-none`}>
+                    <div className={`absolute z-50 ${isOpponent ? "-bottom-15" : "-top-15"} rotate-10 pointer-events-none`}>
                         <div className="flex justify-center items-center text-green-700 animate-clash-heal-popup">
                             <div className="relative">
                                 {["-left-0.5", "-right-0.5", "-top-0.5", "-bottom-0.5"].map((pos, i) => (
@@ -479,8 +499,8 @@ export default function Game() {
                                 <div className="hp-bar bg-gray-700 w-full h-3 rounded-full shadow-inner overflow-hidden border border-gray-800">
                                     <div
                                         className={`hp-fill bg-gradient-to-r ${health <= maxHealth / 3
-                                                ? "from-red-500 to-red-400"
-                                                : "from-green-500 to-green-400"
+                                            ? "from-red-500 to-red-400"
+                                            : "from-green-500 to-green-400"
                                             } h-full rounded-full transition-all duration-500`}
                                         style={{
                                             width: `${Math.max(0, (health / maxHealth) * 100)}%`,
@@ -495,8 +515,8 @@ export default function Game() {
                                 <div className="hp-bar bg-gray-700 w-full h-3 rounded-full shadow-inner overflow-hidden border border-gray-800">
                                     <div
                                         className={`hp-fill bg-gradient-to-r ${health <= maxHealth / 3
-                                                ? "from-red-500 to-red-400"
-                                                : "from-green-500 to-green-400"
+                                            ? "from-red-500 to-red-400"
+                                            : "from-green-500 to-green-400"
                                             } h-full rounded-full transition-all duration-500`}
                                         style={{
                                             width: `${Math.max(0, (health / maxHealth) * 100)}%`,
@@ -518,7 +538,25 @@ export default function Game() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-500 to-blue-900">
-            <div className="game-container bg-gradient-to-b from-blue-400 to-blue-600 p-2 rounded-lg shadow-xl max-w-4xl mx-auto font-sans relative overflow-hidden border-4 border-yellow-500" style={{ fontFamily: "'ClashDisplay', sans-serif" }}>
+            {showLargeAnimation && (
+                <div
+                    className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+                    style={{
+                        fontFamily: "'ClashDisplay', sans-serif",
+                        textShadow: "2px 2px 10px rgba(0, 0, 0, 0.5)",
+                    }}
+                >
+                    <div className="text-6xl font-bold text-white px-12 py-6 animate-turnAlert">
+                        {game.playerTurn === user.user?.username
+                            ? "YOUR TURN"
+                            : "OPPONENT'S TURN"}
+                    </div>
+                </div>
+            )}
+            <div
+                className="game-container bg-gradient-to-b from-blue-400 to-blue-600 p-2 rounded-lg shadow-xl max-w-2xl mx-auto relative overflow-hidden border-4 border-yellow-500"
+                style={{ fontFamily: "'ClashDisplay', sans-serif" }}
+            >
                 {/* Decorative elements */}
                 <div className="absolute -top-16 -left-16 w-32 h-32 bg-yellow-300 rounded-full opacity-20"></div>
                 <div className="absolute -bottom-16 -right-16 w-32 h-32 bg-yellow-300 rounded-full opacity-20"></div>
@@ -535,7 +573,7 @@ export default function Game() {
                 <div className="stats-bar flex justify-between items-center p-2 bg-gradient-to-r from-blue-900 to-blue-800 rounded-lg shadow-md mb-2">
                     {/* OPPONENT STATS */}
                     <div className="opponent-stats flex items-center">
-                        <div className="opponent-avatar relative">
+                        <div className="opponent-avatar relative mx-2">
                             <img
                                 src={opponent.user?.avatar}
                                 alt="avatar"
@@ -555,9 +593,9 @@ export default function Game() {
                     </div>
 
                     {/* TURN DISPLAY */}
-                    <div className="turn-display text-center transform hover:scale-105 transition-transform">
+                    <div className="turn-display text-center transform hover:scale-105 transition-transform mx-2">
                         <div
-                            className={`text-lg px-4 py-1 rounded-full ${game.playerTurn === user.user?.username
+                            className={`text-lg px-4 pt-1 rounded-full ${game.playerTurn === user.user?.username
                                 ? "bg-green-600 text-white animate-pulse"
                                 : "bg-red-600 text-white"
                                 }`}
@@ -581,13 +619,14 @@ export default function Game() {
                             return (
                                 <div
                                     key={i}
-                                    className={`border border-emerald-500 aspect-square ${isEven ? "bg-emerald-400 bg-opacity-20" : "bg-emerald-500 bg-opacity-40"
+                                    className={`border border-emerald-500 aspect-square ${isEven
+                                        ? "bg-emerald-400 bg-opacity-20"
+                                        : "bg-emerald-500 bg-opacity-40"
                                         }`}
                                 ></div>
                             );
                         })}
                     </div>
-
 
                     {/* Battlefield grid layout - 10 columns x 6 rows */}
                     <div className="grid-battlefield grid grid-cols-10 grid-rows-8 relative w-full aspect-[10/8]">
@@ -611,7 +650,12 @@ export default function Game() {
                             Array.from({ length: 10 }).map((_, col) => {
                                 // skip columns 5 and 6 for rows 1 and 2
                                 if (col === 4 || col === 5) return null;
-                                return <div key={`r${rowOffset + 1}-fill-${col}`} className="cell"></div>;
+                                return (
+                                    <div
+                                        key={`r${rowOffset + 1}-fill-${col}`}
+                                        className="cell"
+                                    ></div>
+                                );
                             })
                         )}
 
@@ -734,11 +778,9 @@ export default function Game() {
                 </div>
 
                 {/* TROOP SELECTION */}
-                <div className="troops-container bg-gradient-to-r from-blue-900 to-blue-800 p-4 rounded-lg mt-2 shadow-md border-2 border-blue-700">
+                <div className="troops-container bg-gradient-to-r from-blue-900 to-blue-800 p-2 rounded-lg mt-2 shadow-md border-2 border-blue-700">
                     <div className="section-header flex justify-between items-center mb-3">
-                        <h3 className="text-xl text-yellow-400 drop-shadow-md">
-                            TROOPS
-                        </h3>
+                        <h3 className="text-xl text-yellow-400 drop-shadow-md">TROOPS</h3>
 
                         <button
                             className={`skip-btn px-4 py-1 rounded-full font-semibold transition-all transform hover:scale-105 ${game.playerTurn === user.user?.username
@@ -756,7 +798,7 @@ export default function Game() {
                         {Object.entries(game.troops).map(([troopName, troop], index) => (
                             <div
                                 key={index}
-                                className={`troop w-50 ${game.selectedTroop?.name === troopName
+                                className={`troop w-43 ${game.selectedTroop?.name === troopName
                                     ? "border-4 border-yellow-400 bg-yellow-100 transform scale-105"
                                     : "border-2 border-gray-400 bg-white"
                                     } ${game.playerMana < troop.mana
@@ -782,9 +824,6 @@ export default function Game() {
                                         </div>
                                     )}
                                 </div>
-                                <div className="ability-description text-xs text-center bg-gray-100 p-1 rounded">
-                                    {troop.description}
-                                </div>
                             </div>
                         ))}
                     </div>
@@ -792,9 +831,7 @@ export default function Game() {
                 {/* NOTIFICATION */}
                 {notification.show && (
                     <div className="notification fixed top-5 left-0 right-0 mx-auto max-w-md bg-yellow-400 px-4 py-2 text-center rounded-full shadow-lg border-2 border-yellow-500 animate-bounce">
-                        <span className="text-blue-900">
-                            {notification.message}
-                        </span>
+                        <span className="text-blue-900">{notification.message}</span>
                     </div>
                 )}
 
@@ -804,26 +841,28 @@ export default function Game() {
                         <div className="modal-content bg-gradient-to-b from-blue-800 to-blue-900 rounded-lg shadow-xl p-6 max-w-md w-full border-4 border-yellow-500 transform scale-105 animate-pulse">
                             {/* Crown decoration */}
                             <div className="crown-decoration absolute -top-10 left-1/2 transform -translate-x-1/2 text-6xl">
-                                {game.winner === user.user?.username ? "👑" : "☠️"}
+                                {game.winner === localStorage.getItem("username")
+                                    ? "👑"
+                                    : "☠️"}
                             </div>
 
                             <h2
-                                className={`modal-title text-3xl mb-4 text-center ${game.winner === user.user?.username
+                                className={`modal-title text-3xl mb-4 text-center ${game.winner === localStorage.getItem("username")
                                     ? "text-yellow-400"
                                     : "text-red-400"
                                     }`}
                             >
-                                {game.winner === user.user?.username ? "VICTORY!" : "DEFEAT"}
+                                {game.winner === localStorage.getItem("username") ? "VICTORY!" : "DEFEAT"}
                             </h2>
 
                             <div className="modal-body text-center">
                                 <p className="text-white text-lg mb-3">
-                                    {game.winner === user.user?.username
+                                    {game.winner === localStorage.getItem("username")
                                         ? "You have conquered your opponent's kingdom!"
                                         : "Your kingdom has fallen to the enemy!"}
                                 </p>
                                 <div className="exp-gain text-yellow-300 text-2xl mt-3 animate-pulse">
-                                    {game.winner === user.user?.username ? "+50 XP" : "+5 XP"}
+                                    {game.winner === localStorage.getItem("username") ? "+50 XP" : "+5 XP"}
                                 </div>
                             </div>
 

@@ -106,7 +106,7 @@ export default function Lobby() {
     }
 
     function viewLeaderboard() {
-        addLog("SYSTEM", "Opening leaderboard...");
+        addLog("EVENTS", "Leaderboard is coming soon. Stay tuned!");
     }
 
     const expProgressStyle = {
@@ -127,7 +127,10 @@ export default function Lobby() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-sky-500 to-blue-600 p-4 md:p-8 font-sans" style={{ fontFamily: "'ClashDisplay', sans-serif" }}>
+        <div
+            className="min-h-screen bg-gradient-to-br from-sky-500 to-blue-600 p-4 md:p-8 font-sans"
+            style={{ fontFamily: "'ClashDisplay', sans-serif" }}
+        >
             {/* Gold and Gems Bar */}
             <div className="flex justify-end mb-4 space-x-2">
                 <div className="bg-blue-900 px-3 py-1 rounded-full border-2 border-yellow-400 flex items-center shadow-lg">
@@ -144,15 +147,24 @@ export default function Lobby() {
                 {/* Header */}
                 <div className="text-center mb-8">
                     <div className="relative inline-block">
-                        <h1 className="text-5xl md:text-6xl font-black text-white mb-2 drop-shadow-lg" style={{ textShadow: "3px 3px 0 #2563eb, 6px 6px 0 #1d4ed8" }}>
+                        <h1
+                            className="text-5xl md:text-6xl font-black text-white mb-2 drop-shadow-lg pointer-events-none"
+                            style={{ textShadow: "3px 3px 0 #2563eb, 6px 6px 0 #1d4ed8" }}
+                        >
                             <span className="text-yellow-400">ROY</span>
                             <span className="text-red-500">AKA</span>
                         </h1>
-                        <div className="absolute -top-4 -right-4 transform rotate-12 text-2xl">✨</div>
-                        <div className="absolute -bottom-2 -left-4 transform -rotate-12 text-2xl">✨</div>
+                        <img
+                            className="absolute w-10 -top-4 -right-4 transform rotate-20 pointer-events-none drop-shadow-[0_0_10px_rgba(255,255,0,0.6)]"
+                            src="/assets/icon_crown.png"
+                        />
+                        <img
+                            className="absolute w-10 -bottom-2 -left-4 transform -rotate-12 pointer-events-none drop-shadow-[0_0_10px_rgba(255,255,0,0.6)]"
+                            src="/assets/icon_path.png"
+                        />
                     </div>
-                    <div className="bg-blue-900 inline-block px-6 py-2 rounded-xl border-4 border-yellow-400 shadow-lg transform -rotate-1">
-                        <p className="text-lg text-yellow-300 font-bold">
+                    <div className="bg-blue-900 inline-block px-6 py-2 rounded-xl border-4 border-yellow-400 shadow-lg transform -rotate-1 pointer-events-none">
+                        <p className="text-lg text-yellow-300">
                             Epic Tower Battles Await!
                         </p>
                     </div>
@@ -162,9 +174,13 @@ export default function Lobby() {
                 <div className="flex flex-col md:flex-row gap-6">
                     {/* Player Card */}
                     <div className="bg-gradient-to-b from-blue-800 to-blue-900 rounded-xl shadow-lg p-6 flex-1 border-4 border-yellow-400 relative overflow-hidden">
-                        <div className="absolute -right-6 -bottom-6 text-yellow-400/20 text-8xl">👑</div>
+                        <img
+                            className="absolute w-[180px] -right-[60px] -bottom-[60px] opacity-60 pointer-events-none"
+                            src="/assets/icon_decorate.png"
+                            alt=""
+                        />
                         <div className="flex flex-col items-center">
-                            <div className="relative w-28 h-28 mb-4">
+                            <div className="relative w-35 h-35 mb-4">
                                 <div className="w-full h-full rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 border-4 border-yellow-400 shadow-lg overflow-hidden relative">
                                     <img
                                         src={user.avatar}
@@ -174,13 +190,25 @@ export default function Lobby() {
                                 </div>
 
                                 {/* Level Badge - overlaps bottom-right */}
-                                <div className="absolute -bottom-1 -right-1 bg-red-500 w-9 h-9 rounded-full border-2 border-white flex items-center justify-center z-10 shadow-md">
-                                    <span className="text-white font-bold text-base">{user.level}</span>
+                                <div className="absolute -bottom-2 right-1 w-9 h-9 z-10 shadow-md drop-shadow-[0_0_10px_rgba(255,255,0,0.4)]">
+                                    <div className="relative w-full h-full flex items-center justify-center">
+                                        <img
+                                            className="pointer-events-none w-full h-full"
+                                            src="/assets/icon_banner.png"
+                                            alt=""
+                                        />
+                                        <span className="absolute text-white text-base font-bold">
+                                            {user.level}
+                                        </span>
+                                    </div>
                                 </div>
+
                             </div>
 
-                            <div className="w-full bg-gradient-to-r from-purple-500 to-blue-500 py-2 px-4 rounded-xl border-4 border-cyan-300 mb-4 transform rotate-1 shadow-lg">
-                                <h2 className="text-2xl font-black text-white text-center">{user.username}</h2>
+                            <div className="w-full bg-gradient-to-r from-violet-500 to-blue-500 py-2 px-4 rounded-xl border-4 border-cyan-300 mb-4 transform rotate-1 shadow-lg">
+                                <h2 className="text-2xl font-black text-white text-center">
+                                    {user.username}
+                                </h2>
                             </div>
 
                             <div className="w-full space-y-4">
@@ -188,16 +216,22 @@ export default function Lobby() {
                                 <div className="bg-gradient-to-r from-yellow-500 to-amber-600 p-3 rounded-xl border-4 border-yellow-300 shadow-md flex items-center justify-between">
                                     <div className="flex items-center">
                                         <span className="text-3xl mr-2">🏆</span>
-                                        <span className="text-white font-bold">Trophies</span>
+                                        <span className="text-white">Trophies</span>
                                     </div>
-                                    <span className="font-black text-white text-2xl">{user.gamesWon}</span>
+                                    <span className="font-black text-white text-2xl">
+                                        {user.gamesWon}
+                                    </span>
                                 </div>
 
                                 {/* Experience Bar */}
                                 <div className="bg-blue-700 rounded-xl p-3 border-4 border-cyan-400 shadow-md">
                                     <div className="flex justify-between mb-2">
-                                        <span className="text-cyan-300 font-bold">Experience</span>
-                                        <span className="font-bold text-white">{user.exp}/{expMax}</span>
+                                        <span className="text-cyan-300">
+                                            Experience
+                                        </span>
+                                        <span className="font-bold text-white">
+                                            {user.exp}/{expMax}
+                                        </span>
                                     </div>
 
                                     <div className="w-full h-4 bg-blue-900 rounded-full overflow-hidden border-2 border-cyan-300">
@@ -211,12 +245,20 @@ export default function Lobby() {
                                 {/* Stats */}
                                 <div className="grid grid-cols-2 gap-3">
                                     <div className="bg-gradient-to-b from-green-600 to-green-700 rounded-xl p-3 text-center border-4 border-green-400 shadow-md transform -rotate-1">
-                                        <span className="text-green-300 text-sm font-bold">Games Played</span>
-                                        <div className="text-white font-black text-2xl">{user.gamesPlayed}</div>
+                                        <span className="text-green-300 text-sm">
+                                            Games Played
+                                        </span>
+                                        <div className="text-white text-2xl">
+                                            {user.gamesPlayed}
+                                        </div>
                                     </div>
                                     <div className="bg-gradient-to-b from-purple-600 to-purple-700 rounded-xl p-3 text-center border-4 border-purple-400 shadow-md transform rotate-1">
-                                        <span className="text-purple-300 text-sm font-bold">Victories</span>
-                                        <div className="text-white font-black text-2xl">{user.gamesWon}</div>
+                                        <span className="text-purple-300 text-sm">
+                                            Victories
+                                        </span>
+                                        <div className="text-white text-2xl">
+                                            {user.gamesWon}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -225,10 +267,14 @@ export default function Lobby() {
 
                     {/* Game Options */}
                     <div className="bg-gradient-to-b from-blue-800 to-blue-900 rounded-xl shadow-lg p-6 flex-1 border-4 border-yellow-400 relative overflow-hidden">
-                        <div className="absolute -left-8 -top-8 text-red-400/20 text-8xl">⚔️</div>
+                        <div className="absolute -left-8 -top-8 text-red-400/20 text-8xl">
+                            ⚔️
+                        </div>
 
                         <div className="bg-gradient-to-r from-red-500 to-orange-500 py-2 px-4 rounded-xl border-4 border-yellow-300 mb-6 shadow-lg transform -rotate-1">
-                            <h3 className="text-2xl font-black text-center text-white">BATTLE MODES</h3>
+                            <h3 className="text-2xl font-black text-center text-white">
+                                BATTLE MODES
+                            </h3>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
@@ -237,13 +283,20 @@ export default function Lobby() {
                                 className={`${selectedMode === "simple"
                                     ? "bg-gradient-to-b from-red-500 to-red-600 border-yellow-300 shadow-lg transform scale-105"
                                     : "bg-gradient-to-b from-blue-700 to-blue-800 border-blue-400"
-                                    } rounded-xl p-4 cursor-pointer transition-all hover:shadow-lg border-4 relative overflow-hidden`}
+                                    } rounded-xl p-4 cursor-pointer transition-all hover:shadow-lg border-4 relative overflow-hidden flex flex-col items-center`}
                                 onClick={() => setSelectedMode("simple")}
                             >
-                                <div className="absolute -right-4 -bottom-4 text-white/10 text-6xl">🏆</div>
-                                <div className="text-5xl text-center mb-2">🏰</div>
-                                <div className="font-black text-center mb-1 text-white text-xl">TURN-BASED</div>
-                                <div className="text-sm text-center text-white font-semibold">
+                                <div className="absolute -right-4 -bottom-4 text-white/10 text-6xl">
+                                    🏆
+                                </div>
+                                <img
+                                    className=" w-20 mb-2 pointer-events-none"
+                                    src="/assets/icon_turn_based.png"
+                                />
+                                <div className="font-black text-center mb-1 text-white text-xl">
+                                    TURN-BASED
+                                </div>
+                                <div className="text-xs text-center text-white">
                                     Strategic 1v1, move by move.
                                 </div>
                             </div>
@@ -253,12 +306,19 @@ export default function Lobby() {
                                 className={`${selectedMode === "enhanced"
                                     ? "bg-gradient-to-b from-red-500 to-red-600 border-yellow-300 shadow-lg transform scale-105"
                                     : "bg-gradient-to-b from-blue-700 to-blue-800 border-blue-400"
-                                    } rounded-xl p-4 cursor-pointer transition-all hover:shadow-lg border-4 relative overflow-hidden`}
+                                    } rounded-xl p-4 cursor-pointer transition-all hover:shadow-lg border-4 relative overflow-hidden flex flex-col items-center`}
                                 onClick={() => setSelectedMode("enhanced")}
                             >
-                                <div className="absolute -right-4 -bottom-4 text-white/10 text-6xl">👥</div>
-                                <div className="text-5xl text-center mb-2">⚔️</div>
-                                <div className="font-black text-center mb-1 text-white text-xl">TIMED MATCH</div>
+                                <div className="absolute -right-4 -bottom-4 text-white/10 text-6xl">
+                                    👥
+                                </div>
+                                <img
+                                    className=" w-20 mb-2 pointer-events-none"
+                                    src="/assets/icon_timed_match.png"
+                                />
+                                <div className="font-black text-center mb-1 text-white text-xl">
+                                    TIMED MATCH
+                                </div>
                                 <div className="text-sm text-center text-white font-semibold">
                                     Fast-paced 1v1 chaos.
                                 </div>
@@ -278,9 +338,25 @@ export default function Lobby() {
                             >
                                 {isJoiningGame ? (
                                     <span className="flex items-center justify-center gap-2">
-                                        <svg className="w-6 h-6 animate-spin text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+                                        <svg
+                                            className="w-6 h-6 animate-spin text-white"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <circle
+                                                className="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                strokeWidth="4"
+                                            ></circle>
+                                            <path
+                                                className="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 018-8v8z"
+                                            ></path>
                                         </svg>
                                         MATCHING...
                                     </span>
@@ -306,7 +382,7 @@ export default function Lobby() {
                             {/* Logout Button */}
                             <button
                                 onClick={handleLogout}
-                                className="w-full py-3 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-xl font-black text-xl transition-all hover:shadow-lg hover:-translate-y-1 active:translate-y-0 border-4 border-pink-300 shadow-md"
+                                className="w-full py-3 bg-gradient-to-r from-violet-600 to-violet-500 text-white rounded-xl font-black text-xl transition-all hover:shadow-lg hover:-translate-y-1 active:translate-y-0 border-4 border-pink-300 shadow-md"
                             >
                                 <span className="flex items-center justify-center">
                                     <span className="text-xl mr-2">🚪</span>
@@ -320,7 +396,9 @@ export default function Lobby() {
                 {/* Log Container */}
                 <div className="mt-6 bg-blue-900 rounded-xl p-4 border-4 border-cyan-400 shadow-lg h-40 overflow-y-auto">
                     <div className="text-center mb-2">
-                        <span className="bg-blue-700 px-4 py-1 rounded-full text-white text-sm font-black border-2 border-cyan-300">BATTLE LOG</span>
+                        <span className="bg-blue-700 px-4 py-1 rounded-full text-white text-sm font-black border-2 border-cyan-300">
+                            BATTLE LOG
+                        </span>
                     </div>
                     {logs.map((log, index) => {
                         let bgColor;
@@ -342,12 +420,20 @@ export default function Lobby() {
                         }
 
                         return (
-                            <div key={index} className={`mb-2 text-sm ${bgColor} p-2 rounded-lg border-2 ${borderColor} transform ${index % 2 === 0 ? 'rotate-1' : '-rotate-1'}`}>
-                                <span className="text-white mr-2 font-bold">{log.timestamp}</span>
+                            <div
+                                key={index}
+                                className={`mb-2 text-sm ${bgColor} p-2 rounded-lg border-2 ${borderColor} transform ${index % 2 === 0 ? "rotate-1" : "-rotate-1"
+                                    }`}
+                            >
+                                <span className="text-white mr-2">
+                                    {log.timestamp}
+                                </span>
                                 <span className="font-black mr-2 text-white">
                                     {icon} {log.type}
                                 </span>
-                                <span className="text-white font-semibold">{log.message}</span>
+                                <span className="text-white font-semibold">
+                                    {log.message}
+                                </span>
                             </div>
                         );
                     })}
@@ -365,7 +451,9 @@ export default function Lobby() {
 
                 {/* Decorative elements */}
                 <div className="fixed top-4 left-4 text-4xl animate-pulse">🏆</div>
-                <div className="fixed bottom-4 right-4 text-4xl animate-bounce">⚔️</div>
+                <div className="fixed bottom-4 right-4 text-4xl animate-bounce">
+                    ⚔️
+                </div>
             </div>
         </div>
     );
