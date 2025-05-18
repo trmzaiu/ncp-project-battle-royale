@@ -537,14 +537,14 @@ export default function Game() {
     };
 
     const tileMap = [
-        ["00", "01", "00", "24", "25", "25", "26", "00", "00", "00"],
-        ["00", "12", "13", "39", "25", "25", "40", "13", "14", "01"],
-        ["00", "24", "25", "25", "25", "25", "25", "25", "26", "00"],
-        ["00", "36", "37", "37", "37", "37", "37", "37", "38", "00"],
-        ["00", "12", "13", "13", "13", "13", "13", "13", "14", "00"],
-        ["00", "24", "25", "25", "25", "25", "25", "25", "26", "00"],
-        ["00", "36", "37", "42", "25", "25", "41", "37", "38", "00"],
-        ["00", "00", "02", "24", "25", "25", "26", "01", "00", "00"]
+        ["00", "01", "00", "87", "80", "80", "88", "00", "02", "02"],
+        ["00", "00", "00", "87", "80", "80", "88", "00", "02", "01"],
+        ["00", "00", "00", "85", "84", "84", "86", "00", "00", "00"],
+        ["19", "19", "19", "19", "19", "19", "19", "19", "19", "19"],
+        ["55", "55", "55", "55", "55", "55", "55", "55", "55", "55"],
+        ["00", "00", "00", "00", "00", "00", "01", "00", "00", "00"],
+        ["00", "00", "01", "00", "00", "00", "00", "00", "00", "02"],
+        ["82", "83", "00", "00", "00", "00", "03", "73", "04", "00"]
     ];
 
     return (
@@ -619,7 +619,7 @@ export default function Game() {
                 </div>
 
                 {/* BATTLEFIELD - GRID LAYOUT */}
-                <div className="battle-container rounded-lg shadow-inner border-2 border-green-700 overflow-hidden relative w-full aspect-[10/8]">
+                <div className="battle-container rounded-lg shadow-inner border-4 border-green-700 overflow-hidden relative w-full aspect-[10/8]">
                     {/* Grid background */}
                     <div className="absolute inset-0 grid grid-cols-10 grid-rows-8">
                         {tileMap.map((row, rowIndex) =>
@@ -631,27 +631,27 @@ export default function Game() {
                                         backgroundImage: `url(/assets/tiles/tile_00${tile}.png)`,
                                     }}
                                 >
-                                    {colIndex === 0 && (
+                                    {colIndex === 0 && rowIndex === 0 && (
                                         <img
-                                            src={`/assets/tiles/tile_00${rowIndex % 2 === 0 ? "08" : "32"}.png`}
+                                            src="/assets/tiles/tile_0092.png"
                                             alt="Tree"
                                             className="w-full h-full pointer-events-none select-none"
                                             style={{ objectFit: "contain" }}
                                         />
                                     )}
-                                    {colIndex === 9 && (
+                                    {colIndex === 0 && rowIndex === 1 && (
                                         <img
-                                            src={`/assets/tiles/tile_00${rowIndex % 2 === 0 ? "09" : "33"}.png`}
+                                            src="/assets/tiles/tile_0090.png"
                                             alt="Tree"
                                             className="w-full h-full pointer-events-none select-none"
                                             style={{ objectFit: "contain" }}
                                         />
                                     )}
-                                    {colIndex === 7 && rowIndex === 0 && (
+                                    {colIndex === 1 && rowIndex === 0 && (
                                         <img
-                                            src="/assets/tiles/tile_0017.png"
+                                            src="/assets/tiles/tile_0090.png"
                                             alt="Tree"
-                                            className="pointer-events-none select-none w-1/2 h-1/2"
+                                            className="w-full h-full pointer-events-none select-none"
                                             style={{ objectFit: "contain" }}
                                         />
                                     )}
