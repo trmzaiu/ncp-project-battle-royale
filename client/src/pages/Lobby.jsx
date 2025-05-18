@@ -157,10 +157,12 @@ export default function Lobby() {
                         <img
                             className="absolute w-10 -top-4 -right-4 transform rotate-20 pointer-events-none drop-shadow-[0_0_10px_rgba(255,255,0,0.6)]"
                             src="/assets/icon_crown.png"
+                            alt=""
                         />
                         <img
-                            className="absolute w-10 -bottom-2 -left-4 transform -rotate-12 pointer-events-none drop-shadow-[0_0_10px_rgba(255,255,0,0.6)]"
-                            src="/assets/icon_path.png"
+                            className="absolute w-12 -bottom-2 -left-6 transform -rotate-12 pointer-events-none drop-shadow-[0_0_10px_rgba(255,255,0,0.6)]"
+                            src="/assets/icon_badge.png"
+                            alt=""
                         />
                     </div>
                     <div className="bg-blue-900 inline-block px-6 py-2 rounded-xl border-4 border-yellow-400 shadow-lg transform -rotate-1 pointer-events-none">
@@ -175,7 +177,7 @@ export default function Lobby() {
                     {/* Player Card */}
                     <div className="bg-gradient-to-b from-blue-800 to-blue-900 rounded-xl shadow-lg p-6 flex-1 border-4 border-yellow-400 relative overflow-hidden">
                         <img
-                            className="absolute w-[180px] -right-[60px] -bottom-[60px] opacity-60 pointer-events-none"
+                            className="absolute w-35 -right-8 -bottom-8 opacity-60 pointer-events-none"
                             src="/assets/icon_decorate.png"
                             alt=""
                         />
@@ -267,11 +269,13 @@ export default function Lobby() {
 
                     {/* Game Options */}
                     <div className="bg-gradient-to-b from-blue-800 to-blue-900 rounded-xl shadow-lg p-6 flex-1 border-4 border-yellow-400 relative overflow-hidden">
-                        <div className="absolute -left-8 -top-8 text-red-400/20 text-8xl">
-                            ⚔️
-                        </div>
+                        <img
+                            className="absolute w-35 -left-8 -top-8 opacity-40 -rotate-12 pointer-events-none"
+                            src="/assets/icon_timed_match.png"
+                            alt=""
+                        />
 
-                        <div className="bg-gradient-to-r from-red-500 to-orange-500 py-2 px-4 rounded-xl border-4 border-yellow-300 mb-6 shadow-lg transform -rotate-1">
+                        <div className="bg-gradient-to-r from-red-500 to-orange-500 py-2 px-4 rounded-xl border-4 border-yellow-300 mb-6 shadow-lg transform -rotate-1  pointer-events-none">
                             <h3 className="text-2xl font-black text-center text-white">
                                 BATTLE MODES
                             </h3>
@@ -286,12 +290,10 @@ export default function Lobby() {
                                     } rounded-xl p-4 cursor-pointer transition-all hover:shadow-lg border-4 relative overflow-hidden flex flex-col items-center`}
                                 onClick={() => setSelectedMode("simple")}
                             >
-                                <div className="absolute -right-4 -bottom-4 text-white/10 text-6xl">
-                                    🏆
-                                </div>
                                 <img
                                     className=" w-20 mb-2 pointer-events-none"
                                     src="/assets/icon_turn_based.png"
+                                    alt=""
                                 />
                                 <div className="font-black text-center mb-1 text-white text-xl">
                                     TURN-BASED
@@ -309,12 +311,10 @@ export default function Lobby() {
                                     } rounded-xl p-4 cursor-pointer transition-all hover:shadow-lg border-4 relative overflow-hidden flex flex-col items-center`}
                                 onClick={() => setSelectedMode("enhanced")}
                             >
-                                <div className="absolute -right-4 -bottom-4 text-white/10 text-6xl">
-                                    👥
-                                </div>
                                 <img
                                     className=" w-20 mb-2 pointer-events-none"
                                     src="/assets/icon_timed_match.png"
+                                    alt=""
                                 />
                                 <div className="font-black text-center mb-1 text-white text-xl">
                                     TIMED MATCH
@@ -396,7 +396,7 @@ export default function Lobby() {
                 {/* Log Container */}
                 <div className="mt-6 bg-blue-900 rounded-xl p-4 border-4 border-cyan-400 shadow-lg h-40 overflow-y-auto">
                     <div className="text-center mb-2">
-                        <span className="bg-blue-700 px-4 py-1 rounded-full text-white text-sm font-black border-2 border-cyan-300">
+                        <span className="bg-blue-700 px-4 py-1 rounded-full text-white text-sm font-black border-2 border-cyan-300 pointer-events-none">
                             BATTLE LOG
                         </span>
                     </div>
@@ -450,10 +450,16 @@ export default function Lobby() {
                 )}
 
                 {/* Decorative elements */}
-                <div className="fixed top-4 left-4 text-4xl animate-pulse">🏆</div>
-                <div className="fixed bottom-4 right-4 text-4xl animate-bounce">
-                    ⚔️
-                </div>
+                <img
+                    className="fixed w-25 top-1 left-1 animate-pulse pointer-events-none"
+                    src="/assets/icon_badge.png"
+                    alt=""
+                />
+                <img
+                    className="fixed w-20 bottom-1 right-1 animate-bounce pointer-events-none"
+                    src="/assets/icon_timed_match.png"
+                    alt=""
+                />
             </div>
         </div>
     );

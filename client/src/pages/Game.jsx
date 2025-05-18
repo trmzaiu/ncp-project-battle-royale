@@ -536,6 +536,17 @@ export default function Game() {
         );
     };
 
+    const tileMap = [
+        ["00", "01", "00", "24", "25", "25", "26", "00", "00", "00"],
+        ["00", "12", "13", "39", "25", "25", "40", "13", "14", "01"],
+        ["00", "24", "25", "25", "25", "25", "25", "25", "26", "00"],
+        ["00", "36", "37", "37", "37", "37", "37", "37", "38", "00"],
+        ["00", "12", "13", "13", "13", "13", "13", "13", "14", "00"],
+        ["00", "24", "25", "25", "25", "25", "25", "25", "26", "00"],
+        ["00", "36", "37", "42", "25", "25", "41", "37", "38", "00"],
+        ["00", "00", "02", "24", "25", "25", "26", "01", "00", "00"]
+    ];
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-500 to-blue-900">
             {showLargeAnimation && (
@@ -596,8 +607,8 @@ export default function Game() {
                     <div className="turn-display text-center transform hover:scale-105 transition-transform mx-2">
                         <div
                             className={`text-lg px-4 pt-1 rounded-full ${game.playerTurn === user.user?.username
-                                ? "bg-green-600 text-white animate-pulse"
-                                : "bg-red-600 text-white"
+                                    ? "bg-green-600 text-white animate-pulse"
+                                    : "bg-red-600 text-white"
                                 }`}
                         >
                             {game.playerTurn === user.user?.username
@@ -608,31 +619,51 @@ export default function Game() {
                 </div>
 
                 {/* BATTLEFIELD - GRID LAYOUT */}
-                <div className="battle-container bg-gradient-to-b from-green-500 to-green-600 rounded-lg shadow-inner border-2 border-green-700 overflow-hidden relative w-full aspect-[10/8]">
+                <div className="battle-container rounded-lg shadow-inner border-2 border-green-700 overflow-hidden relative w-full aspect-[10/8]">
                     {/* Grid background */}
                     <div className="absolute inset-0 grid grid-cols-10 grid-rows-8">
-                        {Array.from({ length: 80 }).map((_, i) => {
-                            const row = Math.floor(i / 10);
-                            const col = i % 10;
-                            // If row + col is even, color A; else color B
-                            const isEven = (row + col) % 2 === 0;
-                            return (
+                        {tileMap.map((row, rowIndex) =>
+                            row.map((tile, colIndex) => (
                                 <div
-                                    key={i}
-                                    className={`border border-emerald-500 aspect-square ${isEven
-                                        ? "bg-emerald-400 bg-opacity-20"
-                                        : "bg-emerald-500 bg-opacity-40"
-                                        }`}
-                                ></div>
-                            );
-                        })}
+                                    key={`r${rowIndex}-c${colIndex}`}
+                                    className="bg-cover flex items-center justify-center"
+                                    style={{
+                                        backgroundImage: `url(/assets/tiles/tile_00${tile}.png)`,
+                                    }}
+                                >
+                                    {colIndex === 0 && (
+                                        <img
+                                            src={`/assets/tiles/tile_00${rowIndex % 2 === 0 ? "08" : "32"}.png`}
+                                            alt="Tree"
+                                            className="w-full h-full pointer-events-none select-none"
+                                            style={{ objectFit: "contain" }}
+                                        />
+                                    )}
+                                    {colIndex === 9 && (
+                                        <img
+                                            src={`/assets/tiles/tile_00${rowIndex % 2 === 0 ? "09" : "33"}.png`}
+                                            alt="Tree"
+                                            className="w-full h-full pointer-events-none select-none"
+                                            style={{ objectFit: "contain" }}
+                                        />
+                                    )}
+                                    {colIndex === 7 && rowIndex === 0 && (
+                                        <img
+                                            src="/assets/tiles/tile_0017.png"
+                                            alt="Tree"
+                                            className="pointer-events-none select-none w-1/2 h-1/2"
+                                            style={{ objectFit: "contain" }}
+                                        />
+                                    )}
+                                </div>
+                            ))
+                        )}
                     </div>
 
                     {/* Battlefield grid layout - 10 columns x 6 rows */}
                     <div className="grid-battlefield grid grid-cols-10 grid-rows-8 relative w-full aspect-[10/8]">
                         {/* Row 1 - Opponent King (spans 2 columns) */}
                         <div className="col-start-5 col-span-2 row-start-1 row-span-2 relative">
-                            {" "}
                             {/* Starts at column 5, spans 2 columns */}
                             <Tower
                                 type="king"
@@ -769,8 +800,8 @@ export default function Game() {
                             <div
                                 key={i}
                                 className={`mana-segment flex-1 h-full border-r border-gray-700 last:border-r-0 transition-all ${i < game.playerMana
-                                    ? "bg-gradient-to-r from-blue-400 to-blue-400"
-                                    : ""
+                                        ? "bg-gradient-to-r from-blue-400 to-blue-400"
+                                        : ""
                                     }`}
                             />
                         ))}
@@ -784,8 +815,8 @@ export default function Game() {
 
                         <button
                             className={`skip-btn px-4 py-1 rounded-full font-semibold transition-all transform hover:scale-105 ${game.playerTurn === user.user?.username
-                                ? "bg-yellow-400 text-blue-900 border-2 border-yellow-500"
-                                : "bg-gray-500 text-white opacity-50 cursor-not-allowed"
+                                    ? "bg-yellow-400 text-blue-900 border-2 border-yellow-500"
+                                    : "bg-gray-500 text-white opacity-50 cursor-not-allowed"
                                 }`}
                             disabled={game.playerTurn !== user.user?.username}
                             onClick={skipTurn}
@@ -798,9 +829,9 @@ export default function Game() {
                         {Object.entries(game.troops).map(([troopName, troop], index) => (
                             <div
                                 key={index}
-                                className={`troop w-43 ${game.selectedTroop?.name === troopName
-                                    ? "border-4 border-yellow-400 bg-yellow-100 transform scale-105"
-                                    : "border-2 border-gray-400 bg-white"
+                                className={`troop w-37 ${game.selectedTroop?.name === troopName
+                                        ? "border-4 border-yellow-400 bg-yellow-100 transform scale-105"
+                                        : "border-2 border-gray-400 bg-white"
                                     } ${game.playerMana < troop.mana
                                         ? "opacity-50 grayscale"
                                         : "hover:scale-105"
@@ -828,6 +859,7 @@ export default function Game() {
                         ))}
                     </div>
                 </div>
+
                 {/* NOTIFICATION */}
                 {notification.show && (
                     <div className="notification fixed top-5 left-0 right-0 mx-auto max-w-md bg-yellow-400 px-4 py-2 text-center rounded-full shadow-lg border-2 border-yellow-500 animate-bounce">
@@ -848,11 +880,13 @@ export default function Game() {
 
                             <h2
                                 className={`modal-title text-3xl mb-4 text-center ${game.winner === localStorage.getItem("username")
-                                    ? "text-yellow-400"
-                                    : "text-red-400"
+                                        ? "text-yellow-400"
+                                        : "text-red-400"
                                     }`}
                             >
-                                {game.winner === localStorage.getItem("username") ? "VICTORY!" : "DEFEAT"}
+                                {game.winner === localStorage.getItem("username")
+                                    ? "VICTORY!"
+                                    : "DEFEAT"}
                             </h2>
 
                             <div className="modal-body text-center">
@@ -862,7 +896,9 @@ export default function Game() {
                                         : "Your kingdom has fallen to the enemy!"}
                                 </p>
                                 <div className="exp-gain text-yellow-300 text-2xl mt-3 animate-pulse">
-                                    {game.winner === localStorage.getItem("username") ? "+50 XP" : "+5 XP"}
+                                    {game.winner === localStorage.getItem("username")
+                                        ? "+50 XP"
+                                        : "+5 XP"}
                                 </div>
                             </div>
 
