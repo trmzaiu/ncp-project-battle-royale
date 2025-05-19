@@ -103,6 +103,19 @@ func createTroopInstances(templates []*Troop, ownerID string) []*TroopInstance {
 	return instances
 }
 
+func shuffleTroops(troops []*Troop) []*Troop {
+	shuffled := make([]*Troop, len(troops))
+	copy(shuffled, troops)
+	for i := len(shuffled) - 1; i > 0; i-- {
+		j, err := cryptoRandInt(int64(i + 1))
+		if err != nil {
+			continue
+		}
+		shuffled[i], shuffled[j] = shuffled[j], shuffled[i]
+	}
+	return shuffled
+}
+
 func (t *Troop) CalculateDamage(level int) (int, bool) {
 	baseAtk := float64(t.ATK) * (1 + 0.1*float64(level))
 

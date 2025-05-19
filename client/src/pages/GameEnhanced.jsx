@@ -7,11 +7,16 @@ export default function GameEnhanced() {
     const { sendMessage, subscribe } = useWebSocketContext();
     const damageTimeoutRef = useRef(null);
     const healTimeoutRef = useRef(null);
+    // const hasLeftGameRef = useRef(false);
 
     const [user, setUser] = useState({});
     const [opponent, setOpponent] = useState({});
     const [isGameInitialized, setIsGameInitialized] = useState(false);
     const [hoveredTroop, setHoveredTroop] = useState(null);
+    const [allTroops, setAllTroops] = useState({});
+    const [activeTroops, setActiveTroops] = useState([]);
+    const [usedTroops, setUsedTroops] = useState({});
+    const MAX_ACTIVE_TROOPS = 4;
 
     const [damagePopup, setDamagePopup] = useState({
         targetId: null,
@@ -48,6 +53,7 @@ export default function GameEnhanced() {
             selectedTarget: null,
             gameOver: false,
             winner: null,
+            message: ""
         };
     }
 
@@ -85,6 +91,7 @@ export default function GameEnhanced() {
 
         return () => {
             unsubscribe();
+            // leaveGame();
             if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
             if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
         };
@@ -130,6 +137,22 @@ export default function GameEnhanced() {
 
     // === Game Initialization ===
     const initializeGame = (troops, userData, opponentData) => {
+        const troopsObject = troops.reduce((acc, troop) => {
+            acc[troop.name] = troop;
+            return acc;
+        }, {});
+
+        setAllTroops(troopsObject);
+
+        const initialActiveTroops = Object.keys(troopsObject).slice(0, MAX_ACTIVE_TROOPS);
+        setActiveTroops(initialActiveTroops);
+
+        const initialUsedTroops = {};
+        Object.keys(troopsObject).forEach(troopName => {
+            initialUsedTroops[troopName] = false;
+        });
+        setUsedTroops(initialUsedTroops);
+
         setGame({
             playerMana: userData.mana,
             maxMana: 10,
@@ -137,10 +160,6 @@ export default function GameEnhanced() {
             opponentHealth: extractHP(opponentData.towers),
             playerShield: extractMaxHP(userData.towers),
             opponentShield: extractMaxHP(opponentData.towers),
-            troops: troops.reduce((acc, troop) => {
-                acc[troop.name] = troop;
-                return acc;
-            }, {}),
             selectedTroop: null,
             selectedTarget: null,
             gameOver: false,
@@ -162,9 +181,56 @@ export default function GameEnhanced() {
         guard2: towers.guard2.hp,
     });
 
+    // === Leave Game ===
+    // const leaveGame = () => {
+    //     if (hasLeftGameRef.current) return;
+
+    //     hasLeftGameRef.current = true;
+    //     sendMessage({
+    //         type: "leave_game",
+    //         data: {
+    //             room_id: localStorage.getItem("room_id"),
+    //             username: localStorage.getItem("username"),
+    //         },
+    //     });
+    //     localStorage.removeItem("room_id");
+    // };
+
+    // === Rotate Troops ===
+    const rotateTroop = (usedTroopName) => {
+        // Mark the troop as used
+        setUsedTroops(prev => ({
+            ...prev,
+            [usedTroopName]: true
+        }));
+
+        // Get all unused troops that are not currently active
+        const availableTroops = Object.keys(allTroops).filter(troopName =>
+            !usedTroops[troopName] && !activeTroops.includes(troopName)
+        );
+
+        // If there are available troops, replace the used one
+        if (availableTroops.length > 0) {
+            // Get a random new troop
+            const newTroopIndex = Math.floor(Math.random() * availableTroops.length);
+            const newTroopName = availableTroops[newTroopIndex];
+
+            // Replace the used troop with the new one
+            setActiveTroops(prev => {
+                const index = prev.indexOf(usedTroopName);
+                if (index !== -1) {
+                    const newActive = [...prev];
+                    newActive[index] = newTroopName;
+                    return newActive;
+                }
+                return prev;
+            });
+        }
+    }
+
     // === Select Troop ===
     const selectTroop = (troopName) => {
-        const troop = game.troops[troopName];
+        const troop = allTroops[troopName];
         if (game.playerMana < troop.mana)
             return showNotification("Not enough mana.");
 
@@ -178,6 +244,8 @@ export default function GameEnhanced() {
                 },
             });
 
+            // Rotate the troop after use
+            rotateTroop(troopName);
             return;
         }
 
@@ -506,7 +574,7 @@ export default function GameEnhanced() {
                         <div
                             className={`text-lg px-4 pt-1 rounded-full bg-green-600 text-white`}
                         >
-                        12:20
+                            12:20
                         </div>
                     </div>
                 </div>
@@ -643,7 +711,7 @@ export default function GameEnhanced() {
                         <div className="text-lg text-yellow-400 flex items-center">
                             <span className="text-xl mr-1">⚡</span> MANA
                         </div>
-                        <div className="text-xl text-white font-bold me-1">
+                        <div className="text-xl text-white me-1">
                             {game.playerMana}/{game.maxMana}
                         </div>
                     </div>
@@ -662,74 +730,127 @@ export default function GameEnhanced() {
 
                 {/* TROOP SELECTION */}
                 <div className="troops-container bg-gradient-to-r from-blue-900 to-blue-800 p-2 rounded-lg mt-2 shadow-md border-2 border-blue-700">
-                    <div className="section-header flex justify-between items-center mb-2 px-1">
+                    <div className="section-header flex justify-between items-center mb-1 px-1">
                         <h3 className="text-xl text-yellow-400 drop-shadow-md">TROOPS</h3>
                     </div>
 
-                    <div className="troop-selection flex flex-wrap justify-center gap-3.5">
-                        {Object.entries(game.troops).map(([troopName, troop], index) => (
-                            <div key={index} className="relative"
-                                onMouseEnter={() => setHoveredTroop(troopName)}
-                                onMouseLeave={() => setHoveredTroop(null)}
-                            >
-                                {hoveredTroop === troopName && (
-                                    <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-52 bg-gray-800 text-white rounded-lg shadow-lg z-20 overflow-hidden">
-                                        {/* Troop Header */}
-                                        <div className="bg-gradient-to-r from-blue-700 to-blue-900 p-2 border-b border-gray-600">
-                                            <h4 className="text-yellow-300 text-center">{troopName}</h4>
-                                        </div>
+                    <div className="troop-selection flex flex-wrap justify-center gap-3">
+                        {activeTroops.map((troopName, index) => {
+                            const troop = allTroops[troopName];
+                            if (!troop) return null;
 
-                                        {/* Troop Description */}
-                                        <div className="p-2 pb-1 border-b border-gray-600 text-center italic text-[11px]">
-                                            {troop.description}
-                                        </div>
+                            const isUsed = usedTroops[troopName];
+                            const isSelected = game.selectedTroop?.name === troopName;
+                            const isDisabled = game.playerMana < troop.mana || isUsed;
 
-                                        {/* Troop Stats */}
-                                        <div className="p-2">
-                                            <div className="grid grid-cols-2 gap-x-3 gap-y-1 ">
-                                                <div className="flex items-center">
-                                                    <span className="w-5 h-5 rounded-full bg-red-400 flex items-center justify-center mr-1">❤️</span>
-                                                    <span className="text-[11px]">HP: {troop.max_hp}</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <span className="w-5 h-5 rounded-full bg-yellow-400 flex items-center justify-center mr-1">⚔️</span>
-                                                    <span className="text-[11px]">ATK: {troop.atk}</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <span className="w-5 h-5 rounded-full bg-green-400 flex items-center justify-center mr-1">🛡️</span>
-                                                    <span className="text-[11px]">DEF: {troop.def}</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                    <span className="w-5 h-5 rounded-full bg-purple-400 flex items-center justify-center mr-1">🎯</span>
-                                                    <span className="text-[11px]">CRIT: {troop.crit}%</span>
+                            return (
+                                <div key={index} className="relative"
+                                    onMouseEnter={() => setHoveredTroop(troopName)}
+                                    onMouseLeave={() => setHoveredTroop(null)}
+                                >
+                                    {hoveredTroop === troopName && (
+                                        <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-52 bg-gray-800 text-white rounded-lg shadow-lg z-20 overflow-hidden">
+                                            {/* Troop Header */}
+                                            <div className="bg-gradient-to-r from-blue-700 to-blue-900 p-2 border-b border-gray-600">
+                                                <h4 className="text-yellow-300 text-center">{troopName}</h4>
+                                            </div>
+
+                                            {/* Troop Type */}
+                                            <div className="px-2 py-1 bg-gray-700 text-center">
+                                                <span
+                                                    className={`text-xs px-2 py-0.5 rounded-full ${troop.type === "atk" ? "bg-red-500" :
+                                                        troop.type === "def" ? "bg-blue-500" :
+                                                            troop.type === "buf" ? "bg-yellow-500" :
+                                                                troop.type === "heal" ? "bg-green-500" :
+                                                                    "bg-gray-500"
+                                                        }`}
+                                                >
+                                                    {troop.type}
+                                                </span>
+                                            </div>
+
+                                            {/* Troop Description */}
+                                            <div className="p-2 pb-1 border-b border-gray-600 text-center italic text-[11px]">
+                                                {troop.description}
+                                            </div>
+
+                                            {/* Troop Stats */}
+                                            <div className="p-2">
+                                                <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                                                    <div className="flex items-center">
+                                                        <span className="w-5 h-5 rounded-full bg-red-400 flex items-center justify-center mr-1">❤️</span>
+                                                        <span className="text-[11px]">HP: {troop.max_hp}</span>
+                                                    </div>
+                                                    <div className="flex items-center">
+                                                        <span className="w-5 h-5 rounded-full bg-yellow-400 flex items-center justify-center mr-1">⚔️</span>
+                                                        <span className="text-[11px]">ATK: {troop.atk}</span>
+                                                    </div>
+                                                    <div className="flex items-center">
+                                                        <span className="w-5 h-5 rounded-full bg-green-400 flex items-center justify-center mr-1">🛡️</span>
+                                                        <span className="text-[11px]">DEF: {troop.def}</span>
+                                                    </div>
+                                                    <div className="flex items-center">
+                                                        <span className="w-5 h-5 rounded-full bg-purple-400 flex items-center justify-center mr-1">🎯</span>
+                                                        <span className="text-[11px]">CRIT: {troop.crit}%</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                )}
-                                <div
-                                    className={`troop ${game.selectedTroop?.name === troopName
-                                        ? "border-4 border-rose-900 transform scale-105"
-                                        : "border-3 border-stone-900"
-                                        } ${game.playerMana < troop.mana
-                                            ? "opacity-50 grayscale"
-                                            : "hover:scale-105"
-                                        } rounded-xl shadow-lg shadow-inner relative overflow-hidden cursor-pointer transition-all duration-200`}
-                                    onClick={() => selectTroop(troopName)}
-                                >
-                                    <div className="justify-between items-center">
-                                        <div className="w-full h-full relative">
-                                            <img className="w-full h-43 object-cover" src={troop.card} alt={troopName} />
+                                    )}
+                                    <div
+                                        className={`troop relative rounded-xl shadow-lg overflow-hidden cursor-pointer transition-all duration-200 
+                                            ${isSelected ? "border-4 border-yellow-400 transform scale-105" : "border-2 border-gray-700"}
+                                            ${isDisabled ? "opacity-60 grayscale" : "hover:scale-105"}
+                                        `}
+                                        onClick={() => !isDisabled && selectTroop(troopName)}
+                                    >
+                                        {isUsed && (
+                                            <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center z-10">
+                                                <span className="text-white text-lg">USED</span>
+                                            </div>
+                                        )}
+
+                                        <div className="w-full relative">
+                                            <img
+                                                className="w-35 h-37 object-cover"
+                                                src={troop.card}
+                                                alt={troopName}
+                                            />
+
+                                            {/* Type indicator */}
+                                            <div className="absolute top-1 left-1">
+                                                <span
+                                                    className={`text-xs px-2 py-1 rounded-full shadow-md ${troop.type === "atk" ? "bg-red-500 text-white" :
+                                                        troop.type === "def" ? "bg-blue-500 text-white" :
+                                                            troop.type === "buf" ? "bg-yellow-500 text-black" :
+                                                                troop.type === "heal" ? "bg-green-500 text-white" :
+                                                                    "bg-gray-500"
+                                                        }`}
+                                                >
+                                                    {troop.type === "atk" && "ATK"}
+                                                    {troop.type === "def" && "DEF"}
+                                                    {troop.type === "buf" && "BUFF"}
+                                                    {troop.type === "heal" && "HEAL"}
+                                                </span>
+                                            </div>
+
+                                            {/* Mana cost */}
+                                            <div className="absolute bottom-1 right-1 bg-blue-800 bg-opacity-80 rounded-full w-8 h-8 flex items-center justify-center shadow-md border border-blue-400">
+                                                <span className="text-white text-lg mt-1 leading-none">{troop.mana}</span>
+                                            </div>
+
+                                            {/* Selection indicator */}
+                                            {isSelected && (
+                                                <div className="absolute inset-0 pointer-events-none"></div>
+                                            )}
                                         </div>
-                                    </div>
-                                    <div className="absolute bottom-0 right-0 z-10">
-                                        <div className="text-white text-2xl flex items-center drop-shadow-[0_0_2px_#000] shadow-md">
-                                            {troop.mana}⚡
+                                        <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-1 text-center">
+                                            <span className="text-white text-sm font-semibold truncate block">{troopName}</span>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 </div>
 

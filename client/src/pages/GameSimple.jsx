@@ -807,7 +807,7 @@ export default function GameSimple() {
                         </button>
                     </div>
 
-                    <div className="troop-selection flex flex-wrap justify-center gap-3.5">
+                    <div className="troop-selection flex flex-wrap justify-center gap-3">
                         {Object.entries(game.troops).map(([troopName, troop], index) => (
                             <div key={index} className="relative"
                                 onMouseEnter={() => setHoveredTroop(troopName)}
@@ -850,23 +850,28 @@ export default function GameSimple() {
                                 )}
                                 <div
                                     className={`troop ${game.selectedTroop?.name === troopName
-                                        ? "border-4 border-rose-900 transform scale-105"
-                                        : "border-3 border-stone-900"
+                                        ? "border-4 border-yellow-400 transform scale-105"
+                                        : "border-2 border-gray-700"
                                         } ${game.playerMana < troop.mana
                                             ? "opacity-50 grayscale"
                                             : "hover:scale-105"
                                         } rounded-xl shadow-lg shadow-inner relative overflow-hidden cursor-pointer transition-all duration-200`}
                                     onClick={() => selectTroop(troopName)}
                                 >
-                                    <div className="justify-between items-center">
-                                        <div className="w-full h-full relative">
-                                            <img className="w-full h-43 object-cover" src={troop.card} alt={troopName} />
+                                    <div className="w-full relative">
+                                        <img
+                                            className="w-35 h-37 object-cover"
+                                            src={troop.card}
+                                            alt={troopName}
+                                        />
+
+                                        {/* Mana cost */}
+                                        <div className="absolute bottom-1 right-1 bg-blue-800 bg-opacity-80 rounded-full w-8 h-8 flex items-center justify-center shadow-md border border-blue-400">
+                                            <span className="text-white text-lg mt-1 leading-none">{troop.mana}</span>
                                         </div>
                                     </div>
-                                    <div className="absolute bottom-0 right-0 z-10">
-                                        <div className="text-white text-2xl flex items-center drop-shadow-[0_0_2px_#000] shadow-md">
-                                            {troop.mana}⚡
-                                        </div>
+                                    <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-1 text-center">
+                                        <span className="text-white text-sm font-semibold truncate block">{troopName}</span>
                                     </div>
                                 </div>
                             </div>

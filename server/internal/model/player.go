@@ -12,6 +12,7 @@ type Player struct {
 	Mana           int               `json:"mana"`
 	Towers         map[string]*Tower `json:"towers"`
 	Troops         []*Troop          `json:"troops"`
+	TroopQueue     []*Troop          `json:"-"`
 	TroopInstances []*TroopInstance  `json:"troop_instances,omitempty"`
 	Active         bool              `json:"active"`
 	User           *User             `json:"user"`
@@ -21,9 +22,9 @@ type Player struct {
 
 var (
 	connToPlayer   = make(map[*websocket.Conn]*Player)
-	usernameToConn = make(map[string]*websocket.Conn) // Đảm bảo lấy được kết nối từ username
+	usernameToConn = make(map[string]*websocket.Conn)
 	playerLock     sync.RWMutex
-	playerData     = make(map[string]*Player) // username -> player
+	playerData     = make(map[string]*Player)
 	playerDataMu   sync.Mutex
 )
 
@@ -34,13 +35,18 @@ func NewPlayer(user *User, mode string) *Player {
 
 	var (
 		troops         []*Troop
+		troopQueue     []*Troop
 		troopInstances []*TroopInstance
 	)
 
 	if mode == "simple" {
 		troops = getRandomTroops(4)
 	} else {
-		troops = getRandomTroops(6)
+		allTroops := getRandomTroops(8)
+		shuffled := shuffleTroops(allTroops)
+		troops = shuffled[:4]
+		troopQueue = shuffled[4:]
+
 		troopInstances = createTroopInstances(troops, user.ID)
 	}
 
@@ -66,12 +72,39 @@ func NewPlayer(user *User, mode string) *Player {
 			}(),
 		},
 		Troops:         troops,
+		TroopQueue:     troopQueue,
 		TroopInstances: troopInstances,
 		Active:         true,
 		User:           user,
 		Matched:        make(chan bool, 1),
 		Turn:           0,
 	}
+}
+
+func (p *Player) RotateTroop(usedTroopName string) {
+	var newTroops []*Troop
+	var usedTroop *Troop
+
+	for _, t := range p.Troops {
+		if t.Name == usedTroopName && usedTroop == nil {
+			usedTroop = t
+			continue
+		}
+		newTroops = append(newTroops, t)
+	}
+
+	if usedTroop == nil {
+		return
+	}
+
+	if len(p.TroopQueue) > 0 {
+		next := p.TroopQueue[0]
+		p.TroopQueue = p.TroopQueue[1:]
+		newTroops = append(newTroops, next)
+	}
+
+	p.TroopQueue = append(p.TroopQueue, usedTroop)
+	p.Troops = newTroops
 }
 
 func (p *Player) ApplyDefenseBoost(percent float64) {
@@ -100,10 +133,10 @@ func (p *Player) Reset(mode string) {
 		p.Troops = getRandomTroops(4)
 		p.TroopInstances = nil
 	} else {
-		p.Troops = getRandomTroops(6)
+		p.Troops = getRandomTroops(8)
 		p.TroopInstances = createTroopInstances(p.Troops, p.User.ID)
 	}
-	
+
 	p.Active = false
 	p.Turn = 0
 }

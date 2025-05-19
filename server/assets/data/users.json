@@ -19,10 +19,10 @@
     "createdAt": "2025-05-09T23:20:11.7080491+07:00",
     "lastLogin": "2025-05-09T23:20:11.7080491+07:00",
     "isActive": true,
-    "exp": 50,
-    "level": 2,
-    "gamesPlayed": 23,
-    "gamesWon": 2,
+    "exp": 60,
+    "level": 3,
+    "gamesPlayed": 31,
+    "gamesWon": 6,
     "avatar": "/assets/Avatar4.png"
   },
   {
@@ -32,10 +32,10 @@
     "createdAt": "2025-05-10T01:53:15.2001063+07:00",
     "lastLogin": "2025-05-10T01:53:15.2001063+07:00",
     "isActive": true,
-    "exp": 9,
+    "exp": 129,
     "level": 4,
-    "gamesPlayed": 16,
-    "gamesWon": 8,
+    "gamesPlayed": 24,
+    "gamesWon": 12,
     "avatar": "/assets/Avatar14.png"
   },
   {
