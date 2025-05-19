@@ -16,7 +16,9 @@ type Game struct {
 	Started   bool
 	Enhanced  bool
 	StartTime time.Time
-	MaxTime   time.Duration // For enhanced mode
+	MaxTime   time.Duration
+	TickRate  float64
+	LastTick  time.Time
 }
 
 // NewGame initializes a new game with two players.
@@ -97,7 +99,15 @@ func (g *Game) PlayTurnSimple(player *model.Player, troop *model.Troop, tower st
 	}
 
 	player.Turn++
-	g.SwitchTurn()
+
+	if !destroyed {
+		g.SwitchTurn()
+	} else {
+		player.Mana += 3
+		if player.Mana > 10 {
+			player.Mana = 10
+		}
+	}
 
 	return damage, isCrit, message
 }
@@ -108,8 +118,8 @@ func (g *Game) HealTower(player *model.Player, troop *model.Troop) (int, *model.
 	}
 	player.Mana -= troop.MANA
 
-	if troop.Name != "Queen" {
-		return 0, nil, "Only Queen can heal towers"
+	if troop.Type != "heal" {
+		return 0, nil, "Only healing troop can heal towers"
 	}
 
 	lowest := model.GetLowestHPTower(player)
@@ -117,12 +127,7 @@ func (g *Game) HealTower(player *model.Player, troop *model.Troop) (int, *model.
 		return 0, nil, "No tower found to heal"
 	}
 
-	healAmount, isCrit := troop.CalculateDamage(player.User.Level)
-
-	if isCrit {
-		bonus := int(float64(healAmount) * 0.10)
-		healAmount += bonus
-	}
+	healAmount, isCrit := troop.CalculateHeal(player.User.Level)
 
 	// Apply healing
 	lowest.HP += healAmount
@@ -267,7 +272,7 @@ func (g *Game) CheckWinner() (*model.Player, string) {
 		if !g.Started {
 			AwardEXP(g.Player2.User, g.Player1.User, false)
 		}
-		return g.Player2 ,g.Player2.User.Username + " wins!"
+		return g.Player2, g.Player2.User.Username + " wins!"
 	}
 	if g.Player2.Towers["king"].HP <= 0 {
 		g.Started = false
@@ -292,10 +297,20 @@ func (g *Game) CheckWinner() (*model.Player, string) {
 		if !g.Started {
 			AwardEXP(g.Player1.User, g.Player2.User, true)
 		}
-		
+
 		return nil, "It's a draw!"
 	}
 	return nil, ""
+}
+
+func (g *Game) SetWinner(winner *model.Player) {
+	g.Started = false
+	if winner == g.Player1 {
+		AwardEXP(g.Player1.User, g.Player2.User, false)
+	} else if winner == g.Player2 {
+		AwardEXP(g.Player2.User, g.Player1.User, false)
+	}
+
 }
 
 // AwardEXP updates the user's EXP, level, and match records
@@ -305,20 +320,19 @@ func AwardEXP(winner, loser *model.User, isDraw bool) {
 		loser.AddExp(10)
 	} else {
 		winner.GamesWon++
-		winner.AddExp(50)
-		loser.AddExp(5)
+		winner.AddExp(30)
 	}
 
 	winner.GamesPlayed++
 	loser.GamesPlayed++
 
-	model.SaveUser(*winner)
-	model.SaveUser(*loser)
+	model.SaveUser(winner)
+	model.SaveUser(loser)
 }
 
-func (g *Game) Reset() {
-	g.Player1.Reset()
-	g.Player2.Reset()
+func (g *Game) Reset(mode string) {
+	g.Player1.Reset(mode)
+	g.Player2.Reset(mode)
 	g.Turn = ""
 	g.Enhanced = false
 	g.StartTime = time.Time{}

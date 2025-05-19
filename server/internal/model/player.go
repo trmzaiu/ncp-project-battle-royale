@@ -9,13 +9,14 @@ import (
 )
 
 type Player struct {
-	Mana    int               `json:"mana"`
-	Towers  map[string]*Tower `json:"towers"`
-	Troops  []*Troop          `json:"troops"`
-	Active  bool              `json:"active"`
-	User    *User             `json:"user"`
-	Matched chan bool         `json:"-"`
-	Turn    int               `json:"turn"`
+	Mana           int               `json:"mana"`
+	Towers         map[string]*Tower `json:"towers"`
+	Troops         []*Troop          `json:"troops"`
+	TroopInstances []*TroopInstance  `json:"troop_instances,omitempty"`
+	Active         bool              `json:"active"`
+	User           *User             `json:"user"`
+	Matched        chan bool         `json:"-"`
+	Turn           int               `json:"turn"`
 }
 
 var (
@@ -27,13 +28,20 @@ var (
 )
 
 func NewPlayer(user *User, mode string) *Player {
-	var troops []*Troop
 	if mode != "simple" && mode != "enhanced" {
 		return nil
-	} else if mode == "simple" {
+	}
+
+	var (
+		troops         []*Troop
+		troopInstances []*TroopInstance
+	)
+
+	if mode == "simple" {
 		troops = getRandomTroops(4)
 	} else {
 		troops = getRandomTroops(6)
+		troopInstances = createTroopInstances(troops, user.ID)
 	}
 
 	towers := LoadTower()
@@ -57,11 +65,12 @@ func NewPlayer(user *User, mode string) *Player {
 				return t
 			}(),
 		},
-		Troops:  troops,
-		Active:  true,
-		User:    user,
-		Matched: make(chan bool, 1),
-		Turn:    0,
+		Troops:         troops,
+		TroopInstances: troopInstances,
+		Active:         true,
+		User:           user,
+		Matched:        make(chan bool, 1),
+		Turn:           0,
 	}
 }
 
@@ -81,12 +90,20 @@ func (p *Player) FullyChargeMana() {
 	p.Mana = 10
 }
 
-func (p *Player) Reset() {
+func (p *Player) Reset(mode string) {
 	p.Mana = 5
 	p.Towers["king"].Reset("king")
 	p.Towers["guard1"].Reset("guard1")
 	p.Towers["guard2"].Reset("guard2")
-	p.Troops = getRandomTroops(4)
+
+	if mode == "simple" {
+		p.Troops = getRandomTroops(4)
+		p.TroopInstances = nil
+	} else {
+		p.Troops = getRandomTroops(6)
+		p.TroopInstances = createTroopInstances(p.Troops, p.User.ID)
+	}
+	
 	p.Active = false
 	p.Turn = 0
 }

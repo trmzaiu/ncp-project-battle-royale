@@ -2,16 +2,18 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWebSocketContext } from "../context/WebSocketContext";
 
-export default function Game() {
+export default function GameSimple() {
     const navigate = useNavigate();
     const { sendMessage, subscribe } = useWebSocketContext();
     const damageTimeoutRef = useRef(null);
     const healTimeoutRef = useRef(null);
+    const hasLeftGameRef = useRef(false);
 
     const [user, setUser] = useState({});
     const [opponent, setOpponent] = useState({});
     const [isGameInitialized, setIsGameInitialized] = useState(false);
     const [showLargeAnimation, setShowLargeAnimation] = useState(false);
+    const [hoveredTroop, setHoveredTroop] = useState(null);
 
     const [damagePopup, setDamagePopup] = useState({
         targetId: null,
@@ -49,6 +51,7 @@ export default function Game() {
             playerTurn: null,
             gameOver: false,
             winner: null,
+            message: ""
         };
     }
 
@@ -86,6 +89,7 @@ export default function Game() {
 
         return () => {
             unsubscribe();
+            leaveGame();
             if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
             if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
         };
@@ -150,7 +154,8 @@ export default function Game() {
             selectedTarget: null,
             playerTurn: turn,
             gameOver: false,
-            winner: ""
+            winner: "",
+            message: ""
         });
 
         setIsGameInitialized(true);
@@ -172,6 +177,21 @@ export default function Game() {
         guard1: towers.guard1.hp,
         guard2: towers.guard2.hp,
     });
+
+    // === Leave Game ===
+    const leaveGame = () => {
+        if (hasLeftGameRef.current) return;
+
+        hasLeftGameRef.current = true;
+        sendMessage({
+            type: "leave_game",
+            data: {
+                room_id: localStorage.getItem("room_id"),
+                username: localStorage.getItem("username"),
+            },
+        });
+        localStorage.removeItem("room_id");
+    };
 
     // === Skip Turn ===
     const skipTurn = () => {
@@ -197,7 +217,7 @@ export default function Game() {
         if (game.playerMana < troop.mana)
             return showNotification("Not enough mana.");
 
-        if (troop.name === "Queen") {
+        if (troop.type === "heal") {
             sendMessage({
                 type: "heal",
                 data: {
@@ -388,7 +408,6 @@ export default function Game() {
         }, 50);
     };
 
-
     // === Handle Skip Turn Response
     const handleSkipTurn = (msg) => {
         const { turn, player1, player2 } = msg.data;
@@ -413,7 +432,11 @@ export default function Game() {
 
     // === Handle Game Over ===
     const handleGameOver = (res) => {
-        setGame((prev) => ({ ...prev, gameOver: true, winner: res.data.winner.user.username }));
+
+        setShowLargeAnimation(false);
+        setTimeout(() => {
+            setGame((prev) => ({ ...prev, gameOver: true, winner: res.data.winner.user.username, message: res.message }));
+        }, 2000)
     };
 
     // === Play Again ===
@@ -487,7 +510,6 @@ export default function Game() {
                 )}
 
                 <div className="w-full h-full flex flex-col items-center justify-end relative">
-                    {/* Opponent: HP bar goes under the image */}
                     {isOpponent ? (
                         <>
                             <img
@@ -539,12 +561,12 @@ export default function Game() {
     const tileMap = [
         ["00", "01", "00", "87", "80", "80", "88", "00", "02", "02"],
         ["01", "00", "00", "87", "80", "95", "86", "00", "02", "01"],
-        ["00", "00", "00", "85", "84", "86", "01", "00", "00", "00"],
-        ["19", "19", "19", "19", "19", "19", "19", "19", "19", "19"],
-        ["55", "55", "55", "55", "55", "55", "55", "55", "55", "55"],
-        ["00", "00", "01", "00", "00", "01", "00", "00", "00", "00"],
-        ["01", "00", "00", "00", "00", "00", "00", "00", "00", "02"],
-        ["82", "83", "00", "01", "00", "00", "03", "73", "04", "00"]
+        ["19", "20", "00", "85", "84", "86", "01", "00", "00", "00"],
+        ["37", "72", "19", "19", "19", "19", "19", "19", "19", "19"],
+        ["55", "55", "55", "55", "55", "55", "55", "55", "55", "96"],
+        ["00", "00", "01", "00", "00", "01", "00", "00", "00", "36"],
+        ["01", "00", "00", "00", "00", "00", "00", "00", "00", "36"],
+        ["82", "83", "00", "01", "00", "00", "01", "00", "02", "54"]
     ];
 
     return (
@@ -555,10 +577,11 @@ export default function Game() {
                     style={{
                         fontFamily: "'ClashDisplay', sans-serif",
                         textShadow: "2px 2px 10px rgba(0, 0, 0, 0.5)",
+                        transform: "translateY(-92px)",
                     }}
                 >
                     <div className="text-6xl font-bold text-white px-12 py-6 animate-turnAlert">
-                        {game.playerTurn === user.user?.username
+                        {game.playerTurn === localStorage.getItem("username")
                             ? "YOUR TURN"
                             : "OPPONENT'S TURN"}
                     </div>
@@ -607,8 +630,8 @@ export default function Game() {
                     <div className="turn-display text-center transform hover:scale-105 transition-transform mx-2">
                         <div
                             className={`text-lg px-4 pt-1 rounded-full ${game.playerTurn === user.user?.username
-                                    ? "bg-green-600 text-white animate-pulse"
-                                    : "bg-red-600 text-white"
+                                ? "bg-green-600 text-white animate-pulse"
+                                : "bg-red-600 text-white"
                                 }`}
                         >
                             {game.playerTurn === user.user?.username
@@ -662,9 +685,7 @@ export default function Game() {
 
                     {/* Battlefield grid layout - 10 columns x 6 rows */}
                     <div className="grid-battlefield grid grid-cols-10 grid-rows-8 relative w-full aspect-[10/8]">
-                        {/* Row 1 - Opponent King (spans 2 columns) */}
                         <div className="col-start-5 col-span-2 row-start-1 row-span-2 relative">
-                            {/* Starts at column 5, spans 2 columns */}
                             <Tower
                                 type="king"
                                 id="opponent-king"
@@ -677,87 +698,53 @@ export default function Game() {
                             />
                         </div>
 
-                        {Array.from({ length: 2 }).map((rowOffset) =>
-                            Array.from({ length: 10 }).map((_, col) => {
-                                // skip columns 5 and 6 for rows 1 and 2
-                                if (col === 4 || col === 5) return null;
-                                return (
-                                    <div
-                                        key={`r${rowOffset + 1}-fill-${col}`}
-                                        className="cell"
-                                    ></div>
-                                );
-                            })
-                        )}
+                        <div className="col-start-3 row-start-2 relative">
+                            <Tower
+                                type="guard"
+                                id="opponent-guard1"
+                                health={game.opponentHealth.guard1}
+                                maxHealth={game.opponentShield.guard1}
+                                isOpponent={true}
+                                onClick={() => selectTarget("guard1")}
+                                disabled={!game.selectedTroop}
+                            />
+                        </div>
 
-                        {/* Row 2 - Opponent guards */}
-                        {Array.from({ length: 10 }).map((_, i) => (
-                            <div key={`r2-${i}`} className="cell">
-                                {i === 2 && (
-                                    <Tower
-                                        type="guard"
-                                        id="opponent-guard1"
-                                        health={game.opponentHealth.guard1}
-                                        maxHealth={game.opponentShield.guard1}
-                                        isOpponent={true}
-                                        onClick={() => selectTarget("guard1")}
-                                        disabled={!game.selectedTroop}
-                                    />
-                                )}
-                                {i === 7 && (
-                                    <Tower
-                                        type="guard"
-                                        id="opponent-guard2"
-                                        health={game.opponentHealth.guard2}
-                                        maxHealth={game.opponentShield.guard2}
-                                        isOpponent={true}
-                                        onClick={() => selectTarget("guard2")}
-                                        disabled={!game.selectedTroop}
-                                    />
-                                )}
-                            </div>
-                        ))}
+                        <div className="col-start-8 row-start-2 relative">
+                            <Tower
+                                type="guard"
+                                id="opponent-guard2"
+                                health={game.opponentHealth.guard2}
+                                maxHealth={game.opponentShield.guard2}
+                                isOpponent={true}
+                                onClick={() => selectTarget("guard2")}
+                                disabled={!game.selectedTroop}
+                            />
+                        </div>
 
-                        {/* Rows 3-4 - Middle empty rows */}
-                        {Array.from({ length: 2 }).map((_, rowIndex) =>
-                            Array.from({ length: 10 }).map((_, colIndex) => (
-                                <div
-                                    key={`r${rowIndex + 3}-${colIndex}`}
-                                    className="cell"
-                                ></div>
-                            ))
-                        )}
+                        <div className="col-start-3 row-start-7 relative">
+                            <Tower
+                                type="guard"
+                                id="player-guard1"
+                                health={game.playerHealth.guard1}
+                                maxHealth={game.playerShield.guard1}
+                                isOpponent={false}
+                                disabled={true}
+                            />
+                        </div>
 
-                        {/* Row 5 - Player guards */}
-                        {Array.from({ length: 10 }).map((_, i) => (
-                            <div key={`r5-${i}`} className="cell">
-                                {i === 2 && (
-                                    <Tower
-                                        type="guard"
-                                        id="player-guard1"
-                                        health={game.playerHealth.guard1}
-                                        maxHealth={game.playerShield.guard1}
-                                        isOpponent={false}
-                                        disabled={true}
-                                    />
-                                )}
-                                {i === 7 && (
-                                    <Tower
-                                        type="guard"
-                                        id="player-guard2"
-                                        health={game.playerHealth.guard2}
-                                        maxHealth={game.playerShield.guard2}
-                                        isOpponent={false}
-                                        disabled={true}
-                                    />
-                                )}
-                            </div>
-                        ))}
+                        <div className="col-start-8 row-start-7 relative">
+                            <Tower
+                                type="guard"
+                                id="player-guard2"
+                                health={game.playerHealth.guard2}
+                                maxHealth={game.playerShield.guard2}
+                                isOpponent={false}
+                                disabled={true}
+                            />
+                        </div>
 
-                        {/* Row 6 - Player King (spans 2 columns) */}
                         <div className="col-start-5 col-span-2 row-start-7 row-span-2 relative">
-                            {" "}
-                            {/* Starts at column 5, spans 2 columns */}
                             <Tower
                                 type="king"
                                 id="player-king"
@@ -768,17 +755,12 @@ export default function Game() {
                                 className="w-full h-full"
                             />
                         </div>
-
-                        {/* Fill remaining cells in row 6 */}
-                        {[...Array(4), ...Array(4)].map((_, i) => (
-                            <div key={`r6-fill-${i}`} className="cell"></div>
-                        ))}
                     </div>
 
                     {/* Target indicators */}
                     {game.selectedTroop && (
                         <div className="target-indicators absolute top-0 left-0 w-full h-full pointer-events-none">
-                            <div className="text-center text-white text-lg absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-800 bg-opacity-70 px-4 py-2 rounded-full">
+                            <div className="text-center text-white text-lg absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-800 bg-opacity-70 px-4 py-2 rounded-full">
                                 🎯 Pick a Target!
                             </div>
                         </div>
@@ -791,7 +773,7 @@ export default function Game() {
                         <div className="text-lg text-yellow-400 flex items-center">
                             <span className="text-xl mr-1">⚡</span> MANA
                         </div>
-                        <div className="text-white font-bold">
+                        <div className="text-xl text-white font-bold me-1">
                             {game.playerMana}/{game.maxMana}
                         </div>
                     </div>
@@ -800,8 +782,8 @@ export default function Game() {
                             <div
                                 key={i}
                                 className={`mana-segment flex-1 h-full border-r border-gray-700 last:border-r-0 transition-all ${i < game.playerMana
-                                        ? "bg-gradient-to-r from-blue-400 to-blue-400"
-                                        : ""
+                                    ? "bg-gradient-to-r from-blue-400 to-blue-400"
+                                    : ""
                                     }`}
                             />
                         ))}
@@ -810,13 +792,13 @@ export default function Game() {
 
                 {/* TROOP SELECTION */}
                 <div className="troops-container bg-gradient-to-r from-blue-900 to-blue-800 p-2 rounded-lg mt-2 shadow-md border-2 border-blue-700">
-                    <div className="section-header flex justify-between items-center mb-3">
+                    <div className="section-header flex justify-between items-center mb-2 px-1">
                         <h3 className="text-xl text-yellow-400 drop-shadow-md">TROOPS</h3>
 
                         <button
-                            className={`skip-btn px-4 py-1 rounded-full font-semibold transition-all transform hover:scale-105 ${game.playerTurn === user.user?.username
-                                    ? "bg-yellow-400 text-blue-900 border-2 border-yellow-500"
-                                    : "bg-gray-500 text-white opacity-50 cursor-not-allowed"
+                            className={`skip-btn px-4 py-0.5 rounded-full font-semibold transition-all transform hover:scale-105 ${game.playerTurn === user.user?.username
+                                ? "bg-yellow-400 text-blue-900"
+                                : "bg-gray-500 text-white opacity-50 cursor-not-allowed"
                                 }`}
                             disabled={game.playerTurn !== user.user?.username}
                             onClick={skipTurn}
@@ -825,35 +807,67 @@ export default function Game() {
                         </button>
                     </div>
 
-                    <div className="troop-selection flex flex-wrap justify-center gap-3">
+                    <div className="troop-selection flex flex-wrap justify-center gap-3.5">
                         {Object.entries(game.troops).map(([troopName, troop], index) => (
-                            <div
-                                key={index}
-                                className={`troop w-37 ${game.selectedTroop?.name === troopName
-                                        ? "border-4 border-yellow-400 bg-yellow-100 transform scale-105"
-                                        : "border-2 border-gray-400 bg-white"
-                                    } ${game.playerMana < troop.mana
-                                        ? "opacity-50 grayscale"
-                                        : "hover:scale-105"
-                                    } rounded-lg shadow-lg p-2 cursor-pointer transition-all duration-200`}
-                                onClick={() => selectTroop(troopName)}
+                            <div key={index} className="relative"
+                                onMouseEnter={() => setHoveredTroop(troopName)}
+                                onMouseLeave={() => setHoveredTroop(null)}
                             >
-                                <div className="troop-banner bg-gradient-to-r from-blue-600 to-blue-500 rounded-t-md px-2 py-1 -mt-2 -mx-2 mb-1 text-center">
-                                    <div className="troop-name text-white drop-shadow-md truncate">
-                                        {troopName}
-                                    </div>
-                                </div>
-                                <div className="flex justify-between items-center mb-1">
-                                    <div className="troop-mana-cost bg-blue-500 text-white flex items-center rounded-full px-2 border-2 border-blue-600">
-                                        <span className="text-yellow-300 mr-1">⚡</span>{" "}
-                                        {troop.mana}
-                                    </div>
-                                    {troop.atk && (
-                                        <div className="troop-damage bg-red-500 text-white flex items-center rounded-full px-2 border-2 border-red-600">
-                                            <span className="text-yellow-300 mr-1">💥</span>{" "}
-                                            {troop.atk}
+                                {hoveredTroop === troopName && (
+                                    <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-52 bg-gray-800 text-white rounded-lg shadow-lg z-20 overflow-hidden">
+                                        {/* Troop Header */}
+                                        <div className="bg-gradient-to-r from-blue-700 to-blue-900 p-2 border-b border-gray-600">
+                                            <h4 className="text-yellow-300 text-center">{troopName}</h4>
                                         </div>
-                                    )}
+
+                                        {/* Troop Description */}
+                                        <div className="p-2 pb-1 border-b border-gray-600 text-center italic text-[11px]">
+                                            {troop.description}
+                                        </div>
+
+                                        {/* Troop Stats */}
+                                        <div className="p-2">
+                                            <div className="grid grid-cols-2 gap-x-3 gap-y-1 ">
+                                                <div className="flex items-center">
+                                                    <span className="w-5 h-5 rounded-md bg-red-200 flex items-center justify-center mr-1">❤️</span>
+                                                    <span className="text-[11px]">HP: {troop.max_hp}</span>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <span className="w-5 h-5 rounded-md bg-yellow-200 flex items-center justify-center mr-1">⚔️</span>
+                                                    <span className="text-[11px]">ATK: {troop.atk}</span>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <span className="w-5 h-5 rounded-md bg-green-200 flex items-center justify-center mr-1">🛡️</span>
+                                                    <span className="text-[11px]">DEF: {troop.def}</span>
+                                                </div>
+                                                <div className="flex items-center">
+                                                    <span className="w-5 h-5 rounded-md bg-purple-200 flex items-center justify-center mr-1">🎯</span>
+                                                    <span className="text-[11px]">CRIT: {troop.crit}%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                <div
+                                    className={`troop ${game.selectedTroop?.name === troopName
+                                        ? "border-4 border-rose-900 transform scale-105"
+                                        : "border-3 border-stone-900"
+                                        } ${game.playerMana < troop.mana
+                                            ? "opacity-50 grayscale"
+                                            : "hover:scale-105"
+                                        } rounded-xl shadow-lg shadow-inner relative overflow-hidden cursor-pointer transition-all duration-200`}
+                                    onClick={() => selectTroop(troopName)}
+                                >
+                                    <div className="justify-between items-center">
+                                        <div className="w-full h-full relative">
+                                            <img className="w-full h-43 object-cover" src={troop.card} alt={troopName} />
+                                        </div>
+                                    </div>
+                                    <div className="absolute bottom-0 right-0 z-10">
+                                        <div className="text-white text-2xl flex items-center drop-shadow-[0_0_2px_#000] shadow-md">
+                                            {troop.mana}⚡
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -880,8 +894,8 @@ export default function Game() {
 
                             <h2
                                 className={`modal-title text-3xl mb-4 text-center ${game.winner === localStorage.getItem("username")
-                                        ? "text-yellow-400"
-                                        : "text-red-400"
+                                    ? "text-yellow-400"
+                                    : "text-red-400"
                                     }`}
                             >
                                 {game.winner === localStorage.getItem("username")
@@ -890,15 +904,25 @@ export default function Game() {
                             </h2>
 
                             <div className="modal-body text-center">
-                                <p className="text-white text-lg mb-3">
-                                    {game.winner === localStorage.getItem("username")
-                                        ? "You have conquered your opponent's kingdom!"
-                                        : "Your kingdom has fallen to the enemy!"}
-                                </p>
+                                {(() => {
+                                    let victoryMessage = "";
+                                    if (game.winner === localStorage.getItem("username")) {
+                                        victoryMessage = game.message !== ""
+                                            ? "You have conquered your opponent's kingdom!"
+                                            : "You won by opponent leaving the battle!";
+                                    } else {
+                                        victoryMessage = "Your kingdom has fallen to the enemy!";
+                                    }
+                                    return (
+                                        <p className="text-white text-lg mb-3">
+                                            {victoryMessage}
+                                        </p>
+                                    );
+                                })()}
                                 <div className="exp-gain text-yellow-300 text-2xl mt-3 animate-pulse">
                                     {game.winner === localStorage.getItem("username")
-                                        ? "+50 XP"
-                                        : "+5 XP"}
+                                        ? "+30 XP"
+                                        : ""}
                                 </div>
                             </div>
 

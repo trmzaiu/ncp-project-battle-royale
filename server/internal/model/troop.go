@@ -5,20 +5,40 @@ import (
 	"encoding/json"
 	"math/big"
 	"os"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type Troop struct {
-	Name        string  `json:"name"`
-	MaxHP       int     `json:"max_hp"`
-	HP          int     `json:"hp"`
-	ATK         int     `json:"atk"`
-	DEF         int     `json:"def"`
-	MANA        int     `json:"mana"`
-	EXP         int     `json:"exp"`
-	CRIT        float64 `json:"crit"`
-	Special     string  `json:"special"`
-	Icon        string  `json:"icon"`
-	Description string  `json:"description"`
+	Name            string  `json:"name"`
+	MaxHP           int     `json:"max_hp"`
+	HP              int     `json:"hp"`
+	ATK             int     `json:"atk"`
+	DEF             int     `json:"def"`
+	MANA            int     `json:"mana"`
+	CRIT            int     `json:"crit"`
+	Speed           float64 `json:"speed"`
+	Range           float64 `json:"range"`
+	Type            string  `json:"type"`
+	Card            string  `json:"card"`
+	Image           string  `json:"image"`
+	Description     string  `json:"description"`
+	AOE             bool    `json:"aoe"`
+	AttackSpeed     float64 `json:"attack_speed"`
+	AggroPriority   int     `json:"aggro_priority"`
+	ProjectileSpeed float64 `json:"projectile_speed"`
+}
+
+type TroopInstance struct {
+	ID             string    `json:"id"`
+	Template       *Troop    `json:"template"`
+	OwnerID        string    `json:"owner_id"`
+	X, Y           float64   `json:"x", "y"`
+	TargetID       string    `json:"target_id"`
+	TargetType     string    `json:"target_type"`
+	IsDead         bool      `json:"is_dead"`
+	LastAttackTime time.Time `json:"last_attack"`
 }
 
 func loadTroop() ([]Troop, error) {
@@ -49,7 +69,7 @@ func getRandomTroops(n int) []*Troop {
 		return nil
 	}
 
-	// Fisher–Yates Shuffle with crypto/rand
+	// Shuffle
 	for i := len(templates) - 1; i > 0; i-- {
 		j64, err := cryptoRandInt(int64(i + 1))
 		if err != nil {
@@ -62,21 +82,25 @@ func getRandomTroops(n int) []*Troop {
 	selected := make([]*Troop, 0, n)
 	for i := 0; i < n && i < len(templates); i++ {
 		t := templates[i]
-		selected = append(selected, &Troop{
-			Name:        t.Name,
-			ATK:         t.ATK,
-			DEF:         t.DEF,
-			CRIT:        t.CRIT,
-			MaxHP:       t.MaxHP,
-			HP:          t.MaxHP,
-			MANA:        t.MANA,
-			EXP:         t.EXP,
-			Special:     t.Special,
-			Icon:        t.Icon,
-			Description: t.Description,
-		})
+		copy := t
+		copy.HP = t.MaxHP
+		selected = append(selected, &copy)
 	}
 	return selected
+}
+
+func createTroopInstances(templates []*Troop, ownerID string) []*TroopInstance {
+	instances := make([]*TroopInstance, 0, len(templates))
+	for _, t := range templates {
+		instance := &TroopInstance{
+			ID:             uuid.New().String(),
+			Template:       t,
+			OwnerID:        ownerID,
+			LastAttackTime: time.Now(),
+		}
+		instances = append(instances, instance)
+	}
+	return instances
 }
 
 func (t *Troop) CalculateDamage(level int) (int, bool) {
@@ -96,6 +120,23 @@ func (t *Troop) CalculateDamage(level int) (int, bool) {
 	return int(baseAtk), isCrit
 }
 
+func (t *Troop) CalculateHeal(level int) (int, bool) {
+	baseHp := float64(t.ATK) * (1 + 0.1*float64(level))
+
+	// Use crypto/rand for crit calculation
+	critRoll, err := cryptoRandInt(100)
+	if err != nil {
+		return int(baseHp), false
+	}
+	isCrit := critRoll < int64(t.CRIT)
+
+	if isCrit {
+		baseHp *= 1.5
+	}
+
+	return int(baseHp), isCrit
+}
+
 func (t *Troop) BoostAttack() {
 	t.ATK = int(float64(t.ATK) * 1.5)
 }
@@ -105,27 +146,4 @@ func (t *Troop) FortifyHP(amount int) {
 	if t.HP > t.MaxHP {
 		t.HP = t.MaxHP
 	}
-}
-
-func (p *Player) TowerStatus() map[string]int {
-	status := make(map[string]int)
-	for k, v := range p.Towers {
-		status[k] = v.HP
-	}
-	return status
-}
-
-func (p *Player) TroopStatus() []map[string]interface{} {
-	var troops []map[string]interface{}
-	for _, t := range p.Troops {
-		troops = append(troops, map[string]interface{}{
-			"name":  t.Name,
-			"hp":    t.HP,
-			"mana":  t.MANA,
-			"skill": t.Special,
-			"icon":  t.Icon,
-			"desc":  t.Description,
-		})
-	}
-	return troops
 }

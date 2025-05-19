@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import Entry from "./pages/Entry";
-import Game from "./pages/Game";
+import GameSimple from "./pages/GameSimple";
+import GameEnhanced from "./pages/GameEnhanced";
 import Lobby from "./pages/Lobby";
 import Auth from "./pages/Auth";
 import PrivateRoute from "./routes/PrivateRoute";
@@ -13,7 +14,8 @@ function App() {
                 <Route path="/" element={<Entry />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/lobby" element={<PrivateRoute><Lobby /></PrivateRoute>} />
-                <Route path="/game" element={<PrivateRoute><Game /></PrivateRoute>} />
+                <Route path="/game-simple" element={<PrivateRoute><GameSimple /></PrivateRoute>} />
+                <Route path="/game-enhanced" element={<PrivateRoute><GameEnhanced /></PrivateRoute>} />
             </Routes>
         </WebSocketProvider>
     );

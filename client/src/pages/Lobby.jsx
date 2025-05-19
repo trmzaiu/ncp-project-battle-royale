@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWebSocketContext } from "../context/WebSocketContext";
 
@@ -14,6 +14,7 @@ export default function Lobby() {
         { timestamp: getCurrentTimestamp(), type: "SYSTEM", message: "Welcome to Royaka!" },
     ]);
     const [isJoiningGame, setIsJoiningGame] = useState(false);
+    const selectedModeRef = useRef(selectedMode);
 
     const showNotification = (message) => {
         setNotification({ show: true, message });
@@ -28,6 +29,7 @@ export default function Lobby() {
         }
 
         const unsubscribe = subscribe((res) => {
+            selectedModeRef.current = selectedMode;
             switch (res.type) {
                 case "user_response":
                     if (res.success) {
@@ -46,7 +48,11 @@ export default function Lobby() {
                         localStorage.setItem("room_id", res.data.room_id);
                         showNotification("Match found! Starting game...");
                         addLog("GAME", "Match found! Starting game...");
-                        setTimeout(() => navigate("/game"), 1000);
+                        if (selectedModeRef.current === "simple") {
+                            setTimeout(() => navigate("/game-simple"), 1000);
+                        } else {
+                            setTimeout(() => navigate("/game-enhanced"), 1000);
+                        }
                     } else {
                         addLog("ERROR", res.message || "Failed to find a match");
                         showNotification(res.message || "Failed to find a match. Please try again.");
@@ -75,7 +81,7 @@ export default function Lobby() {
         }
 
         return () => unsubscribe();
-    }, [subscribe, sendMessage, navigate]);
+    }, [subscribe, sendMessage, navigate, selectedMode]);
 
     // === UI action handlers ===
     function findMatch() {
@@ -295,7 +301,7 @@ export default function Lobby() {
                                     src="/assets/icon_turn_based.png"
                                     alt=""
                                 />
-                                <div className="font-black text-center mb-1 text-white text-xl">
+                                <div className="text-center mb-1 text-white text-xl">
                                     TURN-BASED
                                 </div>
                                 <div className="text-xs text-center text-white">
@@ -316,10 +322,10 @@ export default function Lobby() {
                                     src="/assets/icon_timed_match.png"
                                     alt=""
                                 />
-                                <div className="font-black text-center mb-1 text-white text-xl">
+                                <div className="text-center mb-1 text-white text-xl">
                                     TIMED MATCH
                                 </div>
-                                <div className="text-sm text-center text-white font-semibold">
+                                <div className="text-xs text-center text-white">
                                     Fast-paced 1v1 chaos.
                                 </div>
                             </div>
@@ -375,7 +381,7 @@ export default function Lobby() {
                             >
                                 <span className="flex items-center justify-center">
                                     <span className="text-xl mr-2">🏆</span>
-                                    LEADERBOARD
+                                    TROOPS DECK
                                 </span>
                             </button>
 
@@ -451,12 +457,12 @@ export default function Lobby() {
 
                 {/* Decorative elements */}
                 <img
-                    className="fixed w-25 top-1 left-1 animate-pulse pointer-events-none"
+                    className="fixed w-25 top-4 left-4 animate-pulse pointer-events-none"
                     src="/assets/icon_badge.png"
                     alt=""
                 />
                 <img
-                    className="fixed w-20 bottom-1 right-1 animate-bounce pointer-events-none"
+                    className="fixed w-20 bottom-4 right-4 animate-bounce pointer-events-none"
                     src="/assets/icon_timed_match.png"
                     alt=""
                 />

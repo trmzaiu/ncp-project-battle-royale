@@ -8,10 +8,11 @@ import (
 )
 
 type Room struct {
-	ID      string        `json:"id"`
-	Player1 *model.Player `json:"player1"`
-	Player2 *model.Player `json:"player2"`
-	Game    *Game         `json:"game"`
+	ID      string
+	Player1 *model.Player
+	Player2 *model.Player
+	Game    *Game
+	mu      sync.Mutex
 }
 
 var (
@@ -44,4 +45,16 @@ func RemoveRoom(roomID string) {
 	roomLock.Lock()
 	defer roomLock.Unlock()
 	delete(roomRegistry, roomID)
+}
+
+func GetRoomIDByUsername(username string) string {
+	roomsMu.RLock()
+	defer roomsMu.RUnlock()
+	for id, room := range rooms {
+		if (room.Player1 != nil && room.Player1.User.Username == username) ||
+			(room.Player2 != nil && room.Player2.User.Username == username) {
+			return id
+		}
+	}
+	return ""
 }

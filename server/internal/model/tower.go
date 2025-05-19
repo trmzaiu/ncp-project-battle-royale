@@ -10,13 +10,17 @@ import (
 )
 
 type Tower struct {
-	Type  string  `json:"type"`
-	MaxHP int     `json:"max_hp"`
-	HP    int     `json:"hp"`
-	ATK   int     `json:"atk"`
-	DEF   int     `json:"def"`
-	CRIT  float64 `json:"crit"`
-	EXP   int     `json:"exp"`
+	Type    string  `json:"type"`
+	MaxHP   int     `json:"max_hp"`
+	HP      int     `json:"hp"`
+	ATK     int     `json:"atk"`
+	DEF     int     `json:"def"`
+	CRIT    float64 `json:"crit"`
+	EXP     int     `json:"exp"`
+	X       float64 `json:"x"`
+	Y       float64 `json:"y"`
+	OwnerID string  `json:"owner_id"`
+	IsDead  bool    `json:"is_dead"`
 }
 
 var defaultTowers map[string]*Tower
@@ -50,7 +54,7 @@ func (t *Tower) Clone() *Tower {
 	return &Tower{
 		Type:  t.Type,
 		MaxHP: t.MaxHP,
-		HP:    t.HP,
+		HP:    t.MaxHP,
 		ATK:   t.ATK,
 		DEF:   t.DEF,
 		CRIT:  t.CRIT,
@@ -107,8 +111,7 @@ func GetLowestHPTower(player *Player) *Tower {
 }
 
 func (t *Tower) Reset(key string) {
-	if def, ok := defaultTowers[key]; 
-	ok {
+	if def, ok := defaultTowers[key]; ok {
 		t.MaxHP = def.MaxHP
 		t.HP = def.MaxHP
 		t.ATK = def.ATK

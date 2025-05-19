@@ -147,24 +147,6 @@ func HandleAttack(conn *websocket.Conn, data json.RawMessage) {
 	damage, isCrit, message := room.Game.PlayTurnSimple(attacker, troop, req.Target)
 	isDestroyed := defender.Towers[req.Target].HP <= 0
 
-	if defender.Towers["king"].HP <= 0  {
-		winner, result := room.Game.CheckWinner()
-		if result == "" {
-			return
-		}
-		payload := utils.Response{
-			Type:    "game_over_response",
-			Success: true,
-			Message: result,
-			Data: map[string]interface{}{
-				"winner": winner,
-			},
-		}
-		sendToClient(room.Player1.User.Username, payload)
-		sendToClient(room.Player2.User.Username, payload)
-		return
-	}
-
 	success := damage > 0 || isDestroyed
 
 	payload := utils.Response{
@@ -185,6 +167,23 @@ func HandleAttack(conn *websocket.Conn, data json.RawMessage) {
 
 	sendToClient(room.Player1.User.Username, payload)
 	sendToClient(room.Player2.User.Username, payload)
+
+	if defender.Towers["king"].HP <= 0 {
+		winner, result := room.Game.CheckWinner()
+		if result == "" {
+			return
+		}
+		gameOverPayload := utils.Response{
+			Type:    "game_over_response",
+			Success: true,
+			Message: result,
+			Data: map[string]interface{}{
+				"winner": winner,
+			},
+		}
+		sendToClient(room.Player1.User.Username, gameOverPayload)
+		sendToClient(room.Player2.User.Username, gameOverPayload)
+	}
 }
 
 func HandleHeal(conn *websocket.Conn, data json.RawMessage) {
@@ -386,4 +385,84 @@ func HandlePlayAgain(conn *websocket.Conn, data json.RawMessage) {
 	roomsMu.Unlock()
 
 	log.Printf("[INFO][PLAY_AGAIN] Room %s cleaned up", room.ID)
+}
+
+func HandleLeaveGame(conn *websocket.Conn, data json.RawMessage) {
+	var req utils.GameRequest
+
+	if err := json.Unmarshal(data, &req); err != nil || req.RoomID == "" || req.Username == "" {
+		conn.WriteJSON(utils.Response{
+			Type:    "leave_game_response",
+			Success: false,
+			Message: "Invalid leave game request",
+		})
+		return
+	}
+
+	room, found := rooms[req.RoomID]
+	if !found {
+		conn.WriteJSON(utils.Response{
+			Type:    "leave_game_response",
+			Success: false,
+			Message: "Room not found",
+		})
+		return
+	}
+
+	room.mu.Lock()
+	defer room.mu.Unlock()
+
+	player1 := room.Game.Player1
+	player2 := room.Game.Player2
+
+	var winner *model.Player
+
+	if player1 != nil && player1.User.Username == req.Username {
+		winner = player2
+	} else if player2 != nil && player2.User.Username == req.Username {
+		winner = player1
+	}
+
+	if winner != nil {
+		room.Game.SetWinner(winner)
+
+		payload := utils.Response{
+			Type:    "game_over_response",
+			Success: true,
+			Message: "",
+			Data: map[string]interface{}{
+				"winner": winner,
+			},
+		}
+
+		sendToClient(winner.User.Username, payload)
+	}
+
+	conn.WriteJSON(utils.Response{
+		Type:    "leave_game_response",
+		Success: true,
+		Message: "Left room and winner set if applicable",
+	})
+}
+
+func HandleDisconnect(conn *websocket.Conn) {
+	player := model.GetPlayerByConn(conn)
+	if player == nil {
+		return
+	}
+
+	username := player.User.Username
+	roomID := GetRoomIDByUsername(username)
+	if roomID == "" {
+		return
+	}
+
+	log.Printf("[INFO] %s disconnected, handling leave...", username)
+
+	req := utils.GameRequest{
+		RoomID:   roomID,
+		Username: username,
+	}
+	raw, _ := json.Marshal(req)
+	HandleLeaveGame(conn, raw)
 }

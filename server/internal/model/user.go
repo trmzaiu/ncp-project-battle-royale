@@ -85,15 +85,15 @@ type Level struct {
 // Example level system with increasing EXP requirements
 var Levels = []Level{
 	{Level: 1, MaxExp: 100},
-	{Level: 2, MaxExp: 200},
-	{Level: 3, MaxExp: 350},
-	{Level: 4, MaxExp: 500},
-	{Level: 5, MaxExp: 700},
-	{Level: 6, MaxExp: 1000},
-	{Level: 7, MaxExp: 1350},
-	{Level: 8, MaxExp: 1750},
-	{Level: 9, MaxExp: 2200},
-	{Level: 10, MaxExp: 2700},
+	{Level: 2, MaxExp: 110},
+	{Level: 3, MaxExp: 121},
+	{Level: 4, MaxExp: 133},
+	{Level: 5, MaxExp: 146},
+	{Level: 6, MaxExp: 160},
+	{Level: 7, MaxExp: 176},
+	{Level: 8, MaxExp: 193},
+	{Level: 9, MaxExp: 212},
+	{Level: 10, MaxExp: 233},
 }
 
 // GetMaxExp returns the max EXP required for a given level
