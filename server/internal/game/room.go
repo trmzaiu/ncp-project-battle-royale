@@ -20,12 +20,12 @@ var (
 	roomLock     sync.RWMutex
 )
 
-func NewRoom(id string, p1, p2 *model.Player) *Room {
+func NewRoom(id string, p1, p2 *model.Player, mode string) *Room {
 	return &Room{
 		ID:      id,
 		Player1: p1,
 		Player2: p2,
-		Game:    NewGame(p1, p2, false),
+		Game:    NewGame(p1, p2, mode),
 	}
 }
 

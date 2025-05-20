@@ -91,6 +91,8 @@ func processMessage(conn *websocket.Conn, pdu utils.Message) {
 		game.HandlePlayAgain(conn, pdu.Data)
 	// case "leave_game":
 	// 	game.HandleLeaveGame(conn, pdu.Data)
+	case "select_troop":
+		game.HandleSelectTroop(conn, pdu.Data)
 	default:
 		log.Printf("[WARN][WS] Unknown message type: %s", pdu.Type)
 		sendError(conn, "Unknown message type")

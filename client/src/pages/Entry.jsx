@@ -62,9 +62,8 @@ export default function Entry() {
 
                     {/* Flash effect when crown lands - ENLARGED */}
                     <div
-                        className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
-                      transition-all duration-500 delay-800
-                      ${animationComplete ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}
+                        className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-500 delay-800
+                        ${animationComplete ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}`}
                     >
                         <div className="animate-ping opacity-70 duration-300">
                             <svg

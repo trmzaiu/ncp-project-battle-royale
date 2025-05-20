@@ -21,9 +21,9 @@
     "isActive": true,
     "exp": 60,
     "level": 3,
-    "gamesPlayed": 31,
+    "gamesPlayed": 32,
     "gamesWon": 6,
-    "avatar": "/assets/Avatar4.png"
+    "avatar": "/assets/Avatar10.png"
   },
   {
     "id": "20250510015315abcdefgh",
@@ -45,10 +45,10 @@
     "createdAt": "2025-05-13T11:15:21.3595435+07:00",
     "lastLogin": "2025-05-13T11:15:21.3595435+07:00",
     "isActive": true,
-    "exp": 0,
+    "exp": 30,
     "level": 3,
-    "gamesPlayed": 22,
-    "gamesWon": 10,
+    "gamesPlayed": 23,
+    "gamesWon": 11,
     "avatar": "/assets/Avatar5.png"
   }
 ]

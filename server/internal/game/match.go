@@ -132,7 +132,7 @@ func startMatchmaker() {
 				player1, player2 := <-queue, <-queue
 				log.Printf("[INFO][MATCH] pairing players in mode %s: %s vs %s", mode, player1.User.Username, player2.User.Username)
 				if validatePlayers(player1, player2, mode) {
-					handleMatch(player1, player2)
+					handleMatch(player1, player2, mode)
 				}
 			}
 		}
@@ -159,7 +159,7 @@ func validatePlayers(p1, p2 *model.Player, mode string) bool {
 	return true
 }
 
-func handleMatch(p1, p2 *model.Player) {
+func handleMatch(p1, p2 *model.Player, mode string) {
 	clientsMu.RLock()
 	conn1 := clients[p1.User.Username]
 	conn2 := clients[p2.User.Username]
@@ -171,7 +171,7 @@ func handleMatch(p1, p2 *model.Player) {
 
 	// Create and register room
 	roomID := utils.GenerateRoomID()
-	room := NewRoom(roomID, p1, p2)
+	room := NewRoom(roomID, p1, p2, mode)
 
 	roomsMu.Lock()
 	rooms[roomID] = room

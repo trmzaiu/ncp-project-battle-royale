@@ -49,6 +49,14 @@ type AttackRequest struct {
 	Target   string `json:"target"`
 }
 
+type SelectTroopRequest struct {
+	RoomID   string `json:"room_id"`
+	Username string `json:"username"`
+	Troop    string `json:"troop"`
+	X        int    `json:"x"`
+	Y        int    `json:"y"`
+}
+
 type HealRequest struct {
 	RoomID   string `json:"room_id"`
 	Username string `json:"username"`

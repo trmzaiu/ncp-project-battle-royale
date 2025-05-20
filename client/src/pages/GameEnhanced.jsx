@@ -1,37 +1,33 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWebSocketContext } from "../context/WebSocketContext";
 
 export default function GameEnhanced() {
     const navigate = useNavigate();
     const { sendMessage, subscribe } = useWebSocketContext();
-    const damageTimeoutRef = useRef(null);
-    const healTimeoutRef = useRef(null);
+    // const damageTimeoutRef = useRef(null);
+    // const healTimeoutRef = useRef(null);
     // const hasLeftGameRef = useRef(false);
 
     const [user, setUser] = useState({});
     const [opponent, setOpponent] = useState({});
     const [isGameInitialized, setIsGameInitialized] = useState(false);
     const [hoveredTroop, setHoveredTroop] = useState(null);
-    const [allTroops, setAllTroops] = useState({});
-    const [activeTroops, setActiveTroops] = useState([]);
-    const [usedTroops, setUsedTroops] = useState({});
-    const MAX_ACTIVE_TROOPS = 4;
 
-    const [damagePopup, setDamagePopup] = useState({
-        targetId: null,
-        amount: 0,
-        isOpponent: false,
-        visible: false,
-        isCrit: false,
-    });
+    // const [damagePopup, setDamagePopup] = useState({
+    //     targetId: null,
+    //     amount: 0,
+    //     isOpponent: false,
+    //     visible: false,
+    //     isCrit: false,
+    // });
 
-    const [healPopup, setHealPopup] = useState({
-        target: null,
-        amount: 0,
-        isOpponent: false,
-        visible: false,
-    });
+    // const [healPopup, setHealPopup] = useState({
+    //     target: null,
+    //     amount: 0,
+    //     isOpponent: false,
+    //     visible: false,
+    // });
 
     const [game, setGame] = useState(getInitialGameState());
     const [notification, setNotification] = useState({
@@ -42,7 +38,7 @@ export default function GameEnhanced() {
     // === Initial Game State ===
     function getInitialGameState() {
         return {
-            playerMana: 0,
+            playerMana: 5,
             maxMana: 10,
             playerHealth: { king: 0, guard1: 0, guard2: 0 },
             opponentHealth: { king: 0, guard1: 0, guard2: 0 },
@@ -92,8 +88,8 @@ export default function GameEnhanced() {
         return () => {
             unsubscribe();
             // leaveGame();
-            if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
-            if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
+            // if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
+            // if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
         };
 
     }, [subscribe, sendMessage, navigate]);
@@ -110,19 +106,21 @@ export default function GameEnhanced() {
                 }
                 break;
 
-            case "attack_response":
-                console.log("Attack Response:", res);
+            case "troop_response":
+                console.log("Troop Response:", res);
                 if (res.success) {
-                    handleAttack(res);
-                } else if (!res.success && res.data.attacker.user.username === localStorage.getItem("username")) {
-                    showNotification(res.message);
+                    handleSetTroop(res.data);
+                } else {
+                    showNotification(res.error || "Failed to get troop data");
                 }
                 break;
 
-            case "heal_response":
-                console.log("Heal Response:", res);
+            case "mana_update":
+                console.log("Mana Update:", res);
                 if (res.success) {
-                    handleHeal(res);
+                    handleSetMana(res.data);
+                } else {
+                    showNotification(res.error || "Failed to get mana data");
                 }
                 break;
 
@@ -137,22 +135,6 @@ export default function GameEnhanced() {
 
     // === Game Initialization ===
     const initializeGame = (troops, userData, opponentData) => {
-        const troopsObject = troops.reduce((acc, troop) => {
-            acc[troop.name] = troop;
-            return acc;
-        }, {});
-
-        setAllTroops(troopsObject);
-
-        const initialActiveTroops = Object.keys(troopsObject).slice(0, MAX_ACTIVE_TROOPS);
-        setActiveTroops(initialActiveTroops);
-
-        const initialUsedTroops = {};
-        Object.keys(troopsObject).forEach(troopName => {
-            initialUsedTroops[troopName] = false;
-        });
-        setUsedTroops(initialUsedTroops);
-
         setGame({
             playerMana: userData.mana,
             maxMana: 10,
@@ -160,10 +142,11 @@ export default function GameEnhanced() {
             opponentHealth: extractHP(opponentData.towers),
             playerShield: extractMaxHP(userData.towers),
             opponentShield: extractMaxHP(opponentData.towers),
+            troops: troops,
             selectedTroop: null,
-            selectedTarget: null,
             gameOver: false,
-            winner: ""
+            winner: "",
+            message: ""
         });
 
         setIsGameInitialized(true);
@@ -196,81 +179,22 @@ export default function GameEnhanced() {
     //     localStorage.removeItem("room_id");
     // };
 
-    // === Rotate Troops ===
-    const rotateTroop = (usedTroopName) => {
-        // Mark the troop as used
-        setUsedTroops(prev => ({
-            ...prev,
-            [usedTroopName]: true
-        }));
-
-        // Get all unused troops that are not currently active
-        const availableTroops = Object.keys(allTroops).filter(troopName =>
-            !usedTroops[troopName] && !activeTroops.includes(troopName)
-        );
-
-        // If there are available troops, replace the used one
-        if (availableTroops.length > 0) {
-            // Get a random new troop
-            const newTroopIndex = Math.floor(Math.random() * availableTroops.length);
-            const newTroopName = availableTroops[newTroopIndex];
-
-            // Replace the used troop with the new one
-            setActiveTroops(prev => {
-                const index = prev.indexOf(usedTroopName);
-                if (index !== -1) {
-                    const newActive = [...prev];
-                    newActive[index] = newTroopName;
-                    return newActive;
-                }
-                return prev;
-            });
-        }
-    }
-
     // === Select Troop ===
     const selectTroop = (troopName) => {
-        const troop = allTroops[troopName];
+        const troop = game.troops[troopName];
         if (game.playerMana < troop.mana)
             return showNotification("Not enough mana.");
 
-        if (troop.type === "heal") {
-            sendMessage({
-                type: "heal",
-                data: {
-                    troop: troop.name,
-                    room_id: localStorage.getItem("room_id"),
-                    username: user.user?.username,
-                },
-            });
-
-            // Rotate the troop after use
-            rotateTroop(troopName);
-            return;
-        }
-
-        setGame((prev) => ({ ...prev, selectedTroop: troop }));
-    };
-
-    // === Select Target & Attack ===
-    const selectTarget = (target) => {
-        const { selectedTroop, playerMana } = game;
-        const currentUser = user.user?.username;
-
-        if (playerMana < selectedTroop.mana)
-            return showNotification("Not enough mana.");
-
         sendMessage({
-            type: "attack",
+            type: "select_troop",
             data: {
-                troop: selectedTroop.name,
-                target,
+                troop: troop.name,
                 room_id: localStorage.getItem("room_id"),
-                username: currentUser,
+                username: user.user?.username,
             },
         });
 
-        setGame((prev) => ({ ...prev, selectedTroop: null }));
+        setGame((prev) => ({ ...prev, selectedTroop: troop }));
     };
 
     // === Handle Set Game Response ===
@@ -288,107 +212,27 @@ export default function GameEnhanced() {
         }
     }
 
-    // === Handle Attack Response ===
-    const handleAttack = (msg) => {
-        const { attacker, defender, damage, target, isDestroyed, isCrit } =
-            msg.data;
-        const isMe = attacker.user.username === localStorage.getItem("username");
-        const targetId = (isMe ? "opponent-" : "player-") + target;
-
-        if (damageTimeoutRef.current) {
-            clearTimeout(damageTimeoutRef.current);
-            damageTimeoutRef.current = null;
-            // Hide the current popup
-            setDamagePopup(prev => ({ ...prev, visible: false }));
+    // === Handle Set Troops ===
+    const handleSetTroop = (msg) => {
+        const { player } = msg;
+        if (player.user.username === localStorage.getItem("username")) {
+            setUser(player);
+            setGame((prev) => ({
+                ...prev,
+                troops: player.troops,
+                playerMana: player.mana,
+            }));
         }
+    }
 
-        setGame((prev) => {
-            const newState = { ...prev };
-
-            if (isMe) {
-                setUser(attacker);
-                setOpponent(defender);
-                newState.playerMana = attacker.mana;
-                newState.opponentHealth[target] = defender.towers[target].hp;
-            } else {
-                setUser(defender);
-                setOpponent(attacker);
-                newState.playerMana = defender.mana;
-                newState.playerHealth[target] = defender.towers[target].hp;
-            }
-
-            return newState;
-        });
-
-        setTimeout(() => {
-            setDamagePopup({
-                targetId,
-                amount: damage,
-                isOpponent: isMe,
-                visible: true,
-                crit: isCrit,
-            });
-
-            // Hide damage popup after 1.5 seconds
-            damageTimeoutRef.current = setTimeout(() => {
-                setDamagePopup(prev => ({ ...prev, visible: false }));
-                damageTimeoutRef.current = null;
-
-            }, 1500);
-        }, 50);
-
-        if (isDestroyed) showNotification(`Tower ${target} has been destroyed!`);
-    };
-
-    // === Handle Heal Response ===
-    const handleHeal = (msg) => {
-        const { player, opponent, healedTower, healAmount } = msg.data;
-        const isMe = player.user.username === localStorage.getItem("username");
-        const targetId = (isMe ? "player-" : "opponent-") + healedTower.type;
-
-        if (healTimeoutRef.current) {
-            clearTimeout(healTimeoutRef.current);
-            healTimeoutRef.current = null;
-            // Hide the current popup
-            setHealPopup(prev => ({ ...prev, visible: false }));
+    // === Handle Set Mana ===
+    const handleSetMana = (msg) => {
+        const { player } = msg;
+        if (player.user.username === localStorage.getItem("username")) {
+            setUser(player);
+            setGame((prev) => ({ ...prev, playerMana: player.mana }));
         }
-
-
-        setGame((prev) => {
-            const newState = { ...prev };
-
-            if (isMe) {
-                setUser(player);
-                setOpponent(opponent);
-                newState.playerMana = player.mana;
-                newState.playerHealth[healedTower.type] = healedTower.hp;
-            } else {
-                setUser(opponent);
-                setOpponent(player);
-                newState.playerMana = opponent.mana;
-                newState.opponentHealth[healedTower.type] = healedTower.hp;
-            }
-
-            return newState;
-
-        });
-
-        setTimeout(() => {
-            setHealPopup({
-                targetId,
-                amount: healAmount,
-                isOpponent: !isMe,
-                visible: true,
-            });
-
-            // Hide damage popup after 1.5 seconds
-            healTimeoutRef.current = setTimeout(() => {
-                setHealPopup(prev => ({ ...prev, visible: false }));
-                healTimeoutRef.current = null;
-
-            }, 1500);
-        }, 50);
-    };
+    }
 
     // === Handle Game Over ===
     const handleGameOver = (res) => {
@@ -413,7 +257,7 @@ export default function GameEnhanced() {
     };
 
     // Tower component for reusability 
-    const Tower = ({ id, type, health, maxHealth, isOpponent, onClick, disabled }) => {
+    const Tower = ({ type, health, maxHealth, isOpponent, onClick, disabled }) => {
         const towerImage = type === "king"
             ? (isOpponent ? "/assets/King_Tower_Red.png" : "/assets/King_Tower_Blue.png")
             : (isOpponent ? "/assets/Guard_Tower_Red.png" : "/assets/Guard_Tower_Blue.png");
@@ -425,7 +269,7 @@ export default function GameEnhanced() {
                 style={{ fontFamily: "'ClashDisplay', sans-serif" }}
             >
                 {/* Damage Popup */}
-                {damagePopup?.visible && damagePopup.targetId === id && (
+                {/* {damagePopup?.visible && damagePopup.targetId === id && (
                     <div className={`absolute z-50 ${isOpponent ? "-bottom-15" : "-top-15"} -right-4 transform rotate-10 pointer-events-none`}>
                         <div className={`
                         flex justify-center items-center
@@ -446,10 +290,10 @@ export default function GameEnhanced() {
                             )}
                         </div>
                     </div>
-                )}
+                )} */}
 
                 {/* Heal Popup */}
-                {healPopup?.visible && healPopup.targetId === id && (
+                {/* {healPopup?.visible && healPopup.targetId === id && (
                     <div className={`absolute z-50 ${isOpponent ? "-bottom-15" : "-top-15"} rotate-10 pointer-events-none`}>
                         <div className="flex justify-center items-center text-green-700 animate-clash-heal-popup">
                             <div className="relative">
@@ -465,7 +309,7 @@ export default function GameEnhanced() {
                             <div className="absolute w-12 h-12 bg-green-400 rounded-full opacity-20 animate-clash-heal-burst" />
                         </div>
                     </div>
-                )}
+                )} */}
 
                 <div className="w-full h-full flex flex-col items-center justify-end relative">
                     {/* Opponent: HP bar goes under the image */}
@@ -518,14 +362,22 @@ export default function GameEnhanced() {
     };
 
     const tileMap = [
-        ["00", "01", "00", "87", "80", "80", "88", "00", "02", "02"],
-        ["01", "00", "00", "87", "80", "95", "86", "00", "02", "01"],
-        ["19", "20", "00", "85", "84", "86", "01", "00", "00", "00"],
-        ["37", "72", "19", "19", "19", "19", "19", "19", "19", "19"],
-        ["55", "55", "55", "55", "55", "55", "55", "55", "55", "96"],
-        ["00", "00", "01", "00", "00", "01", "00", "00", "00", "36"],
-        ["01", "00", "00", "00", "00", "00", "00", "00", "00", "36"],
-        ["82", "83", "00", "01", "00", "00", "01", "00", "02", "54"]
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19"],
+        ["55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
     ];
 
     return (
@@ -582,7 +434,7 @@ export default function GameEnhanced() {
                 {/* BATTLEFIELD - GRID LAYOUT */}
                 <div className="battle-container rounded-lg shadow-inner border-4 border-green-700 overflow-hidden relative w-full aspect-[10/8]">
                     {/* Grid background */}
-                    <div className="absolute inset-0 grid grid-cols-10 grid-rows-8">
+                    <div className="absolute inset-0 grid grid-cols-21 grid-rows-16">
                         {tileMap.map((row, rowIndex) =>
                             row.map((tile, colIndex) => (
                                 <div
@@ -622,45 +474,39 @@ export default function GameEnhanced() {
                     </div>
 
                     {/* Battlefield grid layout - 10 columns x 6 rows */}
-                    <div className="grid-battlefield grid grid-cols-10 grid-rows-8 relative w-full aspect-[10/8]">
-                        <div className="col-start-5 col-span-2 row-start-1 row-span-2 relative">
+                    <div className="grid-battlefield grid grid-cols-21 grid-rows-16 relative w-full aspect-[10/8]">
+                        <div className="col-start-10 col-span-3 row-start-1 row-span-3 relative">
                             <Tower
                                 type="king"
                                 id="opponent-king"
                                 health={game.opponentHealth.king}
                                 maxHealth={game.opponentShield.king}
                                 isOpponent={true}
-                                onClick={() => selectTarget("king")}
-                                disabled={!game.selectedTroop}
                                 className="w-full h-full"
                             />
                         </div>
 
-                        <div className="col-start-3 row-start-2 relative">
+                        <div className="col-start-5 col-span-2 row-start-3 row-span-2 relative">
                             <Tower
                                 type="guard"
                                 id="opponent-guard1"
                                 health={game.opponentHealth.guard1}
                                 maxHealth={game.opponentShield.guard1}
                                 isOpponent={true}
-                                onClick={() => selectTarget("guard1")}
-                                disabled={!game.selectedTroop}
                             />
                         </div>
 
-                        <div className="col-start-8 row-start-2 relative">
+                        <div className="col-start-16 col-span-2 row-start-3 row-span-2  relative">
                             <Tower
                                 type="guard"
                                 id="opponent-guard2"
                                 health={game.opponentHealth.guard2}
                                 maxHealth={game.opponentShield.guard2}
                                 isOpponent={true}
-                                onClick={() => selectTarget("guard2")}
-                                disabled={!game.selectedTroop}
                             />
                         </div>
 
-                        <div className="col-start-3 row-start-7 relative">
+                        <div className="col-start-5 col-span-2 row-start-13 row-span-2 relative">
                             <Tower
                                 type="guard"
                                 id="player-guard1"
@@ -671,7 +517,7 @@ export default function GameEnhanced() {
                             />
                         </div>
 
-                        <div className="col-start-8 row-start-7 relative">
+                        <div className="col-start-16 col-span-2 row-start-13 row-span-2 relative">
                             <Tower
                                 type="guard"
                                 id="player-guard2"
@@ -682,7 +528,7 @@ export default function GameEnhanced() {
                             />
                         </div>
 
-                        <div className="col-start-5 col-span-2 row-start-7 row-span-2 relative">
+                        <div className="col-start-10 col-span-3 row-start-14 row-span-3 relative">
                             <Tower
                                 type="king"
                                 id="player-king"
@@ -694,15 +540,6 @@ export default function GameEnhanced() {
                             />
                         </div>
                     </div>
-
-                    {/* Target indicators */}
-                    {game.selectedTroop && (
-                        <div className="target-indicators absolute top-0 left-0 w-full h-full pointer-events-none">
-                            <div className="text-center text-white text-lg absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-800 bg-opacity-70 px-4 py-2 rounded-full">
-                                🎯 Pick a Target!
-                            </div>
-                        </div>
-                    )}
                 </div>
 
                 {/* MANA BAR */}
@@ -735,13 +572,11 @@ export default function GameEnhanced() {
                     </div>
 
                     <div className="troop-selection flex flex-wrap justify-center gap-3">
-                        {activeTroops.map((troopName, index) => {
-                            const troop = allTroops[troopName];
+                        {Object.entries(game.troops).map(([troopName, troop], index) => {
                             if (!troop) return null;
 
-                            const isUsed = usedTroops[troopName];
                             const isSelected = game.selectedTroop?.name === troopName;
-                            const isDisabled = game.playerMana < troop.mana || isUsed;
+                            const isDisabled = game.playerMana < troop.mana;
 
                             return (
                                 <div key={index} className="relative"
@@ -752,7 +587,7 @@ export default function GameEnhanced() {
                                         <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 w-52 bg-gray-800 text-white rounded-lg shadow-lg z-20 overflow-hidden">
                                             {/* Troop Header */}
                                             <div className="bg-gradient-to-r from-blue-700 to-blue-900 p-2 border-b border-gray-600">
-                                                <h4 className="text-yellow-300 text-center">{troopName}</h4>
+                                                <h4 className="text-yellow-300 text-center">{troop.name}</h4>
                                             </div>
 
                                             {/* Troop Type */}
@@ -804,12 +639,6 @@ export default function GameEnhanced() {
                                         `}
                                         onClick={() => !isDisabled && selectTroop(troopName)}
                                     >
-                                        {isUsed && (
-                                            <div className="absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center z-10">
-                                                <span className="text-white text-lg">USED</span>
-                                            </div>
-                                        )}
-
                                         <div className="w-full relative">
                                             <img
                                                 className="w-35 h-37 object-cover"
@@ -845,7 +674,7 @@ export default function GameEnhanced() {
                                             )}
                                         </div>
                                         <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-1 text-center">
-                                            <span className="text-white text-sm font-semibold truncate block">{troopName}</span>
+                                            <span className="text-white text-sm font-semibold truncate block">{troop.name}</span>
                                         </div>
                                     </div>
                                 </div>

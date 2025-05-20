@@ -30,11 +30,16 @@ type Troop struct {
 	ProjectileSpeed float64 `json:"projectile_speed"`
 }
 
+type Position struct {
+	X int `json:"x"`
+	Y int `json:"y"`
+}
+
 type TroopInstance struct {
 	ID             string    `json:"id"`
 	Template       *Troop    `json:"template"`
 	OwnerID        string    `json:"owner_id"`
-	X, Y           float64   `json:"x", "y"`
+	Position       Position  `json:"position"`
 	TargetID       string    `json:"target_id"`
 	TargetType     string    `json:"target_type"`
 	IsDead         bool      `json:"is_dead"`

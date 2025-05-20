@@ -2,8 +2,10 @@ package game
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"royaka/internal/model"
+	"royaka/internal/utils"
 	"time"
 )
 
@@ -21,21 +23,34 @@ type Game struct {
 
 // ===================== Game Initialization =====================
 
-func NewGame(p1, p2 *model.Player, enhanced bool) *Game {
-	startingPlayer := p1.User.Username
-	if rand.Intn(2) == 0 {
-		startingPlayer = p2.User.Username
+func NewGame(p1, p2 *model.Player, mode string) *Game {
+	var isSimple bool
+	var startingPlayer string
+	if mode != "simple" && mode != "enhanced" {
+		log.Fatal("Invalid game mode")
+	} else if mode == "simple" {
+		isSimple = true
+		startingPlayer = p1.User.Username
+		if rand.Intn(2) == 0 {
+			startingPlayer = p2.User.Username
+		}
+	} else {
+		isSimple = false
 	}
+
+	p1.LastManaRegen = time.Now()
+	p2.LastManaRegen = time.Now()
 
 	game := &Game{
 		Player1:  p1,
 		Player2:  p2,
 		Turn:     startingPlayer,
 		Started:  true,
-		Enhanced: enhanced,
+		Enhanced: !isSimple,
 	}
 
-	if enhanced {
+	if !isSimple {
+		go game.startTicker()
 		game.StartTime = time.Now()
 		game.MaxTime = 3 * time.Minute
 	}
@@ -245,6 +260,36 @@ func AwardEXP(winner, loser *model.User, isDraw bool) {
 
 	model.SaveUser(winner)
 	model.SaveUser(loser)
+}
+
+func (g *Game) startTicker() {
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
+
+	for g.Started {
+		<-ticker.C
+		g.Tick()
+	}
+}
+
+func (g *Game) Tick() {
+	now := time.Now()
+
+	// Apply mana regen for both players
+	for _, player := range []*model.Player{g.Player1, g.Player2} {
+		if player.Mana < 10 && now.Sub(player.LastManaRegen) >= 2*time.Second {
+			player.Mana++
+			player.LastManaRegen = now
+			sendToClient(player.User.Username, utils.Response{
+				Type:    "mana_update",
+				Success: true,
+				Message: fmt.Sprintf("Mana: %d", player.Mana),
+				Data: map[string]interface{}{
+					"player": player,
+				},
+			})
+		}
+	}
 }
 
 // ===================== Game Utility =====================

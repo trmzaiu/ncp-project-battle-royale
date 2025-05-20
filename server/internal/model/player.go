@@ -4,6 +4,7 @@ package model
 
 import (
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -18,6 +19,7 @@ type Player struct {
 	User           *User             `json:"user"`
 	Matched        chan bool         `json:"-"`
 	Turn           int               `json:"turn"`
+	LastManaRegen  time.Time         `json:"-"`
 }
 
 var (
@@ -78,33 +80,36 @@ func NewPlayer(user *User, mode string) *Player {
 		User:           user,
 		Matched:        make(chan bool, 1),
 		Turn:           0,
+		LastManaRegen:  time.Now(),
 	}
 }
 
 func (p *Player) RotateTroop(usedTroopName string) {
-	var newTroops []*Troop
-	var usedTroop *Troop
-
-	for _, t := range p.Troops {
-		if t.Name == usedTroopName && usedTroop == nil {
-			usedTroop = t
-			continue
+	usedIndex := -1
+	for i, t := range p.Troops {
+		if t.Name == usedTroopName {
+			usedIndex = i
+			break
 		}
-		newTroops = append(newTroops, t)
 	}
-
-	if usedTroop == nil {
+	if usedIndex == -1 || p.Mana < p.Troops[usedIndex].MANA || len(p.TroopQueue) == 0 {
 		return
 	}
 
-	if len(p.TroopQueue) > 0 {
-		next := p.TroopQueue[0]
-		p.TroopQueue = p.TroopQueue[1:]
-		newTroops = append(newTroops, next)
+	usedTroop := p.Troops[usedIndex]
+
+	p.Mana -= usedTroop.MANA
+
+	if len(p.TroopQueue) == 0 {
+		return
 	}
 
+	newTroop := p.TroopQueue[0]
+	p.TroopQueue = p.TroopQueue[1:]
+
+	p.Troops[usedIndex] = newTroop
+
 	p.TroopQueue = append(p.TroopQueue, usedTroop)
-	p.Troops = newTroops
 }
 
 func (p *Player) ApplyDefenseBoost(percent float64) {
