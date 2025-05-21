@@ -12,10 +12,10 @@ import (
 
 type Troop struct {
 	Name            string  `json:"name"`
-	MaxHP           int     `json:"max_hp"`
-	HP              int     `json:"hp"`
-	ATK             int     `json:"atk"`
-	DEF             int     `json:"def"`
+	MaxHP           float64 `json:"max_hp"`
+	HP              float64 `json:"hp"`
+	ATK             float64 `json:"atk"`
+	DEF             float64 `json:"def"`
 	MANA            int     `json:"mana"`
 	CRIT            int     `json:"crit"`
 	Speed           float64 `json:"speed"`
@@ -31,19 +31,40 @@ type Troop struct {
 }
 
 type Position struct {
-	X int `json:"x"`
-	Y int `json:"y"`
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
 }
 
 type TroopInstance struct {
 	ID             string    `json:"id"`
 	Template       *Troop    `json:"template"`
-	OwnerID        string    `json:"owner_id"`
+	TypeEntity     string    `json:"type_entity"`
+	Owner          string    `json:"owner"`
 	Position       Position  `json:"position"`
 	TargetID       string    `json:"target_id"`
 	TargetType     string    `json:"target_type"`
 	IsDead         bool      `json:"is_dead"`
 	LastAttackTime time.Time `json:"last_attack"`
+}
+
+func (t *TroopInstance) GetID() string {
+	return t.ID
+}
+
+func (t *TroopInstance) GetOwner() string {
+	return t.Owner
+}
+
+func (t *TroopInstance) GetType() string {
+	return t.TypeEntity
+}
+
+func (t *TroopInstance) GetPosition() Position {
+	return t.Position
+}
+
+func (t *TroopInstance) IsAlive() bool {
+	return !t.IsDead
 }
 
 func loadTroop() ([]Troop, error) {
@@ -94,13 +115,14 @@ func getRandomTroops(n int) []*Troop {
 	return selected
 }
 
-func createTroopInstances(templates []*Troop, ownerID string) []*TroopInstance {
+func createTroopInstances(templates []*Troop, owner string) []*TroopInstance {
 	instances := make([]*TroopInstance, 0, len(templates))
-	for _, t := range templates {
+	for _, troop := range templates {
 		instance := &TroopInstance{
 			ID:             uuid.New().String(),
-			Template:       t,
-			OwnerID:        ownerID,
+			Template:       troop,
+			TypeEntity:     "troop",
+			Owner:          owner,
 			LastAttackTime: time.Now(),
 		}
 		instances = append(instances, instance)
@@ -121,13 +143,13 @@ func shuffleTroops(troops []*Troop) []*Troop {
 	return shuffled
 }
 
-func (t *Troop) CalculateDamage(level int) (int, bool) {
-	baseAtk := float64(t.ATK) * (1 + 0.1*float64(level))
+func (t *Troop) CalculateDamage(level int) (float64, bool) {
+	baseAtk := t.ATK * (1 + 0.1*float64(level))
 
 	// Use crypto/rand for crit calculation
 	critRoll, err := cryptoRandInt(100)
 	if err != nil {
-		return int(baseAtk), false
+		return baseAtk, false
 	}
 	isCrit := critRoll < int64(t.CRIT)
 
@@ -135,16 +157,16 @@ func (t *Troop) CalculateDamage(level int) (int, bool) {
 		baseAtk *= 1.5
 	}
 
-	return int(baseAtk), isCrit
+	return baseAtk, isCrit
 }
 
-func (t *Troop) CalculateHeal(level int) (int, bool) {
-	baseHp := float64(t.ATK) * (1 + 0.1*float64(level))
+func (t *Troop) CalculateHeal(level int) (float64, bool) {
+	baseHp := t.ATK * (1 + 0.1*float64(level))
 
 	// Use crypto/rand for crit calculation
 	critRoll, err := cryptoRandInt(100)
 	if err != nil {
-		return int(baseHp), false
+		return baseHp, false
 	}
 	isCrit := critRoll < int64(t.CRIT)
 
@@ -152,14 +174,14 @@ func (t *Troop) CalculateHeal(level int) (int, bool) {
 		baseHp *= 1.5
 	}
 
-	return int(baseHp), isCrit
+	return baseHp, isCrit
 }
 
 func (t *Troop) BoostAttack() {
-	t.ATK = int(float64(t.ATK) * 1.5)
+	t.ATK = float64(t.ATK) * 1.5
 }
 
-func (t *Troop) FortifyHP(amount int) {
+func (t *Troop) FortifyHP(amount float64) {
 	t.HP += amount
 	if t.HP > t.MaxHP {
 		t.HP = t.MaxHP

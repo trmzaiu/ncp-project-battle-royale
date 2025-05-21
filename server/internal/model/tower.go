@@ -7,20 +7,54 @@ import (
 	"math/rand"
 	"os"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type Tower struct {
-	Type    string  `json:"type"`
-	MaxHP   int     `json:"max_hp"`
-	HP      int     `json:"hp"`
-	ATK     int     `json:"atk"`
-	DEF     int     `json:"def"`
-	CRIT    float64 `json:"crit"`
-	EXP     int     `json:"exp"`
-	X       float64 `json:"x"`
-	Y       float64 `json:"y"`
-	OwnerID string  `json:"owner_id"`
-	IsDead  bool    `json:"is_dead"`
+	Type  string  `json:"type"`
+	MaxHP float64 `json:"max_hp"`
+	HP    float64 `json:"hp"`
+	ATK   float64 `json:"atk"`
+	DEF   float64 `json:"def"`
+	CRIT  float64 `json:"crit"`
+	EXP   int     `json:"exp"`
+}
+
+type Area struct {
+	TopLeft     Position `json:"top_left"`
+	BottomRight Position `json:"bottom_right"`
+}
+
+type TowerInstance struct {
+	ID          string `json:"id"`
+	Template    *Tower `json:"template"`
+	TypeEntity  string `json:"type_entity"`
+	Owner       string `json:"owner"`
+	Area        Area   `json:"area"`
+	IsDestroyed bool   `json:"is_destroyed"`
+}
+
+func (t *TowerInstance) GetID() string {
+	return t.ID
+}
+func (t *TowerInstance) GetOwner() string {
+	return t.Owner
+}
+
+func (t *TowerInstance) GetType() string {
+	return t.TypeEntity
+}
+
+// For position of Tower, get center or top-left (depends on your logic)
+func (t *TowerInstance) GetPosition() Position {
+	return Position{
+		X: (t.Area.TopLeft.X + t.Area.BottomRight.X) / 2,
+		Y: (t.Area.TopLeft.Y + t.Area.BottomRight.Y) / 2,
+	}
+}
+func (t *TowerInstance) IsAlive() bool {
+	return !t.IsDestroyed
 }
 
 var defaultTowers map[string]*Tower
@@ -50,6 +84,11 @@ func LoadTower() map[string]*Tower {
 	return towerMap
 }
 
+func (a Area) Contains(pos Position) bool {
+	return pos.X >= a.TopLeft.X && pos.X <= a.BottomRight.X &&
+		pos.Y >= a.TopLeft.Y && pos.Y <= a.BottomRight.Y
+}
+
 func (t *Tower) Clone() *Tower {
 	return &Tower{
 		Type:  t.Type,
@@ -62,7 +101,7 @@ func (t *Tower) Clone() *Tower {
 	}
 }
 
-func (t *Tower) TakeDamage(rawAtk int, attackerLevel int) (int, bool) {
+func (t *Tower) TakeDamage(rawAtk float64, attackerLevel int) (float64, bool) {
 	dmg := rawAtk - t.DEF/2
 	if dmg < 0 {
 		dmg = 0
@@ -75,23 +114,23 @@ func (t *Tower) TakeDamage(rawAtk int, attackerLevel int) (int, bool) {
 }
 
 func (t *Tower) IncreaseDefense(percent float64) {
-	t.DEF = int(float64(t.DEF) * (1 + percent))
+	t.DEF = float64(t.DEF) * (1 + percent)
 }
 
-func (t *Tower) Heal(amount int) {
+func (t *Tower) Heal(amount float64) {
 	t.HP += amount
 	if t.HP > t.MaxHP {
 		t.HP = t.MaxHP
 	}
 }
 
-func (t *Tower) CounterDamage() int {
+func (t *Tower) CounterDamage() float64 {
 	rand.Seed(time.Now().UnixNano())
 
 	baseDamage := t.ATK
 
 	if rand.Float64() < t.CRIT {
-		baseDamage = int(float64(baseDamage) * 1.5)
+		baseDamage = float64(baseDamage) * 1.5
 	}
 
 	return baseDamage
@@ -118,5 +157,64 @@ func (t *Tower) Reset(key string) {
 		t.DEF = def.DEF
 		t.CRIT = def.CRIT
 		t.EXP = def.EXP
+	}
+}
+
+func CreateTowerInstances(towers map[string]*Tower, owner string, isPlayer1 bool) []*TowerInstance {
+	instances := []*TowerInstance{}
+	for _, tower := range towers {
+		instance := &TowerInstance{
+			ID:          uuid.New().String(),
+			Template:    tower,
+			TypeEntity:  "tower",
+			Owner:       owner,
+			IsDestroyed: false,
+			Area:        GetTowerArea(tower.Type, isPlayer1),
+		}
+		instances = append(instances, instance)
+	}
+	return instances
+}
+
+func GetTowerArea(towerType string, isPlayer1 bool) Area {
+	switch towerType {
+	case "king":
+		if isPlayer1 {
+			return Area{
+				TopLeft:     Position{X: 9, Y: 0},
+				BottomRight: Position{X: 11, Y: 2},
+			}
+		}
+		return Area{
+			TopLeft:     Position{X: 9, Y: 18},
+			BottomRight: Position{X: 11, Y: 20},
+		}
+	case "guard1":
+		if isPlayer1 {
+			return Area{
+				TopLeft:     Position{X: 4, Y: 2},
+				BottomRight: Position{X: 5, Y: 3},
+			}
+		}
+		return Area{
+			TopLeft:     Position{X: 4, Y: 17},
+			BottomRight: Position{X: 5, Y: 18},
+		}
+	case "guard2":
+		if isPlayer1 {
+			return Area{
+				TopLeft:     Position{X: 15, Y: 2},
+				BottomRight: Position{X: 16, Y: 3},
+			}
+		}
+		return Area{
+			TopLeft:     Position{X: 15, Y: 17},
+			BottomRight: Position{X: 16, Y: 18},
+		}
+	default:
+		return Area{
+			TopLeft:     Position{X: 0, Y: 0},
+			BottomRight: Position{X: 0, Y: 0},
+		}
 	}
 }

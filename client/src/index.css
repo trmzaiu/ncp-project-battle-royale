@@ -165,3 +165,25 @@
 .mana-fill.filled::before {
     width: 100%;
 }
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+.float {
+    animation: float 3s ease-in-out infinite;
+}
+
+.smooth-move {
+    transition-property: transform;
+    transition-duration: 1000ms;
+    transition-timing-function: linear;
+}

@@ -5,33 +5,37 @@ import (
 	"log"
 	"royaka/internal/model"
 	"royaka/internal/utils"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
 func HandleSelectTroop(conn *websocket.Conn, data json.RawMessage) {
 	var req utils.SelectTroopRequest
 
-	// Parse & validate request
 	if err := json.Unmarshal(data, &req); err != nil || req.RoomID == "" || req.Username == "" || req.Troop == "" {
-		log.Printf("[WARN][SELECT] Invalid request: %v", err)
+		log.Printf("[ERROR][SELECT] Invalid request: %+v", req)
 		conn.WriteJSON(utils.Response{
 			Type:    "troop_response",
 			Success: false,
-			Message: invalidRequestMessage,
+			Message: "Invalid request",
 		})
 		return
 	}
 
+	log.Printf("[INFO][SELECT] %s is trying to spawn %s at (%f, %f) in room %s",
+		req.Username, req.Troop, req.X, req.Y, req.RoomID)
+
 	roomsMu.RLock()
-	room, exists := rooms[req.RoomID]
+	room, ok := rooms[req.RoomID]
 	roomsMu.RUnlock()
-	if !exists {
+	if !ok {
 		log.Printf("[WARN][SELECT] Room %s not found", req.RoomID)
 		conn.WriteJSON(utils.Response{
 			Type:    "troop_response",
 			Success: false,
-			Message: roomRequestMessage,
+			Message: "Room not found",
 		})
 		return
 	}
@@ -42,45 +46,112 @@ func HandleSelectTroop(conn *websocket.Conn, data json.RawMessage) {
 	} else if room.Player2.User.Username == req.Username {
 		player = room.Player2
 	} else {
-		log.Printf("[WARN][SELECT] User %s not found in room", req.Username)
+		log.Printf("[WARN][SELECT] %s is not in the match", req.Username)
 		conn.WriteJSON(utils.Response{
 			Type:    "troop_response",
 			Success: false,
-			Message: "You are not part of this match",
+			Message: "You are not in this match",
 		})
 		return
 	}
 
-	// Validate troop is in player's hand
-	found := false
-	for _, t := range player.Troops {
+	var selectedTemplate *model.Troop
+	for i, t := range player.Troops {
 		if t.Name == req.Troop {
-			found = true
+			selectedTemplate = player.Troops[i]
 			break
 		}
 	}
-	if !found {
+	if selectedTemplate == nil {
+		log.Printf("[WARN][SELECT] Troop %s not found in %s's hand", req.Troop, req.Username)
 		conn.WriteJSON(utils.Response{
 			Type:    "troop_response",
 			Success: false,
-			Message: "Troop not in current hand",
+			Message: "Troop not in hand",
 		})
 		return
 	}
 
-	// Rotate the troop
+	realX, realY := float64(req.X), float64(req.Y)
+	if room.Player1.User.Username == req.Username {
+		realX = 20.0 - req.X
+		realY = 20.0 - req.Y
+	}
+
+	log.Printf("[INFO][SPAWN] %s spawned %s at (%f, %f)", req.Username, selectedTemplate.Name, realX, realY)
+
+	if !room.Game.IsValidSpawnPosition(req.Username, realX, realY) {
+		log.Printf("[WARN][SELECT] Invalid position (%f, %f) for %s", realX, realY, req.Username)
+		conn.WriteJSON(utils.Response{
+			Type:    "troop_response",
+			Success: false,
+			Message: "Invalid spawn position",
+		})
+		return
+	}
+
+	// Check mana
+	if room.Game.Enhanced && player.Mana < selectedTemplate.MANA {
+		log.Printf("[WARN][SELECT] Not enough mana for %s to use %s (has %d, needs %d)",
+			req.Username, selectedTemplate.Name, player.Mana, selectedTemplate.MANA)
+		conn.WriteJSON(utils.Response{
+			Type:    "troop_response",
+			Success: false,
+			Message: "Not enough mana",
+		})
+		return
+	}
+
 	player.RotateTroop(req.Troop)
 
-	// Send update to both players
+	// Tạo troop instance
+	instance := model.TroopInstance{
+		ID:             uuid.New().String(),
+		Template:       selectedTemplate,
+		TypeEntity:     "troop",
+		Owner:          player.User.Username,
+		Position:       model.Position{X: realX, Y: realY},
+		IsDead:         false,
+		LastAttackTime: time.Now(),
+	}
+
+	room.Game.BattleMap = append(room.Game.BattleMap, &instance)
+
+	// Gửi lại troop mới spawn cho cả 2
 	payload := utils.Response{
 		Type:    "troop_response",
 		Success: true,
-		Message: "Troop selected and rotated",
+		Message: "Troop spawned",
 		Data: map[string]interface{}{
+			"troop":  instance,
 			"player": player,
+			"map":    room.Game.BattleMap,
 		},
 	}
-
 	sendToClient(room.Player1.User.Username, payload)
 	sendToClient(room.Player2.User.Username, payload)
+}
+
+func (g *Game) IsValidSpawnPosition(username string, x, y float64) bool {
+	if x < 0 || x >= 21 || y < 0 || y >= 21 {
+		log.Printf("[INVALID_POS] (%f, %f) is out of bounds", x, y)
+		return false
+	}
+
+	for _, troop := range g.BattleMap {
+		pos := troop.GetPosition()
+		if pos.X == x && pos.Y == y {
+			log.Printf("[INVALID_POS] (%f, %f) already occupied", x, y)
+			return false
+		}
+	}
+
+	if g.Player1.User.Username == username && y > 8 {
+		return false
+	}
+	if g.Player2.User.Username == username && y < 12 {
+		return false
+	}
+
+	return true
 }

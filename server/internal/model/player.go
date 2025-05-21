@@ -12,6 +12,7 @@ import (
 type Player struct {
 	Mana           int               `json:"mana"`
 	Towers         map[string]*Tower `json:"towers"`
+	TowerInstances []*TowerInstance  `json:"tower_instances,omitempty"`
 	Troops         []*Troop          `json:"troops"`
 	TroopQueue     []*Troop          `json:"-"`
 	TroopInstances []*TroopInstance  `json:"troop_instances,omitempty"`
@@ -48,13 +49,12 @@ func NewPlayer(user *User, mode string) *Player {
 		shuffled := shuffleTroops(allTroops)
 		troops = shuffled[:4]
 		troopQueue = shuffled[4:]
-
-		troopInstances = createTroopInstances(troops, user.ID)
+		troopInstances = createTroopInstances(troops, user.Username)
 	}
 
 	towers := LoadTower()
 
-	return &Player{
+	player := &Player{
 		Mana: 5,
 		Towers: map[string]*Tower{
 			"king": func() *Tower {
@@ -73,6 +73,7 @@ func NewPlayer(user *User, mode string) *Player {
 				return t
 			}(),
 		},
+		TowerInstances: []*TowerInstance{},
 		Troops:         troops,
 		TroopQueue:     troopQueue,
 		TroopInstances: troopInstances,
@@ -82,6 +83,8 @@ func NewPlayer(user *User, mode string) *Player {
 		Turn:           0,
 		LastManaRegen:  time.Now(),
 	}
+
+	return player
 }
 
 func (p *Player) RotateTroop(usedTroopName string) {

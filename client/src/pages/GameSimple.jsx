@@ -571,22 +571,23 @@ export default function GameSimple() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-500 to-blue-900">
-            {showLargeAnimation && (
-                <div
-                    className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
-                    style={{
-                        fontFamily: "'ClashDisplay', sans-serif",
-                        textShadow: "2px 2px 10px rgba(0, 0, 0, 0.5)",
-                        transform: "translateY(-92px)",
-                    }}
-                >
-                    <div className="text-6xl font-bold text-white px-12 py-6 animate-turnAlert">
-                        {game.playerTurn === localStorage.getItem("username")
-                            ? "YOUR TURN"
-                            : "OPPONENT'S TURN"}
+            {game.playerHealth['king'] > 0 && game.opponentHealth['king'] > 0 &&
+                showLargeAnimation && (
+                    <div
+                        className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
+                        style={{
+                            fontFamily: "'ClashDisplay', sans-serif",
+                            textShadow: "2px 2px 10px rgba(0, 0, 0, 0.5)",
+                            transform: "translateY(-92px)",
+                        }}
+                    >
+                        <div className="text-6xl font-bold text-white px-12 py-6 animate-turnAlert">
+                            {game.playerTurn === localStorage.getItem("username")
+                                ? "YOUR TURN"
+                                : "OPPONENT'S TURN"}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
             <div
                 className="game-container bg-gradient-to-b from-blue-400 to-blue-600 p-2 rounded-lg shadow-xl max-w-2xl mx-auto relative overflow-hidden border-4 border-yellow-500"
                 style={{ fontFamily: "'ClashDisplay', sans-serif" }}
@@ -929,9 +930,15 @@ export default function GameSimple() {
                                         ? "+30 XP"
                                         : ""}
                                 </div>
+                                <img src={game.winner === user.user?.username
+                                    ? "/assets/win.png"
+                                    : "/assets/lose.png"}
+                                    alt={game.winner === user.user?.username
+                                        ? "Winner"
+                                        : "Loser"} className="w-40 h-40 mx-auto" />
                             </div>
 
-                            <div className="modal-buttons mt-6 text-center">
+                            <div className="modal-buttons text-center">
                                 <button
                                     className="play-again-btn bg-gradient-to-r from-yellow-400 to-yellow-500 text-blue-900 px-8 py-3 rounded-full text-lg border-4 border-yellow-600 shadow-lg transform hover:scale-105 transition-transform"
                                     onClick={handlePlayAgain}

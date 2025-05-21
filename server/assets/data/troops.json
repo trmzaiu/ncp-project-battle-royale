@@ -8,7 +8,7 @@
         "mana": 3,
         "crit": 5,
         "exp": 5,
-        "speed": 2.5,
+        "speed": 1.5,
         "range": 30,
         "type": "atk",
         "card": "/assets/Card_Knight.png",
@@ -28,6 +28,7 @@
         "range": 150,
         "type": "buf",
         "card": "/assets/Card_Wizard.png",
+        "image": "/assets/Wizard.png",
         "description": "Deals 200 magic damage to the enemy tower per attack."
     },
     {
@@ -43,6 +44,7 @@
         "range": 30,
         "type": "def",
         "card": "/assets/Card_Golem.png",
+        "image": "/assets/Golem.png",
         "description": "Deals 200 damage to the enemy tower per attack."
     },
     {
@@ -58,6 +60,7 @@
         "range": 30,
         "type": "atk",
         "card": "/assets/Card_Prince.png",
+        "image": "/assets/Prince.png",
         "description": "Deals 300 damage to the enemy tower per attack."
     },
     {
@@ -73,6 +76,7 @@
         "range": 30,
         "type": "def",
         "card": "/assets/Card_Barbarians.png",
+        "image": "/assets/Barbarian.png",
         "description": "Deals 400 damage to the enemy tower per attack."
     },
     {
@@ -88,6 +92,7 @@
         "range": 200,
         "type": "heal",
         "card": "/assets/Card_Heal_Spirit.png",
+        "image": "/assets/Heal_Spirit.png",
         "description": "Heals your tower by 300 health points per attack."
     },
     {
@@ -103,6 +108,7 @@
         "range": 130,
         "type": "atk",
         "card": "/assets/Card_Musketeer.png",
+        "image": "/assets/Musketeer.png",
         "description": "Deals 250 damage to the enemy tower per attack."
     },
     {
@@ -114,10 +120,11 @@
         "mana": 4,
         "crit": 40,
         "exp": 30,
-        "speed": 3,
+        "speed": 1,
         "range": 30,
         "type": "atk",
         "card": "/assets/Card_Giant_Skeleton.png",
+        "image": "/assets/Giant_Skeleton.png",
         "description": "Deals 350 damage to the enemy tower per attack."
     },
     {
@@ -133,6 +140,7 @@
         "range": 30,
         "type": "def",
         "card": "/assets/Card_Giant.png",
+        "image": "/assets/Giant.png",
         "description": "Deals 180 damage to the enemy tower per attack."
     },
     {
@@ -148,6 +156,7 @@
         "range": 150,
         "type": "atk",
         "card": "/assets/Card_Archers.png",
+        "image": "/assets/Archer.png",
         "description": "Deals 160 damage to the enemy tower per attack."
     },
     {
@@ -163,6 +172,7 @@
         "range": 100,
         "type": "buf",
         "card": "/assets/Card_Valkyrie.png",
+        "image": "/assets/Valkyrie.png",
         "description": "Deals 280 damage to the enemy tower per attack."
     },
     {
@@ -178,6 +188,7 @@
         "range": 130,
         "type": "buf",
         "card": "/assets/Card_Witch.png",
+        "image": "/assets/Witch.png",
         "description": "Deals 220 magic damage to the enemy tower per attack."
     },
     {
@@ -193,6 +204,7 @@
         "range": 200,
         "type": "atk",
         "card": "/assets/Card_Baby_Dragon.png",
+        "image": "/assets/Baby_Dragon.png",
         "description": "Deals 300 magic damage to the enemy tower per attack."
     },
     {
@@ -208,6 +220,7 @@
         "range": 130,
         "type": "atk",
         "card": "/assets/Card_Hunter.png",
+        "image": "/assets/Hunter.png",
         "description": "Deals 280 damage to the enemy tower per attack."
     },
     {
@@ -222,7 +235,8 @@
         "speed": 1.4,
         "range": 30,
         "type": "atk",
-        "card": "/assets/Card_Dark_Prince.png",
+        "card": "/assets/Card_Hog_Rider.png",
+        "image": "/assets/Hog_Rider.png",
         "description": "Deals 320 damage to the enemy tower per attack."
     },
     {
@@ -238,6 +252,7 @@
         "range": 100,
         "type": "atk",
         "card": "/assets/Card_Executioner.png",
+        "image": "/assets/Executioner.png",
         "description": "Deals 270 damage to the enemy tower per attack."
     },
     {
@@ -253,6 +268,7 @@
         "range": 130,
         "type": "atk",
         "card": "/assets/Card_Bowler.png",
+        "image": "/assets/Bowler.png",
         "description": "Deals 210 damage to the enemy tower per attack."
     },
     {
@@ -268,6 +284,7 @@
         "range": 30,
         "type": "def",
         "card": "/assets/Card_Mini_PEKKA.png",
+        "image": "/assets/Mini_Pekka.png",
         "description": "Deals 290 damage to the enemy tower per attack."
     },
     {
@@ -283,6 +300,7 @@
         "range": 200,
         "type": "heal",
         "card": "/assets/Card_Battle_Healer.png",
+        "image": "/assets/Battle_Healer.png",
         "description": "Heals your tower by 250 health points per attack."
     },
     {
@@ -297,7 +315,8 @@
         "speed": 1.1,
         "range": 200,
         "type": "heal",
-        "card": "/assets/Card_Berserker.png",
+        "card": "/assets/Card_Phoenix.png",
+        "image": "/assets/Phoenix.png",
         "description": "Heals your tower by 120 health points per attack."
     }
 ]

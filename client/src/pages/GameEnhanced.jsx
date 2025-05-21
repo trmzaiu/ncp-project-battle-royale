@@ -1,35 +1,40 @@
-import { useEffect, useState } from "react";
+import clsx from "clsx";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWebSocketContext } from "../context/WebSocketContext";
 
 export default function GameEnhanced() {
     const navigate = useNavigate();
     const { sendMessage, subscribe } = useWebSocketContext();
-    // const damageTimeoutRef = useRef(null);
-    // const healTimeoutRef = useRef(null);
-    // const hasLeftGameRef = useRef(false);
+
+    const containerRef = useRef(null);
+    const damageTimeoutRef = useRef(null);
+    const healTimeoutRef = useRef(null);
+    const hasLeftGameRef = useRef(false);
 
     const [user, setUser] = useState({});
     const [opponent, setOpponent] = useState({});
+    const [game, setGame] = useState(getInitialGameState());
     const [isGameInitialized, setIsGameInitialized] = useState(false);
     const [hoveredTroop, setHoveredTroop] = useState(null);
+    const [tileSize, setTileSize] = useState(0);
 
-    // const [damagePopup, setDamagePopup] = useState({
-    //     targetId: null,
-    //     amount: 0,
-    //     isOpponent: false,
-    //     visible: false,
-    //     isCrit: false,
-    // });
+    const [damagePopup, setDamagePopup] = useState({
+        targetId: null,
+        amount: 0,
+        isOpponent: false,
+        visible: false,
+        isCrit: false,
+    });
 
-    // const [healPopup, setHealPopup] = useState({
-    //     target: null,
-    //     amount: 0,
-    //     isOpponent: false,
-    //     visible: false,
-    // });
+    const [healPopup, setHealPopup] = useState({
+        target: null,
+        amount: 0,
+        isOpponent: false,
+        visible: false,
+    });
 
-    const [game, setGame] = useState(getInitialGameState());
+
     const [notification, setNotification] = useState({
         show: false,
         message: "",
@@ -38,18 +43,16 @@ export default function GameEnhanced() {
     // === Initial Game State ===
     function getInitialGameState() {
         return {
+            isPlayer1: false,
             playerMana: 5,
             maxMana: 10,
-            playerHealth: { king: 0, guard1: 0, guard2: 0 },
-            opponentHealth: { king: 0, guard1: 0, guard2: 0 },
-            playerShield: { king: 0, guard1: 0, guard2: 0 },
-            opponentShield: { king: 0, guard1: 0, guard2: 0 },
             troops: {},
             selectedTroop: null,
             selectedTarget: null,
             gameOver: false,
             winner: null,
-            message: ""
+            message: "",
+            map: []
         };
     }
 
@@ -61,6 +64,13 @@ export default function GameEnhanced() {
             4000
         );
     };
+
+    useLayoutEffect(() => {
+        if (containerRef.current) {
+            const width = containerRef.current.offsetWidth;
+            setTileSize(width / 21);
+        }
+    }, []);
 
     // === Effect: Initial Setup & WebSocket Subscription ===
     useEffect(() => {
@@ -87,9 +97,9 @@ export default function GameEnhanced() {
 
         return () => {
             unsubscribe();
-            // leaveGame();
-            // if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
-            // if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
+            leaveGame();
+            if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
+            if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
         };
 
     }, [subscribe, sendMessage, navigate]);
@@ -116,11 +126,20 @@ export default function GameEnhanced() {
                 break;
 
             case "mana_update":
-                console.log("Mana Update:", res);
+                // console.log("Mana Update:", res);
                 if (res.success) {
                     handleSetMana(res.data);
                 } else {
                     showNotification(res.error || "Failed to get mana data");
+                }
+                break;
+
+            case "game_state":
+                console.log("Battle Map:", res.data.battleMap);
+                if (res.success) {
+                    handleSetMap(res.data);
+                } else {
+                    showNotification(res.error || "Failed to get game data");
                 }
                 break;
 
@@ -134,50 +153,36 @@ export default function GameEnhanced() {
     };
 
     // === Game Initialization ===
-    const initializeGame = (troops, userData, opponentData) => {
+    const initializeGame = (map, player1, troops, userData) => {
         setGame({
+            isPlayer1: player1 === localStorage.getItem("username"),
             playerMana: userData.mana,
             maxMana: 10,
-            playerHealth: extractHP(userData.towers),
-            opponentHealth: extractHP(opponentData.towers),
-            playerShield: extractMaxHP(userData.towers),
-            opponentShield: extractMaxHP(opponentData.towers),
             troops: troops,
             selectedTroop: null,
             gameOver: false,
             winner: "",
-            message: ""
+            message: "",
+            map: map
         });
 
         setIsGameInitialized(true);
     };
 
-    const extractMaxHP = (towers) => ({
-        king: towers.king.max_hp,
-        guard1: towers.guard1.max_hp,
-        guard2: towers.guard2.max_hp,
-    });
-
-    const extractHP = (towers) => ({
-        king: towers.king.hp,
-        guard1: towers.guard1.hp,
-        guard2: towers.guard2.hp,
-    });
-
     // === Leave Game ===
-    // const leaveGame = () => {
-    //     if (hasLeftGameRef.current) return;
+    const leaveGame = () => {
+        if (hasLeftGameRef.current) return;
 
-    //     hasLeftGameRef.current = true;
-    //     sendMessage({
-    //         type: "leave_game",
-    //         data: {
-    //             room_id: localStorage.getItem("room_id"),
-    //             username: localStorage.getItem("username"),
-    //         },
-    //     });
-    //     localStorage.removeItem("room_id");
-    // };
+        hasLeftGameRef.current = true;
+        sendMessage({
+            type: "leave_game",
+            data: {
+                room_id: localStorage.getItem("room_id"),
+                username: localStorage.getItem("username"),
+            },
+        });
+        localStorage.removeItem("room_id");
+    };
 
     // === Select Troop ===
     const selectTroop = (troopName) => {
@@ -185,44 +190,60 @@ export default function GameEnhanced() {
         if (game.playerMana < troop.mana)
             return showNotification("Not enough mana.");
 
+        setGame((prev) => ({ ...prev, selectedTroop: troop }));
+    };
+
+    const spawnTroop = (row, col) => {
+        if (!game.selectedTroop) return;
+
+        if (!isValidDrop(row)) return;
+
         sendMessage({
             type: "select_troop",
             data: {
-                troop: troop.name,
+                troop: game.selectedTroop.name,
+                x: col,
+                y: row,
                 room_id: localStorage.getItem("room_id"),
                 username: user.user?.username,
             },
         });
 
-        setGame((prev) => ({ ...prev, selectedTroop: troop }));
-    };
+        console.log(row, col)
+
+        setGame((prev) => ({ ...prev, selectedTroop: null }));
+    }
 
     // === Handle Set Game Response ===
     const handleSetGameState = (msg) => {
-        const { user, opponent } = msg;
+        const { user, opponent, player1, map } = msg;
         setUser(user);
         setOpponent(opponent);
 
         if (!isGameInitialized) {
             initializeGame(
+                map,
+                player1,
                 user.troops,
                 user,
-                opponent
             );
         }
     }
 
     // === Handle Set Troops ===
     const handleSetTroop = (msg) => {
-        const { player } = msg;
+        const { player, map } = msg;
         if (player.user.username === localStorage.getItem("username")) {
             setUser(player);
             setGame((prev) => ({
                 ...prev,
                 troops: player.troops,
-                playerMana: player.mana,
             }));
         }
+        setGame((prev) => ({
+            ...prev,
+            map: map
+        }));
     }
 
     // === Handle Set Mana ===
@@ -234,10 +255,69 @@ export default function GameEnhanced() {
         }
     }
 
+    const handleSetMap = (msg) => {
+        const { battleMap } = msg;
+
+        setGame(prev => {
+            const oldMap = prev?.map || [];
+            const newMap = battleMap;
+
+            for (const newEntity of newMap) {
+                // ✅ Chỉ xử lý TOWER
+                if (newEntity.type_entity !== "tower") continue;
+
+                const oldEntity = oldMap.find(e => e.id === newEntity.id);
+                if (!oldEntity) continue;
+
+                const isMe =
+                    newEntity.owner === localStorage.getItem("username");
+                const targetId = (isMe ? "player-" : "opponent-") + oldEntity.template.type;
+
+                // DAMAGE
+                if (newEntity.hp < oldEntity.hp) {
+                    const damage = oldEntity.hp - newEntity.hp;
+                    const isCrit = newEntity.last_action?.includes("crit") ?? false;
+
+                    setDamagePopup({
+                        targetId: targetId,
+                        amount: damage,
+                        isOpponent: !isMe,
+                        visible: true,
+                        crit: isCrit,
+                    });
+
+                    clearTimeout(damageTimeoutRef.current);
+                    damageTimeoutRef.current = setTimeout(() => {
+                        setDamagePopup(prev => ({ ...prev, visible: false }));
+                    }, 1500);
+                }
+
+                // HEAL
+                if (newEntity.hp > oldEntity.hp) {
+                    const healAmount = newEntity.hp - oldEntity.hp;
+
+                    setHealPopup({
+                        targetId: targetId,
+                        amount: healAmount,
+                        isOpponent: !isMe,
+                        visible: true,
+                    });
+
+                    clearTimeout(healTimeoutRef.current);
+                    healTimeoutRef.current = setTimeout(() => {
+                        setHealPopup(prev => ({ ...prev, visible: false }));
+                    }, 1500);
+                }
+            }
+
+            return { ...prev, map: battleMap };
+        });
+    };
+
     // === Handle Game Over ===
-    const handleGameOver = (res) => {
+    const handleGameOver = (msg) => {
         setTimeout(() => {
-            setGame((prev) => ({ ...prev, gameOver: true, winner: res.data.winner.user.username }));
+            setGame((prev) => ({ ...prev, gameOver: true, winner: msg.data.winner.user.username }));
         }, 4000)
     };
 
@@ -252,24 +332,28 @@ export default function GameEnhanced() {
                 session_id: localStorage.getItem("session_id"),
             },
         });
+        
         localStorage.removeItem("room_id");
         navigate("/lobby");
     };
 
+    function isValidDrop(row) {
+        return row >= 10;
+    }
+
     // Tower component for reusability 
-    const Tower = ({ type, health, maxHealth, isOpponent, onClick, disabled }) => {
+    const Tower = ({ id, type, health, maxHealth, isOpponent }) => {
         const towerImage = type === "king"
             ? (isOpponent ? "/assets/King_Tower_Red.png" : "/assets/King_Tower_Blue.png")
             : (isOpponent ? "/assets/Guard_Tower_Red.png" : "/assets/Guard_Tower_Blue.png");
 
         return (
             <div
-                className={`relative tower ${type} ${health <= 0 ? "grayscale" : ""} w-full h-full flex flex-col items-center justify-end ${!disabled ? "cursor-pointer" : ""}`}
-                onClick={disabled ? undefined : onClick}
+                className={`relative tower ${type} ${health <= 0 ? "grayscale" : ""} w-full h-full flex flex-col items-center justify-end`}
                 style={{ fontFamily: "'ClashDisplay', sans-serif" }}
             >
                 {/* Damage Popup */}
-                {/* {damagePopup?.visible && damagePopup.targetId === id && (
+                {damagePopup?.visible && damagePopup.targetId === id && (
                     <div className={`absolute z-50 ${isOpponent ? "-bottom-15" : "-top-15"} -right-4 transform rotate-10 pointer-events-none`}>
                         <div className={`
                         flex justify-center items-center
@@ -290,10 +374,10 @@ export default function GameEnhanced() {
                             )}
                         </div>
                     </div>
-                )} */}
+                )}
 
                 {/* Heal Popup */}
-                {/* {healPopup?.visible && healPopup.targetId === id && (
+                {healPopup?.visible && healPopup.targetId === id && (
                     <div className={`absolute z-50 ${isOpponent ? "-bottom-15" : "-top-15"} rotate-10 pointer-events-none`}>
                         <div className="flex justify-center items-center text-green-700 animate-clash-heal-popup">
                             <div className="relative">
@@ -309,7 +393,7 @@ export default function GameEnhanced() {
                             <div className="absolute w-12 h-12 bg-green-400 rounded-full opacity-20 animate-clash-heal-burst" />
                         </div>
                     </div>
-                )} */}
+                )}
 
                 <div className="w-full h-full flex flex-col items-center justify-end relative">
                     {/* Opponent: HP bar goes under the image */}
@@ -369,8 +453,13 @@ export default function GameEnhanced() {
         ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
         ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
         ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
         ["19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19"],
+        ["37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37"],
         ["55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
         ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
         ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
         ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
@@ -432,113 +521,112 @@ export default function GameEnhanced() {
                 </div>
 
                 {/* BATTLEFIELD - GRID LAYOUT */}
-                <div className="battle-container rounded-lg shadow-inner border-4 border-green-700 overflow-hidden relative w-full aspect-[10/8]">
+                <div ref={containerRef} className="battle-container rounded-lg shadow-inner border-4 border-stone-600 overflow-hidden relative w-full aspect-square">
                     {/* Grid background */}
-                    <div className="absolute inset-0 grid grid-cols-21 grid-rows-16">
+                    <div className="absolute inset-0 grid grid-cols-21 grid-rows-21 group">
                         {tileMap.map((row, rowIndex) =>
-                            row.map((tile, colIndex) => (
-                                <div
-                                    key={`r${rowIndex}-c${colIndex}`}
-                                    className="bg-cover flex items-center justify-center"
-                                    style={{
-                                        backgroundImage: `url(/assets/tiles/tile_00${tile}.png)`,
-                                    }}
-                                >
-                                    {colIndex === 0 && rowIndex === 0 && (
-                                        <img
-                                            src="/assets/tiles/tile_0092.png"
-                                            alt="Tree"
-                                            className="w-full h-full pointer-events-none select-none"
-                                            style={{ objectFit: "contain" }}
-                                        />
-                                    )}
-                                    {colIndex === 0 && rowIndex === 1 && (
-                                        <img
-                                            src="/assets/tiles/tile_0090.png"
-                                            alt="Tree"
-                                            className="w-full h-full pointer-events-none select-none"
-                                            style={{ objectFit: "contain" }}
-                                        />
-                                    )}
-                                    {colIndex === 1 && rowIndex === 0 && (
-                                        <img
-                                            src="/assets/tiles/tile_0090.png"
-                                            alt="Tree"
-                                            className="w-full h-full pointer-events-none select-none"
-                                            style={{ objectFit: "contain" }}
-                                        />
-                                    )}
-                                </div>
-                            ))
+                            row.map((tile, colIndex) => {
+                                const isPlayerSide = rowIndex >= 11;
+                                const isEnemySide = !isPlayerSide;
+                                const hasSelectedTroop = !!game.selectedTroop;
+
+                                const canClick = isPlayerSide && hasSelectedTroop;
+
+                                return (
+                                    <div
+                                        key={`r${rowIndex}-c${colIndex}`}
+                                        className={clsx(
+                                            "relative bg-cover flex items-center justify-center",
+                                            canClick && isPlayerSide && "cursor-pointer hover:brightness-110",
+                                            !canClick && isPlayerSide && "pointer-events-none",
+                                            isEnemySide && !hasSelectedTroop && "pointer-events-none",
+                                            isEnemySide && hasSelectedTroop ? "group-hover:pointer-events-none group-hover:cursor-not-allowed" : ""
+                                        )}
+                                        style={{
+                                            backgroundImage: `url(/assets/tiles/tile_00${tile}.png)`,
+                                        }}
+                                        onClick={() => {
+                                            if (!canClick) return;
+                                            spawnTroop(rowIndex, colIndex);
+                                        }}
+                                    >
+                                        {isEnemySide && hasSelectedTroop && (
+                                            <div className="absolute inset-0 bg-red-700 opacity-0 group-hover:opacity-50 transition-opacity pointer-events-none" />
+                                        )}
+                                    </div>
+                                );
+                            })
                         )}
                     </div>
 
                     {/* Battlefield grid layout - 10 columns x 6 rows */}
-                    <div className="grid-battlefield grid grid-cols-21 grid-rows-16 relative w-full aspect-[10/8]">
-                        <div className="col-start-10 col-span-3 row-start-1 row-span-3 relative">
-                            <Tower
-                                type="king"
-                                id="opponent-king"
-                                health={game.opponentHealth.king}
-                                maxHealth={game.opponentShield.king}
-                                isOpponent={true}
-                                className="w-full h-full"
-                            />
-                        </div>
+                    <div className="grid-battlefield grid grid-cols-21 grid-rows-21 relative w-full aspect-square pointer-events-none">
+                        {game?.map?.filter(e => e.type_entity === "tower").map((tower) => {
+                            const isEnemyTower = tower.owner !== localStorage.getItem("username");
 
-                        <div className="col-start-5 col-span-2 row-start-3 row-span-2 relative">
-                            <Tower
-                                type="guard"
-                                id="opponent-guard1"
-                                health={game.opponentHealth.guard1}
-                                maxHealth={game.opponentShield.guard1}
-                                isOpponent={true}
-                            />
-                        </div>
+                            const topLeftX = game.isPlayer1 ? 20 - tower.area.bottom_right.x : tower.area.top_left.x;
+                            const topLeftY = game.isPlayer1 ? 20 - tower.area.bottom_right.y : tower.area.top_left.y;
+                            const bottomRightX = game.isPlayer1 ? 20 - tower.area.top_left.x : tower.area.bottom_right.x;
+                            const bottomRightY = game.isPlayer1 ? 20 - tower.area.top_left.y : tower.area.bottom_right.y;
 
-                        <div className="col-start-16 col-span-2 row-start-3 row-span-2  relative">
-                            <Tower
-                                type="guard"
-                                id="opponent-guard2"
-                                health={game.opponentHealth.guard2}
-                                maxHealth={game.opponentShield.guard2}
-                                isOpponent={true}
-                            />
-                        </div>
+                            const towerWidthPx = tileSize * (bottomRightX - topLeftX + 1);
+                            const towerHeightPx = tileSize * (bottomRightY - topLeftY + 1);
 
-                        <div className="col-start-5 col-span-2 row-start-13 row-span-2 relative">
-                            <Tower
-                                type="guard"
-                                id="player-guard1"
-                                health={game.playerHealth.guard1}
-                                maxHealth={game.playerShield.guard1}
-                                isOpponent={false}
-                                disabled={true}
-                            />
-                        </div>
+                            const translateX = topLeftX * tileSize;
+                            const translateY = topLeftY * tileSize;
 
-                        <div className="col-start-16 col-span-2 row-start-13 row-span-2 relative">
-                            <Tower
-                                type="guard"
-                                id="player-guard2"
-                                health={game.playerHealth.guard2}
-                                maxHealth={game.playerShield.guard2}
-                                isOpponent={false}
-                                disabled={true}
-                            />
-                        </div>
+                            const towerId = isEnemyTower ? "opponent" : "player" + "-" + tower.template.type
 
-                        <div className="col-start-10 col-span-3 row-start-14 row-span-3 relative">
-                            <Tower
-                                type="king"
-                                id="player-king"
-                                health={game.playerHealth.king}
-                                maxHealth={game.playerShield.king}
-                                isOpponent={false}
-                                disabled={true}
-                                className="w-full h-full"
-                            />
-                        </div>
+                            return (
+                                <div
+                                    key={tower.id}
+                                    className="absolute z-20"
+                                    style={{
+                                        width: `${towerWidthPx}px`,
+                                        height: `${towerHeightPx}px`,
+                                        transform: `translate(${translateX}px, ${translateY}px)`,
+                                    }}
+                                >
+                                    <Tower
+                                        type={tower.template.type}
+                                        id={towerId}
+                                        health={tower.template.hp}
+                                        maxHealth={tower.template.max_hp}
+                                        isOpponent={isEnemyTower}
+                                        className="w-full h-full"
+                                    />
+                                </div>
+                            );
+                        })}
+
+                        {game?.map?.filter(e => e.type_entity === "troop").map((troop) => {
+                            const isEnemyTroop = troop.owner !== user?.user.username;
+
+                            const displayX = game.isPlayer1 ? 20 - troop.position.x : troop.position.x;
+                            const displayY = game.isPlayer1 ? 20 - troop.position.y : troop.position.y;
+
+                            const troopWidth = 48;
+                            const troopHeight = 48;
+
+                            const translateX = displayX * tileSize + tileSize / 2 - troopWidth / 2;
+                            const translateY = displayY * tileSize + tileSize - troopHeight;
+
+                            return (
+                                <div
+                                    key={troop.id}
+                                    className="absolute smooth-move"
+                                    style={{
+                                        transform: `translate(${translateX}px, ${translateY}px)`,
+                                    }}
+                                >
+                                    <img
+                                        src={troop.template.image}
+                                        alt={troop.template.name}
+                                        className={`w-12 h-12 object-cover ${isEnemyTroop ? "opacity-80" : ""}`}
+                                    />
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 
@@ -566,16 +654,16 @@ export default function GameEnhanced() {
                 </div>
 
                 {/* TROOP SELECTION */}
-                <div className="troops-container bg-gradient-to-r from-blue-900 to-blue-800 p-2 rounded-lg mt-2 shadow-md border-2 border-blue-700">
-                    <div className="section-header flex justify-between items-center mb-1 px-1">
-                        <h3 className="text-xl text-yellow-400 drop-shadow-md">TROOPS</h3>
+                <div className="troops-container bg-gradient-to-r from-blue-900 to-blue-800 p-2 pb-1 rounded-lg mt-2 shadow-md border-2 border-blue-700">
+                    <div className="section-header flex justify-between items-center mb-0.5 px-1">
+                        <h3 className="text-lg text-yellow-400 drop-shadow-md">TROOPS</h3>
                     </div>
 
                     <div className="troop-selection flex flex-wrap justify-center gap-3">
                         {Object.entries(game.troops).map(([troopName, troop], index) => {
                             if (!troop) return null;
 
-                            const isSelected = game.selectedTroop?.name === troopName;
+                            const isSelected = game.selectedTroop?.name === troop.name;
                             const isDisabled = game.playerMana < troop.mana;
 
                             return (
@@ -641,7 +729,7 @@ export default function GameEnhanced() {
                                     >
                                         <div className="w-full relative">
                                             <img
-                                                className="w-35 h-37 object-cover"
+                                                className="w-35 h-36 object-cover"
                                                 src={troop.card}
                                                 alt={troopName}
                                             />
@@ -668,10 +756,6 @@ export default function GameEnhanced() {
                                                 <span className="text-white text-lg mt-1 leading-none">{troop.mana}</span>
                                             </div>
 
-                                            {/* Selection indicator */}
-                                            {isSelected && (
-                                                <div className="absolute inset-0 pointer-events-none"></div>
-                                            )}
                                         </div>
                                         <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-1 text-center">
                                             <span className="text-white text-sm font-semibold truncate block">{troop.name}</span>
@@ -696,36 +780,52 @@ export default function GameEnhanced() {
                         <div className="modal-content bg-gradient-to-b from-blue-800 to-blue-900 rounded-lg shadow-xl p-6 max-w-md w-full border-4 border-yellow-500 transform scale-105 animate-pulse">
                             {/* Crown decoration */}
                             <div className="crown-decoration absolute -top-10 left-1/2 transform -translate-x-1/2 text-6xl">
-                                {game.winner === localStorage.getItem("username")
+                                {game.winner === user.user?.username
                                     ? "👑"
                                     : "☠️"}
                             </div>
 
                             <h2
-                                className={`modal-title text-3xl mb-4 text-center ${game.winner === localStorage.getItem("username")
+                                className={`modal-title text-3xl mb-4 text-center ${game.winner === user.user?.username
                                     ? "text-yellow-400"
                                     : "text-red-400"
                                     }`}
                             >
-                                {game.winner === localStorage.getItem("username")
+                                {game.winner === user.user?.username
                                     ? "VICTORY!"
                                     : "DEFEAT"}
                             </h2>
 
                             <div className="modal-body text-center">
-                                <p className="text-white text-lg mb-3">
-                                    {game.winner === localStorage.getItem("username")
-                                        ? "You have conquered your opponent's kingdom!"
-                                        : "Your kingdom has fallen to the enemy!"}
-                                </p>
+                                {(() => {
+                                    let victoryMessage = "";
+                                    if (game.winner === localStorage.getItem("username")) {
+                                        victoryMessage = game.message !== ""
+                                            ? "You have conquered your opponent's kingdom!"
+                                            : "You won by opponent leaving the battle!";
+                                    } else {
+                                        victoryMessage = "Your kingdom has fallen to the enemy!";
+                                    }
+                                    return (
+                                        <p className="text-white text-lg mb-3">
+                                            {victoryMessage}
+                                        </p>
+                                    );
+                                })()}
                                 <div className="exp-gain text-yellow-300 text-2xl mt-3 animate-pulse">
-                                    {game.winner === localStorage.getItem("username")
+                                    {game.winner === user.user?.username
                                         ? "+30 XP"
                                         : ""}
                                 </div>
+                                <img src={game.winner === user.user?.username
+                                    ? "/assets/win.png"
+                                    : "/assets/lose.png"}
+                                    alt={game.winner === user.user?.username
+                                        ? "Winner"
+                                        : "Loser"} className="w-40 h-40 mx-auto" />
                             </div>
 
-                            <div className="modal-buttons mt-6 text-center">
+                            <div className="modal-buttons text-center">
                                 <button
                                     className="play-again-btn bg-gradient-to-r from-yellow-400 to-yellow-500 text-blue-900 px-8 py-3 rounded-full text-lg border-4 border-yellow-600 shadow-lg transform hover:scale-105 transition-transform"
                                     onClick={handlePlayAgain}

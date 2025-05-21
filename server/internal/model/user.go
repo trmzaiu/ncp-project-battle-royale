@@ -82,30 +82,31 @@ type Level struct {
 	MaxExp int `json:"max_exp"`
 }
 
-// Example level system with increasing EXP requirements
-var Levels = []Level{
-	{Level: 1, MaxExp: 100},
-	{Level: 2, MaxExp: 110},
-	{Level: 3, MaxExp: 121},
-	{Level: 4, MaxExp: 133},
-	{Level: 5, MaxExp: 146},
-	{Level: 6, MaxExp: 160},
-	{Level: 7, MaxExp: 176},
-	{Level: 8, MaxExp: 193},
-	{Level: 9, MaxExp: 212},
-	{Level: 10, MaxExp: 233},
-}
-
-// GetMaxExp returns the max EXP required for a given level
 func GetMaxExp(level int) int {
 	if level <= 0 {
 		return 0
 	}
-	if level > len(Levels) {
-		last := Levels[len(Levels)-1]
-		return last.MaxExp + 500*(level-len(Levels))
+
+	exp := 100.0
+	for i := 1; i < level; i++ {
+		exp *= 1.5
 	}
-	return Levels[level-1].MaxExp
+	return int(exp)
+}
+
+func GenerateLevels(maxLevel int) []Level {
+	levels := make([]Level, maxLevel)
+	exp := 100.0
+
+	for i := 0; i < maxLevel; i++ {
+		levels[i] = Level{
+			Level:  i + 1,
+			MaxExp: int(exp),
+		}
+		exp *= 1.5
+	}
+
+	return levels
 }
 
 func getRandomAvatar() string {
