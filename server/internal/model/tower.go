@@ -181,40 +181,40 @@ func GetTowerArea(towerType string, isPlayer1 bool) Area {
 	case "king":
 		if isPlayer1 {
 			return Area{
-				TopLeft:     Position{X: 9, Y: 0},
-				BottomRight: Position{X: 11, Y: 2},
+				TopLeft:     Position{X: 9.0, Y: 0.0},
+				BottomRight: Position{X: 12.0, Y: 3.0},
 			}
 		}
 		return Area{
-			TopLeft:     Position{X: 9, Y: 18},
-			BottomRight: Position{X: 11, Y: 20},
+			TopLeft:     Position{X: 9.0, Y: 18.0},
+			BottomRight: Position{X: 12.0, Y: 21.0},
 		}
 	case "guard1":
 		if isPlayer1 {
 			return Area{
-				TopLeft:     Position{X: 4, Y: 2},
-				BottomRight: Position{X: 5, Y: 3},
+				TopLeft:     Position{X: 3.0, Y: 2.0},
+				BottomRight: Position{X: 5.0, Y: 4.0},
 			}
 		}
 		return Area{
-			TopLeft:     Position{X: 4, Y: 17},
-			BottomRight: Position{X: 5, Y: 18},
+			TopLeft:     Position{X: 3.0, Y: 17.0},
+			BottomRight: Position{X: 5.0, Y: 19.0},
 		}
 	case "guard2":
 		if isPlayer1 {
 			return Area{
-				TopLeft:     Position{X: 15, Y: 2},
-				BottomRight: Position{X: 16, Y: 3},
+				TopLeft:     Position{X: 16.0, Y: 2.0},
+				BottomRight: Position{X: 18.0, Y: 4.0},
 			}
 		}
 		return Area{
-			TopLeft:     Position{X: 15, Y: 17},
-			BottomRight: Position{X: 16, Y: 18},
+			TopLeft:     Position{X: 16.0, Y: 17.0},
+			BottomRight: Position{X: 18.0, Y: 19.0},
 		}
 	default:
 		return Area{
-			TopLeft:     Position{X: 0, Y: 0},
-			BottomRight: Position{X: 0, Y: 0},
+			TopLeft:     Position{X: 0.0, Y: 0.0},
+			BottomRight: Position{X: 0.0, Y: 0.0},
 		}
 	}
 }

@@ -10,7 +10,7 @@ export default function GameEnhanced() {
     const containerRef = useRef(null);
     const damageTimeoutRef = useRef(null);
     const healTimeoutRef = useRef(null);
-    const hasLeftGameRef = useRef(false);
+    // const hasLeftGameRef = useRef(false);
 
     const [user, setUser] = useState({});
     const [opponent, setOpponent] = useState({});
@@ -68,7 +68,7 @@ export default function GameEnhanced() {
     useLayoutEffect(() => {
         if (containerRef.current) {
             const width = containerRef.current.offsetWidth;
-            setTileSize(width / 21);
+            setTileSize(width / 22);
         }
     }, []);
 
@@ -97,7 +97,7 @@ export default function GameEnhanced() {
 
         return () => {
             unsubscribe();
-            leaveGame();
+            // leaveGame();
             if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
             if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
         };
@@ -170,19 +170,19 @@ export default function GameEnhanced() {
     };
 
     // === Leave Game ===
-    const leaveGame = () => {
-        if (hasLeftGameRef.current) return;
+    // const leaveGame = () => {
+    //     if (hasLeftGameRef.current) return;
 
-        hasLeftGameRef.current = true;
-        sendMessage({
-            type: "leave_game",
-            data: {
-                room_id: localStorage.getItem("room_id"),
-                username: localStorage.getItem("username"),
-            },
-        });
-        localStorage.removeItem("room_id");
-    };
+    //     hasLeftGameRef.current = true;
+    //     sendMessage({
+    //         type: "leave_game",
+    //         data: {
+    //             room_id: localStorage.getItem("room_id"),
+    //             username: localStorage.getItem("username"),
+    //         },
+    //     });
+    //     localStorage.removeItem("room_id");
+    // };
 
     // === Select Troop ===
     const selectTroop = (troopName) => {
@@ -332,7 +332,7 @@ export default function GameEnhanced() {
                 session_id: localStorage.getItem("session_id"),
             },
         });
-        
+
         localStorage.removeItem("room_id");
         navigate("/lobby");
     };
@@ -402,7 +402,7 @@ export default function GameEnhanced() {
                             <img
                                 src={towerImage}
                                 alt={type}
-                                className="relative -bottom-3 w-full h-full object-contain px-1 py-1 drop-shadow-lg transition-transform duration-200 hover:scale-105"
+                                className="relative w-full h-full object-contain px-1 py-1 drop-shadow-lg"
                             />
                             <div className="relative -bottom-5 tower-hp w-5/6">
                                 <div className="hp-bar bg-gray-700 w-full h-3 rounded-full shadow-inner overflow-hidden border border-gray-800">
@@ -436,7 +436,7 @@ export default function GameEnhanced() {
                             <img
                                 src={towerImage}
                                 alt={type}
-                                className="relative w-full h-full object-contain px-1 py-1 drop-shadow-lg transition-transform duration-200 hover:scale-105"
+                                className="relative w-full h-full object-contain px-1 py-1 drop-shadow-lg"
                             />
                         </>
                     )}
@@ -446,27 +446,28 @@ export default function GameEnhanced() {
     };
 
     const tileMap = [
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19"],
-        ["37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37", "37"],
-        ["55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "81", "82", "82", "83", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "87", "80", "80", "88", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
+        ["00", "00", "02", "81", "82", "83", "00", "00", "00", "87", "80", "80", "88", "00", "00", "00", "81", "82", "83", "00", "00", "00"],
+        ["00", "01", "00", "87", "80", "88", "00", "00", "00", "85", "84", "84", "86", "00", "00", "00", "87", "80", "88", "00", "00", "00"],
+        ["00", "00", "00", "85", "80", "86", "00", "00", "00", "00", "00", "00", "00", "00", "00", "01", "85", "80", "86", "00", "01", "00"],
+        ["00", "00", "00", "00", "08", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "08", "00", "00", "00", "00"],
+        ["00", "01", "00", "00", "08", "00", "00", "00", "00", "00", "00", "00", "00", "02", "00", "00", "00", "08", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "08", "01", "00", "00", "00", "00", "00", "00", "01", "00", "00", "00", "00", "08", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "08", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "08", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "08", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "08", "00", "00", "00", "00"],
+        ["19", "19", "19", "19", "08", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "08", "19", "19", "19", "19"],
+        ["55", "55", "55", "55", "08", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "08", "55", "55", "55", "55"],
+        ["00", "00", "00", "00", "08", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "08", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "08", "00", "00", "00", "00", "02", "00", "00", "00", "00", "00", "00", "00", "08", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "08", "00", "00", "00", "00", "00", "00", "00", "01", "00", "00", "01", "00", "08", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "08", "00", "00", "00", "01", "00", "00", "00", "00", "00", "00", "00", "00", "08", "00", "00", "00", "00"],
+        ["00", "02", "00", "00", "08", "00", "00", "00", "00", "00", "00", "00", "00", "01", "00", "00", "00", "08", "00", "00", "00", "00"],
+        ["00", "00", "00", "81", "80", "83", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "81", "80", "83", "00", "00", "00"],
+        ["00", "00", "00", "87", "80", "88", "00", "00", "00", "81", "82", "82", "83", "00", "00", "00", "87", "80", "88", "00", "00", "00"],
+        ["00", "00", "00", "85", "84", "86", "02", "00", "00", "87", "80", "80", "88", "00", "00", "00", "85", "84", "86", "00", "00", "01"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "87", "80", "80", "88", "00", "00", "00", "00", "02", "00", "00", "00", "00"],
+        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "85", "84", "84", "86", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
     ];
 
     return (
@@ -523,7 +524,7 @@ export default function GameEnhanced() {
                 {/* BATTLEFIELD - GRID LAYOUT */}
                 <div ref={containerRef} className="battle-container rounded-lg shadow-inner border-4 border-stone-600 overflow-hidden relative w-full aspect-square">
                     {/* Grid background */}
-                    <div className="absolute inset-0 grid grid-cols-21 grid-rows-21 group">
+                    <div className="absolute inset-0 grid grid-cols-22 grid-rows-22 group">
                         {tileMap.map((row, rowIndex) =>
                             row.map((tile, colIndex) => {
                                 const isPlayerSide = rowIndex >= 11;
@@ -553,21 +554,55 @@ export default function GameEnhanced() {
                                         {isEnemySide && hasSelectedTroop && (
                                             <div className="absolute inset-0 bg-red-700 opacity-0 group-hover:opacity-50 transition-opacity pointer-events-none" />
                                         )}
+
+                                        {((colIndex === 3 || colIndex === 16) && rowIndex === 10) && (
+                                            <img
+                                                src="/assets/tiles/tile_0071.png"
+                                                alt="Tree"
+                                                className="w-full h-full pointer-events-none select-none z-60"
+                                                style={{ objectFit: "contain", transform: "translateX(12px)" }}
+                                            />
+                                        )}
+                                        {(colIndex === 3 || colIndex === 16) && rowIndex === 11 && (
+                                            <img
+                                                src="/assets/tiles/tile_0047.png"
+                                                alt="Tree"
+                                                className="w-full h-full pointer-events-none select-none z-60"
+                                                style={{ objectFit: "cover", transform: "translateX(12px)" }}
+                                            />
+                                        )}
+
+                                        {((colIndex === 5 || colIndex === 18) && rowIndex === 10) && (
+                                            <img
+                                                src="/assets/tiles/tile_0071.png"
+                                                alt="Tree"
+                                                className="w-full h-full pointer-events-none select-none z-60"
+                                                style={{ objectFit: "contain", transform: "translateX(-12px)" }}
+                                            />
+                                        )}
+                                        {(colIndex === 5 || colIndex === 18) && rowIndex === 11 && (
+                                            <img
+                                                src="/assets/tiles/tile_0047.png"
+                                                alt="Tree"
+                                                className="w-full h-full pointer-events-none select-none z-60"
+                                                style={{ objectFit: "contain", transform: "translateX(-12px)" }}
+                                            />
+                                        )}
                                     </div>
                                 );
                             })
                         )}
                     </div>
 
-                    {/* Battlefield grid layout - 10 columns x 6 rows */}
-                    <div className="grid-battlefield grid grid-cols-21 grid-rows-21 relative w-full aspect-square pointer-events-none">
+                    {/* Battlefield grid layout - 22 columns x 6 rows */}
+                    <div className="grid-battlefield grid grid-cols-22 grid-rows-22 relative w-full aspect-square pointer-events-none">
                         {game?.map?.filter(e => e.type_entity === "tower").map((tower) => {
                             const isEnemyTower = tower.owner !== localStorage.getItem("username");
 
-                            const topLeftX = game.isPlayer1 ? 20 - tower.area.bottom_right.x : tower.area.top_left.x;
-                            const topLeftY = game.isPlayer1 ? 20 - tower.area.bottom_right.y : tower.area.top_left.y;
-                            const bottomRightX = game.isPlayer1 ? 20 - tower.area.top_left.x : tower.area.bottom_right.x;
-                            const bottomRightY = game.isPlayer1 ? 20 - tower.area.top_left.y : tower.area.bottom_right.y;
+                            const topLeftX = game.isPlayer1 ? 21 - tower.area.bottom_right.x : tower.area.top_left.x;
+                            const topLeftY = game.isPlayer1 ? 21 - tower.area.bottom_right.y : tower.area.top_left.y;
+                            const bottomRightX = game.isPlayer1 ? 21 - tower.area.top_left.x : tower.area.bottom_right.x;
+                            const bottomRightY = game.isPlayer1 ? 21 - tower.area.top_left.y : tower.area.bottom_right.y;
 
                             const towerWidthPx = tileSize * (bottomRightX - topLeftX + 1);
                             const towerHeightPx = tileSize * (bottomRightY - topLeftY + 1);
@@ -584,7 +619,7 @@ export default function GameEnhanced() {
                                     style={{
                                         width: `${towerWidthPx}px`,
                                         height: `${towerHeightPx}px`,
-                                        transform: `translate(${translateX}px, ${translateY}px)`,
+                                        transform: `translate(${translateX - 3}px, ${translateY - (isEnemyTower ? -4 : 7)}px)`,
                                     }}
                                 >
                                     <Tower
