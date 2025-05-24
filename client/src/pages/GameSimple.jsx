@@ -7,7 +7,7 @@ export default function GameSimple() {
     const { sendMessage, subscribe } = useWebSocketContext();
     const damageTimeoutRef = useRef(null);
     const healTimeoutRef = useRef(null);
-    // const hasLeftGameRef = useRef(false);
+    const hasLeftGameRef = useRef(false);
 
     const [user, setUser] = useState({});
     const [opponent, setOpponent] = useState({});
@@ -89,7 +89,7 @@ export default function GameSimple() {
 
         return () => {
             unsubscribe();
-            // leaveGame();
+            leaveGame();
             if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
             if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
         };
@@ -179,19 +179,19 @@ export default function GameSimple() {
     });
 
     // === Leave Game ===
-    // const leaveGame = () => {
-    //     if (hasLeftGameRef.current) return;
+    const leaveGame = () => {
+        if (hasLeftGameRef.current) return;
 
-    //     hasLeftGameRef.current = true;
-    //     sendMessage({
-    //         type: "leave_game",
-    //         data: {
-    //             room_id: localStorage.getItem("room_id"),
-    //             username: localStorage.getItem("username"),
-    //         },
-    //     });
-    //     localStorage.removeItem("room_id");
-    // };
+        hasLeftGameRef.current = true;
+        sendMessage({
+            type: "leave_game",
+            data: {
+                room_id: localStorage.getItem("room_id"),
+                username: localStorage.getItem("username"),
+            },
+        });
+        localStorage.removeItem("room_id");
+    };
 
     // === Skip Turn ===
     const skipTurn = () => {
