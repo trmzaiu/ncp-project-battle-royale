@@ -12,7 +12,7 @@ export function WebSocketProvider({ children }) {
     const messageListeners = useRef(new Set());
 
     const connectWebSocket = () => {
-        socketRef.current = new WebSocket("ws://localhost:8080/ws");
+        socketRef.current = new WebSocket("ws://LAPTOPCUATUI:8080/ws");
 
         socketRef.current.onopen = () => {
             console.log("[WS] Connected");
