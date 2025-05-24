@@ -494,7 +494,7 @@ export default function GameEnhanced() {
                     <div className="opponent-stats flex items-center">
                         <div className="opponent-avatar relative mx-2">
                             <img
-                                src={opponent.user?.avatar}
+                                src={`/assets/avatars/Avatar${opponent.user?.avatar}.png`}
                                 alt="avatar"
                                 className="w-12 h-12 rounded-full border-2 border-red-700 shadow-md transform hover:scale-105 transition-transform object-cover"
                             />
@@ -619,7 +619,7 @@ export default function GameEnhanced() {
                                     style={{
                                         width: `${towerWidthPx}px`,
                                         height: `${towerHeightPx}px`,
-                                        transform: `translate(${translateX - 3}px, ${translateY - (isEnemyTower ? -4 : 7)}px)`,
+                                        transform: `translate(${translateX}px, ${translateY}px)`,
                                     }}
                                 >
                                     <Tower
@@ -655,7 +655,7 @@ export default function GameEnhanced() {
                                     }}
                                 >
                                     <img
-                                        src={troop.template.image}
+                                        src={`/assets/images/${troop.template.image}.png`}
                                         alt={troop.template.name}
                                         className={`w-12 h-12 object-cover ${isEnemyTroop ? "opacity-80" : ""}`}
                                     />
@@ -716,10 +716,10 @@ export default function GameEnhanced() {
                                             {/* Troop Type */}
                                             <div className="px-2 py-1 bg-gray-700 text-center">
                                                 <span
-                                                    className={`text-xs px-2 py-0.5 rounded-full ${troop.type === "atk" ? "bg-red-500" :
-                                                        troop.type === "def" ? "bg-blue-500" :
+                                                    className={`text-xs px-2 py-0.5 rounded-full ${troop.type === "damage dealer" ? "bg-red-500" :
+                                                        troop.type === "tank" ? "bg-blue-500" :
                                                             troop.type === "buf" ? "bg-yellow-500" :
-                                                                troop.type === "heal" ? "bg-green-500" :
+                                                                troop.type === "healer" ? "bg-green-500" :
                                                                     "bg-gray-500"
                                                         }`}
                                                 >
@@ -765,24 +765,24 @@ export default function GameEnhanced() {
                                         <div className="w-full relative">
                                             <img
                                                 className="w-35 h-36 object-cover"
-                                                src={troop.card}
+                                                src={`/assets/cards/Card_${troop.image}.png`}
                                                 alt={troopName}
                                             />
 
                                             {/* Type indicator */}
                                             <div className="absolute top-1 left-1">
                                                 <span
-                                                    className={`text-xs px-2 py-1 rounded-full shadow-md ${troop.type === "atk" ? "bg-red-500 text-white" :
-                                                        troop.type === "def" ? "bg-blue-500 text-white" :
+                                                    className={`text-xs px-2 py-1 rounded-full shadow-md ${troop.type === "damage dealer" ? "bg-red-500 text-white" :
+                                                        troop.type === "tank" ? "bg-blue-500 text-white" :
                                                             troop.type === "buf" ? "bg-yellow-500 text-black" :
-                                                                troop.type === "heal" ? "bg-green-500 text-white" :
+                                                                troop.type === "healer" ? "bg-green-500 text-white" :
                                                                     "bg-gray-500"
                                                         }`}
                                                 >
-                                                    {troop.type === "atk" && "ATK"}
-                                                    {troop.type === "def" && "DEF"}
+                                                    {troop.type === "damage dealer" && "DMG"}
+                                                    {troop.type === "tank" && "TANK"}
                                                     {troop.type === "buf" && "BUFF"}
-                                                    {troop.type === "heal" && "HEAL"}
+                                                    {troop.type === "healer" && "HEAL"}
                                                 </span>
                                             </div>
 

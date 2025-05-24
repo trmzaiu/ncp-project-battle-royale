@@ -4,10 +4,9 @@ package model
 
 import (
 	"crypto/rand"
-	"encoding/json"
 	"math/big"
-	"os"
 	"time"
+	"strconv"
 )
 
 type User struct {
@@ -38,7 +37,7 @@ func NewUser(username, password string) *User {
 		Level:       1,
 		GamesPlayed: 0,
 		GamesWon:    0,
-		Avatar:      avatar,
+		Avatar:      strconv.Itoa(avatar),
 	}
 }
 
@@ -109,26 +108,11 @@ func GenerateLevels(maxLevel int) []Level {
 	return levels
 }
 
-func getRandomAvatar() string {
-	file, err := os.Open("assets/data/avatars.json")
+func getRandomAvatar() int {
+	n, err := rand.Int(rand.Reader, big.NewInt(15)) // 0–14
 	if err != nil {
-		return ""
+		// fallback or panic, your call
+		return 1
 	}
-	defer file.Close()
-
-	var avatars []string
-	if err := json.NewDecoder(file).Decode(&avatars); err != nil {
-		return ""
-	}
-
-	if len(avatars) == 0 {
-		return ""
-	}
-
-	index, err := rand.Int(rand.Reader, big.NewInt(int64(len(avatars))))
-	if err != nil {
-		return ""
-	}
-
-	return avatars[index.Int64()]
+	return int(n.Int64()) + 1 // shift to 1–15
 }

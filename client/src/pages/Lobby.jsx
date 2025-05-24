@@ -112,7 +112,8 @@ export default function Lobby() {
     }
 
     function viewLeaderboard() {
-        addLog("EVENTS", "Leaderboard is coming soon. Stay tuned!");
+        addLog("EVENTS", "Moving to card desk...");
+        navigate("/card-desk");
     }
 
     const expProgressStyle = {
@@ -191,7 +192,7 @@ export default function Lobby() {
                             <div className="relative w-35 h-35 mb-4">
                                 <div className="w-full h-full rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 border-4 border-yellow-400 shadow-lg overflow-hidden relative">
                                     <img
-                                        src={user.avatar}
+                                        src={`/assets/avatars/Avatar${user.avatar}.png`}
                                         alt="avatar"
                                         className="w-full h-full object-cover"
                                     />

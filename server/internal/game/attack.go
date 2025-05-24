@@ -98,7 +98,7 @@ func HandleAttack(conn *websocket.Conn, data json.RawMessage) {
 			"defender":    defender,
 			"troop":       troop.Name,
 			"target":      req.Target,
-			"damage":      damage,
+			"damage":      int(damage),
 			"isCrit":      isCrit,
 			"isDestroyed": isDestroyed,
 			"turn":        room.Game.Turn,

@@ -77,6 +77,8 @@ func processMessage(conn *websocket.Conn, pdu utils.Message) {
 		handleLogin(conn, pdu.Data)
 	case "get_user":
 		handleGetUser(conn, pdu.Data)
+	case "get_desk":
+		game.HandleGetDesk(conn, pdu.Data)
 	case "find_match":
 		game.HandleFindMatch(conn, pdu.Data)
 	case "get_game":

@@ -610,7 +610,7 @@ export default function GameSimple() {
                     <div className="opponent-stats flex items-center">
                         <div className="opponent-avatar relative mx-2">
                             <img
-                                src={opponent.user?.avatar}
+                                src={`/assets/avatars/Avatar${opponent.user?.avatar}.png`}
                                 alt="avatar"
                                 className="w-12 h-12 rounded-full border-2 border-red-700 shadow-md transform hover:scale-105 transition-transform object-cover"
                             />
@@ -862,7 +862,7 @@ export default function GameSimple() {
                                     <div className="w-full relative">
                                         <img
                                             className="w-35 h-37 object-cover"
-                                            src={troop.card}
+                                            src={`/assets/cards/Card_${troop.image}.png`}
                                             alt={troopName}
                                         />
 

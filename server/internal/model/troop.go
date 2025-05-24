@@ -11,23 +11,24 @@ import (
 )
 
 type Troop struct {
-	Name            string  `json:"name"`
-	MaxHP           float64 `json:"max_hp"`
-	HP              float64 `json:"hp"`
-	ATK             float64 `json:"atk"`
-	DEF             float64 `json:"def"`
-	MANA            int     `json:"mana"`
-	CRIT            int     `json:"crit"`
-	Speed           float64 `json:"speed"`
-	Range           float64 `json:"range"`
-	Type            string  `json:"type"`
-	Card            string  `json:"card"`
-	Image           string  `json:"image"`
-	Description     string  `json:"description"`
-	AOE             bool    `json:"aoe"`
-	AttackSpeed     float64 `json:"attack_speed"`
-	AggroPriority   int     `json:"aggro_priority"`
-	ProjectileSpeed float64 `json:"projectile_speed"`
+	Name          string  `json:"name"`
+	MaxHP         float64 `json:"max_hp"`
+	HP            float64 `json:"hp"`
+	DMG           float64 `json:"dmg"`
+	ATK           float64 `json:"atk"`
+	DEF           float64 `json:"def"`
+	MANA          int     `json:"mana"`
+	CRIT          int     `json:"crit"`
+	EXP           int     `json:"exp"`
+	Speed         float64 `json:"speed"`
+	Range         float64 `json:"range"`
+	Type          string  `json:"type"`
+	Image         string  `json:"image"`
+	Description   string  `json:"description"`
+	AOE           bool    `json:"aoe"`
+	AttackSpeed   float64 `json:"attack_speed"`
+	AggroPriority string  `json:"aggro_priority"`
+	Rarity        string  `json:"rarity"`
 }
 
 type Position struct {
@@ -67,7 +68,7 @@ func (t *TroopInstance) IsAlive() bool {
 	return !t.IsDead
 }
 
-func loadTroop() ([]Troop, error) {
+func LoadTroop() ([]Troop, error) {
 	file, err := os.Open("assets/data/troops.json")
 	if err != nil {
 		return nil, err
@@ -90,7 +91,7 @@ func cryptoRandInt(max int64) (int64, error) {
 }
 
 func getRandomTroops(n int) []*Troop {
-	templates, err := loadTroop()
+	templates, err := LoadTroop()
 	if err != nil {
 		return nil
 	}
