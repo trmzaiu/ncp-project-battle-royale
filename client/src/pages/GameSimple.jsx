@@ -457,8 +457,8 @@ export default function GameSimple() {
     // Tower component for reusability 
     const Tower = ({ id, type, health, maxHealth, isOpponent, onClick, disabled }) => {
         const towerImage = type === "king"
-            ? (isOpponent ? "/assets/King_Tower_Red.png" : "/assets/King_Tower_Blue.png")
-            : (isOpponent ? "/assets/Guard_Tower_Red.png" : "/assets/Guard_Tower_Blue.png");
+            ? (isOpponent ? "/royaka-2025-fe/assets/King_Tower_Red.png" : "/royaka-2025-fe/assets/King_Tower_Blue.png")
+            : (isOpponent ? "/royaka-2025-fe/assets/Guard_Tower_Red.png" : "/royaka-2025-fe/assets/Guard_Tower_Blue.png");
 
         return (
             <div
@@ -593,7 +593,7 @@ export default function GameSimple() {
                     <div className="opponent-stats flex items-center">
                         <div className="opponent-avatar relative mx-2">
                             <img
-                                src={`/assets/avatars/Avatar${opponent.user?.avatar}.png`}
+                                src={`/royaka-2025-fe/assets/avatars/Avatar${opponent.user?.avatar}.png`}
                                 alt="avatar"
                                 className="w-12 h-12 rounded-full border-2 border-red-700 shadow-md transform hover:scale-105 transition-transform object-cover"
                             />
@@ -661,12 +661,12 @@ export default function GameSimple() {
                                     key={`r${rowIndex}-c${colIndex}`}
                                     className="bg-cover flex items-center justify-center"
                                     style={{
-                                        backgroundImage: `url(/assets/tiles/tile_00${tile}.png)`,
+                                        backgroundImage: `url(/royaka-2025-fe/assets/tiles/tile_00${tile}.png)`,
                                     }}
                                 >
                                     {colIndex === 0 && rowIndex === 0 && (
                                         <img
-                                            src="/assets/tiles/tile_0092.png"
+                                            src="/royaka-2025-fe/assets/tiles/tile_0092.png"
                                             alt="Tree"
                                             className="w-full h-full pointer-events-none select-none"
                                             style={{ objectFit: "contain" }}
@@ -674,7 +674,7 @@ export default function GameSimple() {
                                     )}
                                     {colIndex === 0 && rowIndex === 1 && (
                                         <img
-                                            src="/assets/tiles/tile_0090.png"
+                                            src="/royaka-2025-fe/assets/tiles/tile_0090.png"
                                             alt="Tree"
                                             className="w-full h-full pointer-events-none select-none"
                                             style={{ objectFit: "contain" }}
@@ -682,7 +682,7 @@ export default function GameSimple() {
                                     )}
                                     {colIndex === 1 && rowIndex === 0 && (
                                         <img
-                                            src="/assets/tiles/tile_0090.png"
+                                            src="/royaka-2025-fe/assets/tiles/tile_0090.png"
                                             alt="Tree"
                                             className="w-full h-full pointer-events-none select-none"
                                             style={{ objectFit: "contain" }}
@@ -865,7 +865,7 @@ export default function GameSimple() {
                                     <div className="w-full relative">
                                         <img
                                             className="w-20 h-22 md:w-37 md:h-37 object-cover"
-                                            src={`/assets/cards/Card_${troop.image}.png`}
+                                            src={`/royaka-2025-fe/assets/cards/Card_${troop.image}.png`}
                                             alt={troopName}
                                         />
 
@@ -934,8 +934,8 @@ export default function GameSimple() {
                                         : ""}
                                 </div>
                                 <img src={game.winner === user.user?.username
-                                    ? "/assets/win.png"
-                                    : "/assets/lose.png"}
+                                    ? "/royaka-2025-fe/assets/win.png"
+                                    : "/royaka-2025-fe/assets/lose.png"}
                                     alt={game.winner === user.user?.username
                                         ? "Winner"
                                         : "Loser"} className="w-40 h-40 mx-auto" />

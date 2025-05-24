@@ -101,7 +101,7 @@ export default function Auth() {
                     >
                         <img
                             className="w-45 pointer-events-none"
-                            src="/assets/icon_crown.png"
+                            src="/royaka-2025-fe/assets/icon_crown.png"
                             alt=""
                         />
                     </div>

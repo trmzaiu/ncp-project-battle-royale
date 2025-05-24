@@ -6,10 +6,10 @@
     "createdAt": "2025-05-08T23:38:31.6110692+07:00",
     "lastLogin": "2025-05-08T23:38:31.6110692+07:00",
     "isActive": true,
-    "exp": 361,
+    "exp": 331,
     "level": 9,
-    "gamesPlayed": 88,
-    "gamesWon": 51,
+    "gamesPlayed": 86,
+    "gamesWon": 50,
     "avatar": "1"
   },
   {
@@ -19,10 +19,10 @@
     "createdAt": "2025-05-09T23:20:11.7080491+07:00",
     "lastLogin": "2025-05-09T23:20:11.7080491+07:00",
     "isActive": true,
-    "exp": 314,
+    "exp": 284,
     "level": 8,
-    "gamesPlayed": 95,
-    "gamesWon": 39,
+    "gamesPlayed": 93,
+    "gamesWon": 38,
     "avatar": "10"
   },
   {
@@ -32,10 +32,10 @@
     "createdAt": "2025-05-10T01:53:15.2001063+07:00",
     "lastLogin": "2025-05-10T01:53:15.2001063+07:00",
     "isActive": true,
-    "exp": 191,
+    "exp": 221,
     "level": 9,
-    "gamesPlayed": 76,
-    "gamesWon": 36,
+    "gamesPlayed": 77,
+    "gamesWon": 37,
     "avatar": "14"
   },
   {
@@ -47,7 +47,7 @@
     "isActive": true,
     "exp": 100,
     "level": 7,
-    "gamesPlayed": 68,
+    "gamesPlayed": 69,
     "gamesWon": 32,
     "avatar": "5"
   },

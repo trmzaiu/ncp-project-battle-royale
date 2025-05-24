@@ -344,8 +344,8 @@ export default function GameEnhanced() {
     // Tower component for reusability 
     const Tower = ({ id, type, health, maxHealth, isOpponent }) => {
         const towerImage = type === "king"
-            ? (isOpponent ? "/assets/King_Tower_Red.png" : "/assets/King_Tower_Blue.png")
-            : (isOpponent ? "/assets/Guard_Tower_Red.png" : "/assets/Guard_Tower_Blue.png");
+            ? (isOpponent ? "/royaka-2025-fe/assets/King_Tower_Red.png" : "/royaka-2025-fe/assets/King_Tower_Blue.png")
+            : (isOpponent ? "/royaka-2025-fe/assets/Guard_Tower_Red.png" : "/royaka-2025-fe/assets/Guard_Tower_Blue.png");
 
         return (
             <div
@@ -494,7 +494,7 @@ export default function GameEnhanced() {
                     <div className="opponent-stats flex items-center">
                         <div className="opponent-avatar relative mx-2">
                             <img
-                                src={`/assets/avatars/Avatar${opponent.user?.avatar}.png`}
+                                src={`/royaka-2025-fe/assets/avatars/Avatar${opponent.user?.avatar}.png`}
                                 alt="avatar"
                                 className="w-12 h-12 rounded-full border-2 border-red-700 shadow-md transform hover:scale-105 transition-transform object-cover"
                             />
@@ -544,7 +544,7 @@ export default function GameEnhanced() {
                                             isEnemySide && hasSelectedTroop ? "group-hover:pointer-events-none group-hover:cursor-not-allowed" : ""
                                         )}
                                         style={{
-                                            backgroundImage: `url(/assets/tiles/tile_00${tile}.png)`,
+                                            backgroundImage: `url(/royaka-2025-fe/assets/tiles/tile_00${tile}.png)`,
                                         }}
                                         onClick={() => {
                                             if (!canClick) return;
@@ -557,7 +557,7 @@ export default function GameEnhanced() {
 
                                         {((colIndex === 3 || colIndex === 16) && rowIndex === 10) && (
                                             <img
-                                                src="/assets/tiles/tile_0071.png"
+                                                src="/royaka-2025-fe/assets/tiles/tile_0071.png"
                                                 alt="Tree"
                                                 className="w-full h-full pointer-events-none select-none z-60"
                                                 style={{ objectFit: "contain", transform: "translateX(12px)" }}
@@ -565,7 +565,7 @@ export default function GameEnhanced() {
                                         )}
                                         {(colIndex === 3 || colIndex === 16) && rowIndex === 11 && (
                                             <img
-                                                src="/assets/tiles/tile_0047.png"
+                                                src="/royaka-2025-fe/assets/tiles/tile_0047.png"
                                                 alt="Tree"
                                                 className="w-full h-full pointer-events-none select-none z-60"
                                                 style={{ objectFit: "cover", transform: "translateX(12px)" }}
@@ -574,7 +574,7 @@ export default function GameEnhanced() {
 
                                         {((colIndex === 5 || colIndex === 18) && rowIndex === 10) && (
                                             <img
-                                                src="/assets/tiles/tile_0071.png"
+                                                src="/royaka-2025-fe/assets/tiles/tile_0071.png"
                                                 alt="Tree"
                                                 className="w-full h-full pointer-events-none select-none z-60"
                                                 style={{ objectFit: "contain", transform: "translateX(-12px)" }}
@@ -582,7 +582,7 @@ export default function GameEnhanced() {
                                         )}
                                         {(colIndex === 5 || colIndex === 18) && rowIndex === 11 && (
                                             <img
-                                                src="/assets/tiles/tile_0047.png"
+                                                src="/royaka-2025-fe/assets/tiles/tile_0047.png"
                                                 alt="Tree"
                                                 className="w-full h-full pointer-events-none select-none z-60"
                                                 style={{ objectFit: "contain", transform: "translateX(-12px)" }}
@@ -655,7 +655,7 @@ export default function GameEnhanced() {
                                     }}
                                 >
                                     <img
-                                        src={`/assets/images/${troop.template.image}.png`}
+                                        src={`/royaka-2025-fe/assets/images/${troop.template.image}.png`}
                                         alt={troop.template.name}
                                         className={`w-12 h-12 object-cover ${isEnemyTroop ? "opacity-80" : ""}`}
                                     />
@@ -765,7 +765,7 @@ export default function GameEnhanced() {
                                         <div className="w-full relative">
                                             <img
                                                 className="w-35 h-36 object-cover"
-                                                src={`/assets/cards/Card_${troop.image}.png`}
+                                                src={`/royaka-2025-fe/assets/cards/Card_${troop.image}.png`}
                                                 alt={troopName}
                                             />
 
@@ -853,8 +853,8 @@ export default function GameEnhanced() {
                                         : ""}
                                 </div>
                                 <img src={game.winner === user.user?.username
-                                    ? "/assets/win.png"
-                                    : "/assets/lose.png"}
+                                    ? "/royaka-2025-fe/assets/win.png"
+                                    : "/royaka-2025-fe/assets/lose.png"}
                                     alt={game.winner === user.user?.username
                                         ? "Winner"
                                         : "Loser"} className="w-40 h-40 mx-auto" />
