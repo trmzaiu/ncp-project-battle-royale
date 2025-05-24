@@ -7,7 +7,7 @@ export default function GameSimple() {
     const { sendMessage, subscribe } = useWebSocketContext();
     const damageTimeoutRef = useRef(null);
     const healTimeoutRef = useRef(null);
-    const hasLeftGameRef = useRef(false);
+    // const hasLeftGameRef = useRef(false);
 
     const [user, setUser] = useState({});
     const [opponent, setOpponent] = useState({});
@@ -89,7 +89,7 @@ export default function GameSimple() {
 
         return () => {
             unsubscribe();
-            leaveGame();
+            // leaveGame();
             if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
             if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
         };
@@ -179,19 +179,19 @@ export default function GameSimple() {
     });
 
     // === Leave Game ===
-    const leaveGame = () => {
-        if (hasLeftGameRef.current) return;
+    // const leaveGame = () => {
+    //     if (hasLeftGameRef.current) return;
 
-        hasLeftGameRef.current = true;
-        sendMessage({
-            type: "leave_game",
-            data: {
-                room_id: localStorage.getItem("room_id"),
-                username: localStorage.getItem("username"),
-            },
-        });
-        localStorage.removeItem("room_id");
-    };
+    //     hasLeftGameRef.current = true;
+    //     sendMessage({
+    //         type: "leave_game",
+    //         data: {
+    //             room_id: localStorage.getItem("room_id"),
+    //             username: localStorage.getItem("username"),
+    //         },
+    //     });
+    //     localStorage.removeItem("room_id");
+    // };
 
     // === Skip Turn ===
     const skipTurn = () => {
@@ -571,23 +571,6 @@ export default function GameSimple() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-500 to-blue-900">
-            {game.playerHealth['king'] > 0 && game.opponentHealth['king'] > 0 &&
-                showLargeAnimation && (
-                    <div
-                        className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
-                        style={{
-                            fontFamily: "'ClashDisplay', sans-serif",
-                            textShadow: "2px 2px 10px rgba(0, 0, 0, 0.5)",
-                            transform: "translateY(-92px)",
-                        }}
-                    >
-                        <div className="text-6xl font-bold text-white px-12 py-6 animate-turnAlert">
-                            {game.playerTurn === localStorage.getItem("username")
-                                ? "YOUR TURN"
-                                : "OPPONENT'S TURN"}
-                        </div>
-                    </div>
-                )}
             <div
                 className="game-container bg-gradient-to-b from-blue-400 to-blue-600 p-2 rounded-lg shadow-xl max-w-2xl mx-auto relative overflow-hidden border-4 border-yellow-500"
                 style={{ fontFamily: "'ClashDisplay', sans-serif" }}
@@ -630,7 +613,7 @@ export default function GameSimple() {
                     {/* TURN DISPLAY */}
                     <div className="turn-display text-center transform hover:scale-105 transition-transform mx-2">
                         <div
-                            className={`text-lg px-4 pt-1 rounded-full ${game.playerTurn === user.user?.username
+                            className={`text-sm pt-2 pb-1 md:text-lg px-4 rounded-full ${game.playerTurn === user.user?.username
                                 ? "bg-green-600 text-white animate-pulse"
                                 : "bg-red-600 text-white"
                                 }`}
@@ -643,7 +626,33 @@ export default function GameSimple() {
                 </div>
 
                 {/* BATTLEFIELD - GRID LAYOUT */}
-                <div className="battle-container rounded-lg shadow-inner border-4 border-green-700 overflow-hidden relative w-full aspect-[10/8]">
+                <div className="battle-container rounded-lg shadow-inner border-4 border-green-700 relative w-full aspect-[10/8]">
+                    {game.playerHealth['king'] > 0 && game.opponentHealth['king'] > 0 &&
+                        showLargeAnimation && (
+                            <div
+                                className="absolute flex items-center justify-center z-50 pointer-events-none w-full h-full"
+                                style={{
+                                    fontFamily: "'ClashDisplay', sans-serif",
+                                    textShadow: "2px 2px 10px rgba(0, 0, 0, 0.5)",
+                                }}
+                            >
+                                <div className="text-2xl md:text-5xl text-white animate-turnAlert">
+                                    {game.playerTurn === localStorage.getItem("username")
+                                        ? "YOUR TURN"
+                                        : "OPPONENT'S TURN"}
+                                </div>
+                            </div>
+                        )
+                    }
+
+                    {game.selectedTroop && (
+                        <div className="target-indicators absolute flex items-center justify-center z-50 pointer-events-none w-full h-full">
+                            <div className="text-sm md:text-3xl text-white animate-turnAlert bg-blue-800 bg-opacity-70 px-4 py-2 rounded-full">
+                                🎯 Pick a Target!
+                            </div>
+                        </div>
+                    )}
+
                     {/* Grid background */}
                     <div className="absolute inset-0 grid grid-cols-10 grid-rows-8">
                         {tileMap.map((row, rowIndex) =>
@@ -759,13 +768,7 @@ export default function GameSimple() {
                     </div>
 
                     {/* Target indicators */}
-                    {game.selectedTroop && (
-                        <div className="target-indicators absolute top-0 left-0 w-full h-full pointer-events-none">
-                            <div className="text-center text-white text-lg absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-800 bg-opacity-70 px-4 py-2 rounded-full">
-                                🎯 Pick a Target!
-                            </div>
-                        </div>
-                    )}
+
                 </div>
 
                 {/* MANA BAR */}
@@ -808,7 +811,7 @@ export default function GameSimple() {
                         </button>
                     </div>
 
-                    <div className="troop-selection flex flex-wrap justify-center gap-3">
+                    <div className="troop-selection flex flex-wrap justify-between">
                         {Object.entries(game.troops).map(([troopName, troop], index) => (
                             <div key={index} className="relative"
                                 onMouseEnter={() => setHoveredTroop(troopName)}
@@ -861,7 +864,7 @@ export default function GameSimple() {
                                 >
                                     <div className="w-full relative">
                                         <img
-                                            className="w-35 h-37 object-cover"
+                                            className="w-20 h-22 md:w-37 md:h-37 object-cover"
                                             src={`/assets/cards/Card_${troop.image}.png`}
                                             alt={troopName}
                                         />
@@ -872,7 +875,7 @@ export default function GameSimple() {
                                         </div>
                                     </div>
                                     <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-1 text-center">
-                                        <span className="text-white text-sm font-semibold truncate block">{troopName}</span>
+                                        <span className="text-white text-[9px] md:text-sm font-semibold truncate block">{troopName}</span>
                                     </div>
                                 </div>
                             </div>
