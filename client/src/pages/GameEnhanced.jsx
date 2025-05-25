@@ -475,7 +475,7 @@ export default function GameEnhanced() {
                             );
                         })}
 
-                        {game?.map?.filter(e => e.type_entity === "troop" && e.template.hp > 0).map((troop) => {
+                        {game?.map?.filter(e => e.type_entity === "troop").map((troop) => {
                             const isEnemyTroop = troop.owner !== user?.user.username;
 
                             const displayX = game.isPlayer1 ? 21 - troop.position.x : troop.position.x;
@@ -490,11 +490,13 @@ export default function GameEnhanced() {
                             const isDisplayHP = troop.template.hp < troop.template.max_hp;
                             const health = troop.template.hp;
                             const maxHealth = troop.template.max_hp;
+                            const isLowHP = health > 0 && health / maxHealth <= 0.2;
+                            const isDead = health <= 0;
 
                             return (
                                 <div
                                     key={troop.id}
-                                    className="z-20 absolute smooth-move"
+                                    className="absolute z-20 smooth-move"
                                     style={{
                                         transform: `translate(${translateX}px, ${translateY}px)`,
                                     }}
@@ -503,10 +505,12 @@ export default function GameEnhanced() {
                                         <div className="absolute -top-2 w-5/6">
                                             <div className={`hp-bar ${isEnemyTroop ? "bg-red-900" : "bg-blue-900"} bg-opacity-25 w-full h-1.5 rounded-full shadow-inner overflow-hidden border ${isEnemyTroop ? "border-red-900" : "border-blue-900"}`}>
                                                 <div
-                                                    className={`hp-fill bg-gradient-to-r ${isEnemyTroop
-                                                        ? "from-red-500 to-red-400"
-                                                        : "from-blue-500 to-blue-400"
-                                                        } h-full rounded-sm transition-all duration-500`}
+                                                    className={`hp-fill h-full rounded-sm transition-all duration-500
+                                                        ${isEnemyTroop
+                                                            ? "bg-gradient-to-r from-red-500 to-red-400"
+                                                            : "bg-gradient-to-r from-blue-500 to-blue-400"}
+                                                        ${isLowHP ? "animate-pulse" : ""}
+                                                    `}
                                                     style={{
                                                         width: `${Math.max(0, (health / maxHealth) * 100)}%`,
                                                     }}
@@ -514,23 +518,28 @@ export default function GameEnhanced() {
                                             </div>
                                         </div>
                                     )}
-                                    <img
-                                        src={`/royaka-2025-fe/assets/images/${troop.template.image}.png`}
-                                        alt={troop.template.name}
-                                        className={`w-12 h-12 object-cover`}
-                                    />
+
+                                    {/* Vòng tròn range nằm dưới ảnh */}
                                     <div
-                                        className="absolute bottom-1/2 left-1/2 -translate-x-1/2 pointer-events-none"
+                                        className="absolute bottom-1/2 left-1/2 -translate-x-1/2 pointer-events-none z-10"
                                         style={{
-                                            width: `${troop.template.range * tileSize * 2}px`,
-                                            height: `${troop.template.range * tileSize * 2}px`,
+                                            width: `${troop.template.range * troopWidth * 2}px`,
+                                            height: `${troop.template.range * troopHeight * 2}px`,
                                             borderRadius: "9999px",
                                             border: `2px dashed ${isEnemyTroop ? "rgba(239, 68, 68, 0.5)" : "rgba(59, 130, 246, 0.5)"}`,
                                             backgroundColor: isEnemyTroop ? "rgba(239, 68, 68, 0.1)" : "rgba(59, 130, 246, 0.1)",
                                             transform: "translateY(50%)",
                                         }}
                                     ></div>
+
+                                    {/* Hình ảnh troop nằm trên */}
+                                    <img
+                                        src={`/royaka-2025-fe/assets/images/${troop.template.image}.png`}
+                                        alt={troop.template.name}
+                                        className={`w-12 h-12 object-cover ${isDead ? "grayscale opacity-50" : ""}`}
+                                    />
                                 </div>
+
                             );
                         })}
                     </div>

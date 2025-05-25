@@ -84,6 +84,7 @@ func NewPlayer(user *User, mode string) *Player {
 		Matched:        make(chan bool, 1),
 		Turn:           0,
 		LastManaRegen:  time.Now(),
+		Gold:           0,
 	}
 
 	return player

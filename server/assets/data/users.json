@@ -8,7 +8,7 @@
     "isActive": true,
     "exp": 421,
     "level": 9,
-    "gamesPlayed": 95,
+    "gamesPlayed": 96,
     "gamesWon": 53,
     "avatar": "1",
     "gold": 21
@@ -20,10 +20,10 @@
     "createdAt": "2025-05-09T23:20:11.7080491+07:00",
     "lastLogin": "2025-05-09T23:20:11.7080491+07:00",
     "isActive": true,
-    "exp": 464,
+    "exp": 494,
     "level": 8,
-    "gamesPlayed": 102,
-    "gamesWon": 44,
+    "gamesPlayed": 103,
+    "gamesWon": 45,
     "avatar": "10",
     "gold": 851
   },

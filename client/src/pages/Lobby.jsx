@@ -142,11 +142,11 @@ export default function Lobby() {
             <div className="flex justify-end mb-4 space-x-2">
                 <div className="bg-blue-900 px-3 py-1 rounded-full border-2 border-yellow-400 flex items-center shadow-lg">
                     <span className="text-yellow-400 mr-1 text-xl">💰</span>
-                    <span className="font-bold text-yellow-300">12,850</span>
+                    <span className="font-bold text-yellow-300 mt-1">{(user.gold ?? 0).toLocaleString('en-US')}</span>
                 </div>
                 <div className="bg-blue-900 px-3 py-1 rounded-full border-2 border-yellow-400 flex items-center shadow-lg">
                     <span className="text-green-400 mr-1 text-xl">💎</span>
-                    <span className="font-bold text-green-300">436</span>
+                    <span className="font-bold text-green-300 mt-1">436</span>
                 </div>
             </div>
 

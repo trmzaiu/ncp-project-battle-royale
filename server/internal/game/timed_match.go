@@ -84,6 +84,12 @@ func (g *Game) updateTroop(troop *model.TroopInstance) {
 
 	// Xác định troop này thuộc Player 1 hay Player 2
 	isPlayer1 := troop.Owner == g.Player1.User.Username
+
+	if troop.Template.Type == "healer" {
+		g.updateHealerTroop(troop, isPlayer1)
+		return
+	}
+
 	directionY := getDirectionY(isPlayer1) // +1 hoặc -1 tùy hướng di chuyển
 
 	// Nếu troop đã chạm tới cuối bản đồ phía bên kia thì dừng luôn
@@ -250,6 +256,126 @@ func (g *Game) canAttackTower(troop *model.TroopInstance) (bool, *model.TowerIns
 	return false, nil, minDist
 }
 
+// findAllyInRange - Tìm bất kỳ đồng minh nào trong phạm vi cho trước
+func (g *Game) findAllyInRange(healer *model.TroopInstance, searchRange float64) *model.TroopInstance {
+	if healer == nil || healer.Template == nil {
+		return nil
+	}
+
+	healerPos := healer.Position
+
+	for _, entities := range g.BattleSystem.BattleMap {
+		for _, entity := range entities {
+			if ally, ok := entity.(*model.TroopInstance); ok &&
+				ally.IsAlive() &&
+				ally.Owner == healer.Owner &&
+				ally.ID != healer.ID {
+
+				dist := calculateDistance(healerPos, ally.Position)
+				if dist <= searchRange {
+					return ally // Tìm thấy đồng minh trong phạm vi
+				}
+			}
+		}
+	}
+
+	return nil // Không có đồng minh nào trong phạm vi
+}
+
+// findLowestHPAllyInRange - Tìm troop có HP thấp nhất trong tầm nhìn của healer (CẢI THIỆN)
+func (g *Game) findLowestHPAllyInRange(healer *model.TroopInstance) *model.TroopInstance {
+	if healer == nil || healer.Template == nil {
+		return nil
+	}
+
+	var lowestHPAlly *model.TroopInstance
+	minHPPercent := 0.9 // Chỉ heal khi HP < 90%
+	healerPos := healer.Position
+	healRange := healer.Template.Range
+
+	for _, entities := range g.BattleSystem.BattleMap {
+		for _, entity := range entities {
+			if ally, ok := entity.(*model.TroopInstance); ok &&
+				ally.IsAlive() &&
+				ally.Owner == healer.Owner &&
+				ally.ID != healer.ID {
+
+				dist := calculateDistance(healerPos, ally.Position)
+
+				if dist <= healRange {
+					hpPercent := ally.Template.HP / ally.Template.MaxHP
+
+					// Ưu tiên heal ally có HP thấp nhất và dưới ngưỡng
+					if hpPercent < minHPPercent {
+						minHPPercent = hpPercent
+						lowestHPAlly = ally
+					}
+				}
+			}
+		}
+	}
+
+	return lowestHPAlly
+}
+
+// Cải thiện hàm findAllyToFollow để ưu tiên ally ở gần vùng an toàn
+func (g *Game) findAllyToFollow(healer *model.TroopInstance) *model.TroopInstance {
+	if healer == nil || healer.Template == nil {
+		return nil
+	}
+
+	var bestAlly *model.TroopInstance
+	bestScore := 0.0
+	healerPos := healer.Position
+	isPlayer1 := healer.Owner == g.Player1.User.Username
+
+	for _, entities := range g.BattleSystem.BattleMap {
+		for _, entity := range entities {
+			if ally, ok := entity.(*model.TroopInstance); ok &&
+				ally.IsAlive() &&
+				ally.Owner == healer.Owner &&
+				ally.ID != healer.ID &&
+				ally.Template.Type != "healer" {
+
+				dist := calculateDistance(healerPos, ally.Position)
+				hpPercent := ally.Template.HP / ally.Template.MaxHP
+
+				// Tính điểm ưu tiên
+				score := 0.0
+
+				// Ưu tiên ally gần
+				if dist <= 8 {
+					score += (8 - dist)
+				}
+
+				// Ưu tiên ally khỏe mạnh
+				score += hpPercent * 3
+
+				// Ưu tiên ally không ở quá sâu trong phe địch
+				allyInEnemyTerritory := g.isHealerInEnemyTerritory(&model.TroopInstance{
+					Position: ally.Position,
+				}, isPlayer1)
+
+				if !allyInEnemyTerritory {
+					score += 5 // Bonus lớn cho ally ở vùng an toàn
+				}
+
+				// Ưu tiên damage dealer
+				if ally.Template.DMG > ally.Template.HP/5 {
+					score += 2
+				}
+
+				if score > bestScore {
+					bestScore = score
+					bestAlly = ally
+				}
+			}
+		}
+	}
+
+	return bestAlly
+}
+
 // =============================================================================
 // PHẦN 4: HỆ THỐNG TẤN CÔNG
 // =============================================================================
@@ -273,6 +399,9 @@ func (g *Game) attackTroop(attacker *model.TroopInstance, target *model.TroopIns
 	if !attacker.IsAlive() || !target.IsAlive() {
 		return
 	}
+
+	target.Mutex.Lock()
+	defer target.Mutex.Unlock()
 
 	damage := math.Max(attacker.Template.DMG, 1)
 	target.Template.HP -= damage
@@ -343,7 +472,164 @@ func (g *Game) attackTower(troop *model.TroopInstance) {
 }
 
 // =============================================================================
-// PHẦN 5: HỆ THỐNG DI CHUYỂN
+// PHẦN 5: HỆ THỐNG HỒI MÁU
+// =============================================================================
+
+func (g *Game) updateHealerTroop(troop *model.TroopInstance, isPlayer1 bool) {
+	if troop == nil || troop.Template == nil {
+		return
+	}
+
+	speed := troop.Template.Speed
+
+	// Kiểm tra xem healer có đang ở phe địch không
+	if g.isHealerInEnemyTerritory(troop, isPlayer1) {
+		// Nếu ở phe địch và không có đồng minh gần, quay về
+		allyNearby := g.findAllyInRange(troop, troop.Template.Range*2) // Tìm trong phạm vi rộng hơn
+		if allyNearby == nil {
+			g.moveHealerBackToSafety(troop, speed, isPlayer1)
+			return
+		}
+	}
+
+	// Tìm đồng minh gần nhất cần hồi máu
+	allyNeedHeal := g.findLowestHPAllyInRange(troop)
+
+	if allyNeedHeal != nil {
+		// Có ally cần heal
+		dist := calculateDistance(troop.Position, allyNeedHeal.Position)
+		if dist <= troop.Template.Range {
+			// Trong tầm heal -> heal luôn
+			g.healAlly(troop, allyNeedHeal)
+		} else {
+			// Ngoài tầm -> di chuyển lại gần để heal
+			g.moveTowardPosition(troop, allyNeedHeal.Position, speed*0.8)
+		}
+	} else {
+		// Không có ally cần heal -> tìm ally để follow
+		allyToFollow := g.findAllyToFollow(troop)
+		if allyToFollow != nil {
+			// Có ally để theo -> follow với khoảng cách an toàn
+			g.followAlly(troop, allyToFollow, speed)
+		} else {
+			// Không có ally nào -> kiểm tra vị trí và quyết định hành động
+			g.handleHealerWithoutAllies(troop, speed, isPlayer1)
+		}
+	}
+
+	// Clamp lại vị trí
+	troop.Position.X = utils.ClampFloat(troop.Position.X, 0, MAP_SIZE)
+	troop.Position.Y = utils.ClampFloat(troop.Position.Y, 0, MAP_SIZE)
+}
+
+// isHealerInEnemyTerritory - Kiểm tra healer có đang ở phe địch không
+func (g *Game) isHealerInEnemyTerritory(healer *model.TroopInstance, isPlayer1 bool) bool {
+	if isPlayer1 {
+		// Player 1 spawn từ dưới (Y=0), phe địch là Y > 15
+		return healer.Position.Y > 14.0
+	} else {
+		// Player 2 spawn từ trên (Y=21), phe địch là Y < 6
+		return healer.Position.Y < 7.0
+	}
+}
+
+// handleHealerWithoutAllies - Xử lý healer khi không có đồng minh
+func (g *Game) handleHealerWithoutAllies(healer *model.TroopInstance, speed float64, isPlayer1 bool) {
+	// Kiểm tra vị trí hiện tại
+	if g.isHealerInEnemyTerritory(healer, isPlayer1) {
+		// Ở phe địch -> quay về
+		g.moveHealerBackToSafety(healer, speed, isPlayer1)
+	} else {
+		// Ở phe mình -> di chuyển chậm để tìm hoặc chờ đồng minh
+		g.searchForAlliesSlowly(healer, speed, isPlayer1)
+	}
+}
+
+// searchForAlliesSlowly - Tìm kiếm đồng minh một cách chậm rãi
+func (g *Game) searchForAlliesSlowly(healer *model.TroopInstance, speed float64, isPlayer1 bool) {
+	// Di chuyển chậm về trung tâm theo trục X
+	centerX := MAP_SIZE / 2
+
+	if healer.Position.X < centerX-2 {
+		healer.Position.X += speed * 0.3
+	} else if healer.Position.X > centerX+2 {
+		healer.Position.X -= speed * 0.3
+	}
+
+	// Di chuyển rất chậm về phía trước để không bỏ lỡ đồng minh
+	directionY := getDirectionY(isPlayer1)
+	healer.Position.Y += directionY * speed * 0.2
+
+	// Không tiến quá xa khỏi vùng spawn
+	var maxAdvanceY float64
+	if isPlayer1 {
+		maxAdvanceY = 10.0 // Player 1 không tiến quá Y = 10
+	} else {
+		maxAdvanceY = 11.0 // Player 2 không lùi quá Y = 11
+	}
+
+	if (isPlayer1 && healer.Position.Y > maxAdvanceY) ||
+		(!isPlayer1 && healer.Position.Y < maxAdvanceY) {
+		healer.Position.Y = maxAdvanceY
+	}
+}
+
+// followAlly - Follow đồng minh với khoảng cách an toàn
+func (g *Game) followAlly(healer *model.TroopInstance, ally *model.TroopInstance, speed float64) {
+	if healer == nil || ally == nil {
+		return
+	}
+
+	idealDistance := healer.Template.Range - 1 // Khoảng cách lý tưởng để follow (không quá gần, không quá xa)
+	currentDist := calculateDistance(healer.Position, ally.Position)
+
+	if currentDist > idealDistance+0.5 {
+		// Quá xa -> di chuyển lại gần
+		g.moveTowardPosition(healer, ally.Position, speed*0.9)
+	} else if currentDist < idealDistance-0.5 {
+		// Quá gần -> lùi lại một chút để tránh chen chúc
+		g.moveAwayFromPosition(healer, ally.Position, speed*0.5)
+	} else {
+		// Khoảng cách vừa phải -> di chuyển cùng hướng với ally
+		g.moveInSameDirection(healer, ally, speed*0.7)
+	}
+}
+
+// healAlly - Hồi máu cho đồng minh
+func (g *Game) healAlly(healer *model.TroopInstance, target *model.TroopInstance) {
+	if healer == nil || target == nil || healer.Template == nil || target.Template == nil {
+		return
+	}
+
+	currentTime := time.Now()
+	healCooldown := time.Duration(healer.Template.AttackSpeed * float64(time.Second))
+
+	if currentTime.Sub(healer.LastAttackTime) < healCooldown {
+		return
+	}
+
+	healAmount := healer.Template.DMG
+
+	target.Mutex.Lock()
+	defer target.Mutex.Unlock()
+
+	target.Template.HP += healAmount
+	if target.Template.HP > target.Template.MaxHP {
+		target.Template.HP = target.Template.MaxHP
+	}
+
+	healer.LastAttackTime = currentTime
+
+	fmt.Printf("Healer %s healed ally %s for %.2f HP (%.1f/%.1f)\n",
+		healer.Template.Name,
+		target.Template.Name,
+		healAmount,
+		target.Template.HP,
+		target.Template.MaxHP)
+}
+
+// =============================================================================
+// PHẦN 6: HỆ THỐNG DI CHUYỂN
 // =============================================================================
 
 // handleMovement - Xử lý di chuyển chính của troop
@@ -395,16 +681,12 @@ func (g *Game) calculateNextPosition(troop *model.TroopInstance, moveSpeed, dire
 	currentX := troop.Position.X
 	currentY := troop.Position.Y
 
-	// Ranh giới sông
-	riverTop := 9.0
-	riverBottom := 12.0
-
 	// Kiểm tra trạng thái băng sông
-	isNearRiver := (directionY > 0 && currentY < riverTop && currentY+moveSpeed >= riverTop) ||
-		(directionY < 0 && currentY > riverBottom && currentY-moveSpeed <= riverBottom)
-	isCrossingRiver := (currentY >= riverTop && currentY <= riverBottom)
-	hasPassedRiver := (directionY > 0 && currentY > riverBottom) ||
-		(directionY < 0 && currentY < riverTop)
+	isNearRiver := (directionY > 0 && currentY < RIVER_TOP && currentY+moveSpeed >= RIVER_TOP) ||
+		(directionY < 0 && currentY > RIVER_BOTTOM && currentY-moveSpeed <= RIVER_BOTTOM)
+	isCrossingRiver := (currentY >= RIVER_TOP && currentY <= RIVER_BOTTOM)
+	hasPassedRiver := (directionY > 0 && currentY > RIVER_BOTTOM) ||
+		(directionY < 0 && currentY < RIVER_TOP)
 
 	// Trước khi đến sông, di chuyển về phía cầu gần nhất
 	if isNearRiver && !isCrossingRiver && !hasPassedRiver {
@@ -484,10 +766,10 @@ func (g *Game) moveTowardsTarget(troop *model.TroopInstance, currentX, currentY,
 		enemy := g.getClosestEnemy(troop)
 		if enemy != nil {
 			// Tạo khu vực nhỏ xung quanh enemy
-			targetArea.TopLeft.X = enemy.Position.X - 0.5
-			targetArea.TopLeft.Y = enemy.Position.Y - 0.5
-			targetArea.BottomRight.X = enemy.Position.X + 0.5
-			targetArea.BottomRight.Y = enemy.Position.Y + 0.5
+			targetArea.TopLeft.X = enemy.Position.X - 0.3
+			targetArea.TopLeft.Y = enemy.Position.Y - 0.3
+			targetArea.BottomRight.X = enemy.Position.X + 0.3
+			targetArea.BottomRight.Y = enemy.Position.Y + 0.3
 		} else {
 			targetArea = getTargetTowerArea(troop, g)
 		}
@@ -511,8 +793,8 @@ func (g *Game) moveTowardsTarget(troop *model.TroopInstance, currentX, currentY,
 	}
 
 	// Áp dụng di chuyển với tránh khu vực tower
-	moveX := dx * moveSpeed * 0.8
-	moveY := dy * moveSpeed * 0.8
+	moveX := dx * moveSpeed * MIN_TROOP_DISTANCE
+	moveY := dy * moveSpeed * MIN_TROOP_DISTANCE
 
 	newX := currentX + moveX
 	newY := currentY + moveY
@@ -525,8 +807,184 @@ func (g *Game) moveTowardsTarget(troop *model.TroopInstance, currentX, currentY,
 	return newX, newY
 }
 
+func (g *Game) moveTowardPosition(troop *model.TroopInstance, targetPos model.Position, speed float64) {
+	dirX := targetPos.X - troop.Position.X
+	dirY := targetPos.Y - troop.Position.Y
+	mag := math.Sqrt(dirX*dirX + dirY*dirY)
+
+	if mag == 0 {
+		return
+	}
+
+	// Chuẩn hóa vector
+	dirX /= mag
+	dirY /= mag
+
+	// Cập nhật vị trí
+	troop.Position.X += dirX * speed
+	troop.Position.Y += dirY * speed
+}
+
+// moveAwayFromPosition - Di chuyển ra xa khỏi một vị trí
+func (g *Game) moveAwayFromPosition(troop *model.TroopInstance, pos model.Position, speed float64) {
+	dirX := troop.Position.X - pos.X
+	dirY := troop.Position.Y - pos.Y
+	mag := math.Sqrt(dirX*dirX + dirY*dirY)
+
+	if mag == 0 {
+		// Nếu trùng vị trí, di chuyển random
+		dirX = 1.0
+		dirY = 0.0
+		mag = 1.0
+	}
+
+	// Chuẩn hóa vector và di chuyển ra xa
+	dirX /= mag
+	dirY /= mag
+
+	newX := troop.Position.X + dirX*speed
+	newY := troop.Position.Y + dirY*speed
+
+	if g.isValidPosition(newX, newY) && !g.checkCollision(troop, newX, newY) {
+		troop.Position.X = newX
+		troop.Position.Y = newY
+	}
+}
+
+// moveInSameDirection - Di chuyển cùng hướng với ally
+func (g *Game) moveInSameDirection(healer *model.TroopInstance, ally *model.TroopInstance, speed float64) {
+	if healer == nil || ally == nil {
+		return
+	}
+
+	// Ước tính hướng di chuyển của ally dựa trên vị trí hiện tại
+	isPlayer1 := healer.Owner == g.Player1.User.Username
+	directionY := getDirectionY(isPlayer1)
+
+	// Di chuyển song song với ally
+	offsetX := 0.0 // Có thể thêm offset nhỏ để không đi trùng
+	if healer.Position.X < ally.Position.X {
+		offsetX = -0.5
+	} else {
+		offsetX = 0.5
+	}
+
+	newX := healer.Position.X + offsetX*speed*0.3
+	newY := healer.Position.Y + directionY*speed
+
+	if g.isValidPosition(newX, newY) && !g.checkCollision(healer, newX, newY) {
+		healer.Position.X = newX
+		healer.Position.Y = newY
+	}
+}
+
+// moveToFindAllies - Di chuyển để tìm đồng minh khi không có ai để follow
+func (g *Game) moveToFindAllies(healer *model.TroopInstance, speed float64, isPlayer1 bool) {
+	// Di chuyển chậm về phía giữa map để có thể gặp đồng minh
+	centerX := MAP_SIZE / 2
+	directionY := getDirectionY(isPlayer1)
+
+	// Di chuyển về trung tâm theo trục X
+	if healer.Position.X < centerX {
+		healer.Position.X += speed * 0.3
+	} else if healer.Position.X > centerX {
+		healer.Position.X -= speed * 0.3
+	}
+
+	// Di chuyển chậm về phía trước
+	healer.Position.Y += directionY * speed * 0.4
+}
+
+// moveHealerBackToSafety - Di chuyển healer về vùng an toàn qua cầu
+func (g *Game) moveHealerBackToSafety(healer *model.TroopInstance, speed float64, isPlayer1 bool) {
+	currentX := healer.Position.X
+	currentY := healer.Position.Y
+
+	// Xác định hướng về nhà
+	directionY := -getDirectionY(isPlayer1) // Ngược lại với hướng tấn công
+
+	// Vùng an toàn tùy theo phe
+	var safeZoneY float64
+	if isPlayer1 {
+		safeZoneY = 8.0 // Player 1 về vùng Y < 8
+	} else {
+		safeZoneY = 13.0 // Player 2 về vùng Y > 13
+	}
+
+	// Nếu đã ở vùng an toàn, dừng lại và chờ đồng minh
+	if (isPlayer1 && currentY < safeZoneY) || (!isPlayer1 && currentY > safeZoneY) {
+		g.waitForAlliesAtSafeZone(healer, speed*0.3, isPlayer1)
+		return
+	}
+
+	// Nếu đang ở trong sông, di chuyển theo cầu
+	if currentY >= RIVER_TOP && currentY <= RIVER_BOTTOM {
+		if !isBridgeColumn(currentX) {
+			// Không ở trên cầu, di chuyển về cầu gần nhất
+			closestBridge := closestBridgeColumn(currentX)
+			if currentX < closestBridge {
+				healer.Position.X += min(speed, closestBridge-currentX)
+			} else if currentX > closestBridge {
+				healer.Position.X -= min(speed, currentX-closestBridge)
+			}
+		} else {
+			// Đang trên cầu, tiếp tục về phía nhà
+			healer.Position.Y += directionY * speed
+		}
+	} else {
+		// Không ở trong sông, di chuyển về cầu gần nhất trước
+		closestBridge := closestBridgeColumn(currentX)
+		dx := closestBridge - currentX
+
+		if utils.AbsFloat(dx) > 0.5 {
+			// Di chuyển chéo về phía cầu
+			if dx > 0 {
+				healer.Position.X += min(speed*0.7, dx)
+			} else {
+				healer.Position.X += max(-speed*0.7, dx)
+			}
+			healer.Position.Y += directionY * speed * 0.5
+		} else {
+			// Gần cầu, căn chỉnh và về nhà
+			healer.Position.X = closestBridge
+			healer.Position.Y += directionY * speed
+		}
+	}
+
+	fmt.Printf("Healer %s retreating to safety at (%.1f, %.1f)\n",
+		healer.Template.Name, healer.Position.X, healer.Position.Y)
+}
+
+// waitForAlliesAtSafeZone - Chờ đồng minh tại vùng an toàn
+func (g *Game) waitForAlliesAtSafeZone(healer *model.TroopInstance, speed float64, isPlayer1 bool) {
+	// Di chuyển về trung tâm map để dễ gặp đồng minh
+	centerX := MAP_SIZE / 2
+
+	if healer.Position.X < centerX-1 {
+		healer.Position.X += speed
+	} else if healer.Position.X > centerX+1 {
+		healer.Position.X -= speed
+	}
+
+	// Duy trì vị trí Y trong vùng an toàn
+	var idealY float64
+	if isPlayer1 {
+		idealY = 8.0 // Player 1 chờ ở Y = 7
+	} else {
+		idealY = 13.0 // Player 2 chờ ở Y = 14
+	}
+
+	if utils.AbsFloat(healer.Position.Y-idealY) > 0.5 {
+		if healer.Position.Y < idealY {
+			healer.Position.Y += speed * 0.5
+		} else {
+			healer.Position.Y -= speed * 0.5
+		}
+	}
+}
+
 // =============================================================================
-// PHẦN 6: HỆ THỐNG VA CHẠM
+// PHẦN 7: HỆ THỐNG VA CHẠM
 // =============================================================================
 
 // CheckCollision - Kiểm tra va chạm với các troop khác
@@ -660,7 +1118,7 @@ func (g *Game) avoidTowerAreas(x, y float64, isPlayer1 bool) (float64, float64) 
 }
 
 // =============================================================================
-// PHẦN 7: LOGIC CỦA TOWER
+// PHẦN 8: LOGIC CỦA TOWER
 // =============================================================================
 
 // updateTower - Logic chính của tower trong mỗi frame
@@ -755,7 +1213,7 @@ func (g *Game) towerAttackTroop(tower *model.TowerInstance, target *model.TroopI
 }
 
 // =============================================================================
-// PHẦN 8: HỆ THỐNG THƯỞNG VÀ CHIẾN THẮNG
+// PHẦN 9: HỆ THỐNG THƯỞNG VÀ CHIẾN THẮNG
 // =============================================================================
 
 // AddKillReward - Thêm phần thưởng khi giết troop
@@ -799,7 +1257,7 @@ func (g *Game) checkWinCondition() {
 }
 
 // =============================================================================
-// PHẦN 9: HÀM TIỆN ÍCH
+// PHẦN 10: HÀM TIỆN ÍCH
 // =============================================================================
 
 // getDirectionY - Lấy hướng Y dựa trên player (1 hoặc -1)
@@ -900,7 +1358,7 @@ func calculateDistance(pos1, pos2 model.Position) float64 {
 
 // isBridgeColumn - Kiểm tra có phải cột cầu không với tolerance được điều chỉnh
 func isBridgeColumn(x float64) bool { // Vị trí 2 cầu
-	bridgeTolerance := 0.5         // Tăng tolerance để dễ dàng đi qua cầu hơn
+	bridgeTolerance := 0.5 // Tăng tolerance để dễ dàng đi qua cầu hơn
 
 	for _, col := range BRIDGE_COLUMNS {
 		if math.Abs(x-col) <= bridgeTolerance {
