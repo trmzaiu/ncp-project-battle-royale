@@ -5,14 +5,16 @@ package model
 import (
 	"crypto/rand"
 	"math/big"
-	"time"
 	"strconv"
+	"time"
 )
+
+// ==== STRUCTS ====
 
 type User struct {
 	ID          string    `json:"id"`
 	Username    string    `json:"username"`
-	Password    string    `json:"password"` // This should be hashed in production
+	Password    string    `json:"password"` 
 	CreatedAt   time.Time `json:"createdAt"`
 	LastLogin   time.Time `json:"lastLogin"`
 	IsActive    bool      `json:"isActive"`
@@ -21,6 +23,7 @@ type User struct {
 	GamesPlayed int       `json:"gamesPlayed"` // Track number of games played
 	GamesWon    int       `json:"gamesWon"`    // Track number of games won
 	Avatar      string    `json:"avatar"`
+	Gold        int       `json:"gold"`
 }
 
 func NewUser(username, password string) *User {

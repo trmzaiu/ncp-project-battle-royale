@@ -5,6 +5,7 @@ import (
 	"log"
 	"royaka/internal/model"
 	"royaka/internal/utils"
+	"sync"
 	"time"
 
 	"github.com/google/uuid"
@@ -59,6 +60,7 @@ func HandleSelectTroop(conn *websocket.Conn, data json.RawMessage) {
 	for i, t := range player.Troops {
 		if t.Name == req.Troop {
 			selectedTemplate = player.Troops[i]
+			selectedTemplate.HP = selectedTemplate.MaxHP
 			break
 		}
 	}
@@ -73,9 +75,10 @@ func HandleSelectTroop(conn *websocket.Conn, data json.RawMessage) {
 	}
 
 	realX, realY := float64(req.X), float64(req.Y)
+
 	if room.Player1.User.Username == req.Username {
-		realX = 20.0 - req.X
-		realY = 20.0 - req.Y
+		realX = 21.0 - req.X
+		realY = 21.0 - req.Y
 	}
 
 	log.Printf("[INFO][SPAWN] %s spawned %s at (%f, %f)", req.Username, selectedTemplate.Name, realX, realY)
@@ -105,7 +108,7 @@ func HandleSelectTroop(conn *websocket.Conn, data json.RawMessage) {
 	player.RotateTroop(req.Troop)
 
 	// Tạo troop instance
-	instance := model.TroopInstance{
+	instance := &model.TroopInstance{
 		ID:             uuid.New().String(),
 		Template:       selectedTemplate,
 		TypeEntity:     "troop",
@@ -113,9 +116,10 @@ func HandleSelectTroop(conn *websocket.Conn, data json.RawMessage) {
 		Position:       model.Position{X: realX, Y: realY},
 		IsDead:         false,
 		LastAttackTime: time.Now(),
+		Mutex:          sync.RWMutex{},
 	}
 
-	room.Game.BattleMap = append(room.Game.BattleMap, &instance)
+	room.Game.BattleSystem.AddEntity(instance)
 
 	// Gửi lại troop mới spawn cho cả 2
 	payload := utils.Response{
@@ -123,35 +127,85 @@ func HandleSelectTroop(conn *websocket.Conn, data json.RawMessage) {
 		Success: true,
 		Message: "Troop spawned",
 		Data: map[string]interface{}{
-			"troop":  instance,
 			"player": player,
-			"map":    room.Game.BattleMap,
+			// "map":    room.Game.BattleSystem.BattleMap,
 		},
 	}
+
+	log.Printf("[INFO][SELECT] Sending troop response to %s", req.Username)
 	sendToClient(room.Player1.User.Username, payload)
 	sendToClient(room.Player2.User.Username, payload)
 }
 
 func (g *Game) IsValidSpawnPosition(username string, x, y float64) bool {
+	// Check map boundaries
 	if x < 0 || x >= 21 || y < 0 || y >= 21 {
-		log.Printf("[INVALID_POS] (%f, %f) is out of bounds", x, y)
+		log.Printf("[INVALID_POS] (%f, %f) is out of bounds (map: 0-21)", x, y)
 		return false
 	}
 
-	for _, troop := range g.BattleMap {
-		pos := troop.GetPosition()
-		if pos.X == x && pos.Y == y {
-			log.Printf("[INVALID_POS] (%f, %f) already occupied", x, y)
-			return false
+	// Check if position is already occupied
+	for _, entities := range g.BattleSystem.BattleMap {
+		for _, entity := range entities {
+			pos := entity.GetPosition()
+			if calculateDistance(pos, model.Position{X: x, Y: y}) < 0.5 {
+				log.Printf("[INVALID_POS] (%.2f, %.2f) too close to existing entity at (%.2f, %.2f)",
+					x, y, pos.X, pos.Y)
+				return false
+			}
 		}
 	}
 
-	if g.Player1.User.Username == username && y > 8 {
-		return false
-	}
-	if g.Player2.User.Username == username && y < 12 {
+	isPlayer1, validPlayer := g.getPlayerType(username)
+	if !validPlayer {
+		log.Printf("[INVALID_POS] Unknown player: %s", username)
 		return false
 	}
 
+	if !isValidSpawnZone(isPlayer1, y, username) {
+		return false
+	}
+
+	if !isValidRiverArea(y) {
+		return false
+	}
+
+	log.Printf("[VALID_POS] Position (%f, %f) is valid for %s", x, y, username)
+	return true
+}
+
+// getPlayerType returns (isPlayer1, valid)
+func (g *Game) getPlayerType(username string) (bool, bool) {
+	if g.Player1.User.Username == username {
+		return true, true
+	} else if g.Player2.User.Username == username {
+		return false, true
+	}
+	return false, false
+}
+
+func isValidSpawnZone(isPlayer1 bool, y float64, username string) bool {
+	if isPlayer1 {
+		// Player 1 can only spawn in bottom half (Y: 0-9)
+		if y > 9 {
+			log.Printf("[INVALID_POS] Player 1 (%s) cannot spawn at Y=%f (must be ≤9)", username, y)
+			return false
+		}
+	} else {
+		// Player 2 can only spawn in top half (Y: 12-21)
+		if y < 12 {
+			log.Printf("[INVALID_POS] Player 2 (%s) cannot spawn at Y=%f (must be ≥12)", username, y)
+			return false
+		}
+	}
+	return true
+}
+
+func isValidRiverArea(y float64) bool {
+	// Check river area (Y: 10-11) - no spawning in river
+	if y >= 10 && y <= 11 {
+		log.Printf("[INVALID_POS] Cannot spawn in river area at Y=%f", y)
+		return false
+	}
 	return true
 }

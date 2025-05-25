@@ -1,20 +1,24 @@
 [
   {
     "type": "King Tower",
-    "max_hp": 2000,
-    "hp": 2000,
-    "atk": 500,
-    "def": 200,
+    "max_hp": 2904,
+    "hp": 2904,
+    "atk": 72,
+    "def": 215,
     "crit": 10,
-    "exp": 200
+    "exp": 200,
+    "range": 5,
+    "attack_speed": 1
   },
   {
     "type": "Guard Tower",
-    "max_hp": 1000,
-    "hp": 1000,
-    "atk": 400,
-    "def": 100,
+    "max_hp": 1750,
+    "hp": 1750,
+    "atk": 72,
+    "def": 132,
     "crit": 5,
-    "exp": 100
+    "exp": 100,
+    "range": 5.5,
+    "attack_speed": 0.8
   }
 ]

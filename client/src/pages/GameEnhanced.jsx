@@ -19,22 +19,6 @@ export default function GameEnhanced() {
     const [hoveredTroop, setHoveredTroop] = useState(null);
     const [tileSize, setTileSize] = useState(0);
 
-    const [damagePopup, setDamagePopup] = useState({
-        targetId: null,
-        amount: 0,
-        isOpponent: false,
-        visible: false,
-        isCrit: false,
-    });
-
-    const [healPopup, setHealPopup] = useState({
-        target: null,
-        amount: 0,
-        isOpponent: false,
-        visible: false,
-    });
-
-
     const [notification, setNotification] = useState({
         show: false,
         message: "",
@@ -232,7 +216,7 @@ export default function GameEnhanced() {
 
     // === Handle Set Troops ===
     const handleSetTroop = (msg) => {
-        const { player, map } = msg;
+        const { player } = msg;
         if (player.user.username === localStorage.getItem("username")) {
             setUser(player);
             setGame((prev) => ({
@@ -240,10 +224,10 @@ export default function GameEnhanced() {
                 troops: player.troops,
             }));
         }
-        setGame((prev) => ({
-            ...prev,
-            map: map
-        }));
+        // setGame((prev) => ({
+        //     ...prev,
+        //     map: map
+        // }));
     }
 
     // === Handle Set Mana ===
@@ -258,60 +242,10 @@ export default function GameEnhanced() {
     const handleSetMap = (msg) => {
         const { battleMap } = msg;
 
-        setGame(prev => {
-            const oldMap = prev?.map || [];
-            const newMap = battleMap;
-
-            for (const newEntity of newMap) {
-                // ✅ Chỉ xử lý TOWER
-                if (newEntity.type_entity !== "tower") continue;
-
-                const oldEntity = oldMap.find(e => e.id === newEntity.id);
-                if (!oldEntity) continue;
-
-                const isMe =
-                    newEntity.owner === localStorage.getItem("username");
-                const targetId = (isMe ? "player-" : "opponent-") + oldEntity.template.type;
-
-                // DAMAGE
-                if (newEntity.hp < oldEntity.hp) {
-                    const damage = oldEntity.hp - newEntity.hp;
-                    const isCrit = newEntity.last_action?.includes("crit") ?? false;
-
-                    setDamagePopup({
-                        targetId: targetId,
-                        amount: damage,
-                        isOpponent: !isMe,
-                        visible: true,
-                        crit: isCrit,
-                    });
-
-                    clearTimeout(damageTimeoutRef.current);
-                    damageTimeoutRef.current = setTimeout(() => {
-                        setDamagePopup(prev => ({ ...prev, visible: false }));
-                    }, 1500);
-                }
-
-                // HEAL
-                if (newEntity.hp > oldEntity.hp) {
-                    const healAmount = newEntity.hp - oldEntity.hp;
-
-                    setHealPopup({
-                        targetId: targetId,
-                        amount: healAmount,
-                        isOpponent: !isMe,
-                        visible: true,
-                    });
-
-                    clearTimeout(healTimeoutRef.current);
-                    healTimeoutRef.current = setTimeout(() => {
-                        setHealPopup(prev => ({ ...prev, visible: false }));
-                    }, 1500);
-                }
-            }
-
-            return { ...prev, map: battleMap };
-        });
+        setGame((prev) => ({
+            ...prev,
+            map: battleMap
+        }));
     };
 
     // === Handle Game Over ===
@@ -342,7 +276,7 @@ export default function GameEnhanced() {
     }
 
     // Tower component for reusability 
-    const Tower = ({ id, type, health, maxHealth, isOpponent }) => {
+    const Tower = ({ type, health, maxHealth, isOpponent }) => {
         const towerImage = type === "king"
             ? (isOpponent ? "/assets/King_Tower_Red.png" : "/assets/King_Tower_Blue.png")
             : (isOpponent ? "/assets/Guard_Tower_Red.png" : "/assets/Guard_Tower_Blue.png");
@@ -352,65 +286,19 @@ export default function GameEnhanced() {
                 className={`relative tower ${type} ${health <= 0 ? "grayscale" : ""} w-full h-full flex flex-col items-center justify-end`}
                 style={{ fontFamily: "'ClashDisplay', sans-serif" }}
             >
-                {/* Damage Popup */}
-                {damagePopup?.visible && damagePopup.targetId === id && (
-                    <div className={`absolute z-50 ${isOpponent ? "-bottom-15" : "-top-15"} -right-4 transform rotate-10 pointer-events-none`}>
-                        <div className={`
-                        flex justify-center items-center
-                        ${damagePopup.crit ? "text-yellow-500 animate-clash-crit-popup" : "text-red-500 animate-clash-damage-popup"}
-                    `}>
-                            <div className="relative">
-                                {["-left-1", "-right-1", "-top-1", "-bottom-1"].map((pos, i) => (
-                                    <span key={i} className={`absolute font-extrabold ${damagePopup.crit ? "text-4xl" : "text-3xl"} text-white opacity-25 ${pos}`}>
-                                        -{damagePopup.amount}
-                                    </span>
-                                ))}
-                                <span className={`relative font-extrabold ${damagePopup.crit ? "text-4xl" : "text-3xl"}`}>
-                                    -{damagePopup.amount}
-                                </span>
-                            </div>
-                            {damagePopup.crit && (
-                                <div className="absolute w-16 h-16 bg-yellow-400 rounded-full opacity-20 animate-clash-crit-burst" />
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* Heal Popup */}
-                {healPopup?.visible && healPopup.targetId === id && (
-                    <div className={`absolute z-50 ${isOpponent ? "-bottom-15" : "-top-15"} rotate-10 pointer-events-none`}>
-                        <div className="flex justify-center items-center text-green-700 animate-clash-heal-popup">
-                            <div className="relative">
-                                {["-left-0.5", "-right-0.5", "-top-0.5", "-bottom-0.5"].map((pos, i) => (
-                                    <span key={i} className={`absolute font-extrabold text-3xl text-white opacity-25 ${pos}`}>
-                                        +{healPopup.amount}
-                                    </span>
-                                ))}
-                                <span className="relative font-extrabold text-3xl">
-                                    +{healPopup.amount}
-                                </span>
-                            </div>
-                            <div className="absolute w-12 h-12 bg-green-400 rounded-full opacity-20 animate-clash-heal-burst" />
-                        </div>
-                    </div>
-                )}
-
-                <div className="w-full h-full flex flex-col items-center justify-end relative">
+                <div className="w-full h-full flex flex-col items-center justify-center relative">
                     {/* Opponent: HP bar goes under the image */}
                     {isOpponent ? (
                         <>
                             <img
                                 src={towerImage}
                                 alt={type}
-                                className="relative w-full h-full object-contain px-1 py-1 drop-shadow-lg"
+                                className="relative -top-1.5 object-cover px-3 py-3 drop-shadow-lg"
                             />
-                            <div className="relative -bottom-5 tower-hp w-5/6">
-                                <div className="hp-bar bg-gray-700 w-full h-3 rounded-full shadow-inner overflow-hidden border border-gray-800">
+                            <div className="absolute -bottom-2 tower-hp w-5/6">
+                                <div className="hp-bar bg-red-950 w-full h-2.5 rounded-sm shadow-inner overflow-hidden border border-red-950">
                                     <div
-                                        className={`hp-fill bg-gradient-to-r ${health <= maxHealth / 3
-                                            ? "from-red-500 to-red-400"
-                                            : "from-green-500 to-green-400"
-                                            } h-full rounded-full transition-all duration-500`}
+                                        className="hp-fill bg-gradient-to-r from-red-500 to-red-400 h-full rounded-xs transition-all duration-500"
                                         style={{
                                             width: `${Math.max(0, (health / maxHealth) * 100)}%`,
                                         }}
@@ -420,13 +308,10 @@ export default function GameEnhanced() {
                         </>
                     ) : (
                         <>
-                            <div className="relative -top-3 tower-hp w-5/6">
-                                <div className="hp-bar bg-gray-700 w-full h-3 rounded-full shadow-inner overflow-hidden border border-gray-800">
+                            <div className="absolute -top-4 tower-hp w-5/6">
+                                <div className="hp-bar bg-blue-950 w-full h-2.5 rounded-sm shadow-inner overflow-hidden border border-blue-950">
                                     <div
-                                        className={`hp-fill bg-gradient-to-r ${health <= maxHealth / 3
-                                            ? "from-red-500 to-red-400"
-                                            : "from-green-500 to-green-400"
-                                            } h-full rounded-full transition-all duration-500`}
+                                        className="hp-fill bg-gradient-to-r from-blue-500 to-blue-400 h-full rounded-xs transition-all duration-500"
                                         style={{
                                             width: `${Math.max(0, (health / maxHealth) * 100)}%`,
                                         }}
@@ -436,7 +321,7 @@ export default function GameEnhanced() {
                             <img
                                 src={towerImage}
                                 alt={type}
-                                className="relative w-full h-full object-contain px-1 py-1 drop-shadow-lg"
+                                className="relative -top-2 object-cover px-3 py-3 drop-shadow-lg"
                             />
                         </>
                     )}
@@ -527,7 +412,7 @@ export default function GameEnhanced() {
                     <div className="absolute inset-0 grid grid-cols-22 grid-rows-22 group">
                         {tileMap.map((row, rowIndex) =>
                             row.map((tile, colIndex) => {
-                                const isPlayerSide = rowIndex >= 11;
+                                const isPlayerSide = rowIndex >= 12;
                                 const isEnemySide = !isPlayerSide;
                                 const hasSelectedTroop = !!game.selectedTroop;
 
@@ -554,40 +439,6 @@ export default function GameEnhanced() {
                                         {isEnemySide && hasSelectedTroop && (
                                             <div className="absolute inset-0 bg-red-700 opacity-0 group-hover:opacity-50 transition-opacity pointer-events-none" />
                                         )}
-
-                                        {((colIndex === 3 || colIndex === 16) && rowIndex === 10) && (
-                                            <img
-                                                src="/assets/tiles/tile_0071.png"
-                                                alt="Tree"
-                                                className="w-full h-full pointer-events-none select-none z-60"
-                                                style={{ objectFit: "contain", transform: "translateX(12px)" }}
-                                            />
-                                        )}
-                                        {(colIndex === 3 || colIndex === 16) && rowIndex === 11 && (
-                                            <img
-                                                src="/assets/tiles/tile_0047.png"
-                                                alt="Tree"
-                                                className="w-full h-full pointer-events-none select-none z-60"
-                                                style={{ objectFit: "cover", transform: "translateX(12px)" }}
-                                            />
-                                        )}
-
-                                        {((colIndex === 5 || colIndex === 18) && rowIndex === 10) && (
-                                            <img
-                                                src="/assets/tiles/tile_0071.png"
-                                                alt="Tree"
-                                                className="w-full h-full pointer-events-none select-none z-60"
-                                                style={{ objectFit: "contain", transform: "translateX(-12px)" }}
-                                            />
-                                        )}
-                                        {(colIndex === 5 || colIndex === 18) && rowIndex === 11 && (
-                                            <img
-                                                src="/assets/tiles/tile_0047.png"
-                                                alt="Tree"
-                                                className="w-full h-full pointer-events-none select-none z-60"
-                                                style={{ objectFit: "contain", transform: "translateX(-12px)" }}
-                                            />
-                                        )}
                                     </div>
                                 );
                             })
@@ -599,32 +450,22 @@ export default function GameEnhanced() {
                         {game?.map?.filter(e => e.type_entity === "tower").map((tower) => {
                             const isEnemyTower = tower.owner !== localStorage.getItem("username");
 
-                            const topLeftX = game.isPlayer1 ? 21 - tower.area.bottom_right.x : tower.area.top_left.x;
-                            const topLeftY = game.isPlayer1 ? 21 - tower.area.bottom_right.y : tower.area.top_left.y;
-                            const bottomRightX = game.isPlayer1 ? 21 - tower.area.top_left.x : tower.area.bottom_right.x;
-                            const bottomRightY = game.isPlayer1 ? 21 - tower.area.top_left.y : tower.area.bottom_right.y;
-
-                            const towerWidthPx = tileSize * (bottomRightX - topLeftX + 1);
-                            const towerHeightPx = tileSize * (bottomRightY - topLeftY + 1);
-
-                            const translateX = topLeftX * tileSize;
-                            const translateY = topLeftY * tileSize;
-
-                            const towerId = isEnemyTower ? "opponent" : "player" + "-" + tower.template.type
+                            const colStart = game.isPlayer1 ? 21 - tower.area.bottom_right.x + 1 : tower.area.top_left.x + 1;
+                            const rowStart = game.isPlayer1 ? 21 - tower.area.bottom_right.y + 1 : tower.area.top_left.y + 1;
+                            const colEnd = game.isPlayer1 ? 21 - tower.area.top_left.x + 1 : tower.area.bottom_right.x + 1;
+                            const rowEnd = game.isPlayer1 ? 21 - tower.area.top_left.y + 1 : tower.area.bottom_right.y + 1;
 
                             return (
                                 <div
                                     key={tower.id}
-                                    className="absolute z-20"
+                                    className="z-10 flex items-center justify-center"
                                     style={{
-                                        width: `${towerWidthPx}px`,
-                                        height: `${towerHeightPx}px`,
-                                        transform: `translate(${translateX}px, ${translateY}px)`,
+                                        gridColumn: `${colStart} / ${colEnd + 1}`,
+                                        gridRow: `${rowStart} / ${rowEnd + 1}`,
                                     }}
                                 >
                                     <Tower
                                         type={tower.template.type}
-                                        id={towerId}
                                         health={tower.template.hp}
                                         maxHealth={tower.template.max_hp}
                                         isOpponent={isEnemyTower}
@@ -634,11 +475,11 @@ export default function GameEnhanced() {
                             );
                         })}
 
-                        {game?.map?.filter(e => e.type_entity === "troop").map((troop) => {
+                        {game?.map?.filter(e => e.type_entity === "troop" && e.template.hp > 0).map((troop) => {
                             const isEnemyTroop = troop.owner !== user?.user.username;
 
-                            const displayX = game.isPlayer1 ? 20 - troop.position.x : troop.position.x;
-                            const displayY = game.isPlayer1 ? 20 - troop.position.y : troop.position.y;
+                            const displayX = game.isPlayer1 ? 21 - troop.position.x : troop.position.x;
+                            const displayY = game.isPlayer1 ? 21 - troop.position.y : troop.position.y;
 
                             const troopWidth = 48;
                             const troopHeight = 48;
@@ -646,19 +487,49 @@ export default function GameEnhanced() {
                             const translateX = displayX * tileSize + tileSize / 2 - troopWidth / 2;
                             const translateY = displayY * tileSize + tileSize - troopHeight;
 
+                            const isDisplayHP = troop.template.hp < troop.template.max_hp;
+                            const health = troop.template.hp;
+                            const maxHealth = troop.template.max_hp;
+
                             return (
                                 <div
                                     key={troop.id}
-                                    className="absolute smooth-move"
+                                    className="z-20 absolute smooth-move"
                                     style={{
                                         transform: `translate(${translateX}px, ${translateY}px)`,
                                     }}
                                 >
+                                    {isDisplayHP && (
+                                        <div className="absolute -top-2 w-5/6">
+                                            <div className={`hp-bar ${isEnemyTroop ? "bg-red-900" : "bg-blue-900"} bg-opacity-25 w-full h-1.5 rounded-full shadow-inner overflow-hidden border ${isEnemyTroop ? "border-red-900" : "border-blue-900"}`}>
+                                                <div
+                                                    className={`hp-fill bg-gradient-to-r ${isEnemyTroop
+                                                        ? "from-red-500 to-red-400"
+                                                        : "from-blue-500 to-blue-400"
+                                                        } h-full rounded-sm transition-all duration-500`}
+                                                    style={{
+                                                        width: `${Math.max(0, (health / maxHealth) * 100)}%`,
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                     <img
                                         src={`/assets/images/${troop.template.image}.png`}
                                         alt={troop.template.name}
-                                        className={`w-12 h-12 object-cover ${isEnemyTroop ? "opacity-80" : ""}`}
+                                        className={`w-12 h-12 object-cover`}
                                     />
+                                    <div
+                                        className="absolute bottom-1/2 left-1/2 -translate-x-1/2 pointer-events-none"
+                                        style={{
+                                            width: `${troop.template.range * tileSize * 2}px`,
+                                            height: `${troop.template.range * tileSize * 2}px`,
+                                            borderRadius: "9999px",
+                                            border: `2px dashed ${isEnemyTroop ? "rgba(239, 68, 68, 0.5)" : "rgba(59, 130, 246, 0.5)"}`,
+                                            backgroundColor: isEnemyTroop ? "rgba(239, 68, 68, 0.1)" : "rgba(59, 130, 246, 0.1)",
+                                            transform: "translateY(50%)",
+                                        }}
+                                    ></div>
                                 </div>
                             );
                         })}
