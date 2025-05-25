@@ -1,10 +1,9 @@
-// cmd/server/main.go
-
 package main
 
 import (
 	"log"
 	"net/http"
+	"os"
 	"royaka/config"
 	"royaka/internal/network"
 )
@@ -12,8 +11,17 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = cfg.ServerPort
+	}
+
+	fs := http.FileServer(http.Dir("./assets"))
+	http.Handle("/assets/", http.StripPrefix("/assets/", fs))
+
+	// WebSocket handler
 	http.HandleFunc("/ws", network.HandleWebSocket)
 
-	log.Println("Server running at http://localhost" + cfg.ServerPort)
-	log.Fatal(http.ListenAndServe(cfg.ServerPort, nil))
+	log.Println("Server running at http://localhost:" + port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

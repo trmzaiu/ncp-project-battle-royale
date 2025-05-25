@@ -13,6 +13,7 @@ function App() {
         <WebSocketProvider>
             <Routes>
                 <Route path="/" element={<Entry />} />
+                <Route path="/index.html" element={<Entry />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/lobby" element={<PrivateRoute><Lobby /></PrivateRoute>} />
                 <Route path="/game-simple" element={<PrivateRoute><GameSimple /></PrivateRoute>} />

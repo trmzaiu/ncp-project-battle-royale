@@ -1,15 +1,12 @@
-import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { defineConfig } from 'vite'
 
-// https://vite.dev/config/
 export default defineConfig({
-	plugins: [
-		react(),
-		tailwindcss(),
-	],
-	server: {
-		host: true,
-		port: 5173,
-	},
+  plugins: [react(), tailwindcss()],
+  base: '/royaka-2025-fe/',
+  server: {
+    host: true,
+    port: 5173,
+  },
 })

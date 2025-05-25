@@ -8,6 +8,6 @@ type Config struct {
 
 func LoadConfig() Config {
 	return Config{
-		ServerPort: ":8080", // Default port
+		ServerPort: "8080", // Default port
 	}
 }

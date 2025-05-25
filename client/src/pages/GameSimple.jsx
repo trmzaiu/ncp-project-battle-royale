@@ -457,8 +457,8 @@ export default function GameSimple() {
     // Tower component for reusability 
     const Tower = ({ id, type, health, maxHealth, isOpponent, onClick, disabled }) => {
         const towerImage = type === "king"
-            ? (isOpponent ? "/assets/King_Tower_Red.png" : "/assets/King_Tower_Blue.png")
-            : (isOpponent ? "/assets/Guard_Tower_Red.png" : "/assets/Guard_Tower_Blue.png");
+            ? (isOpponent ? "/royaka-2025-fe/assets/King_Tower_Red.png" : "/royaka-2025-fe/assets/King_Tower_Blue.png")
+            : (isOpponent ? "/royaka-2025-fe/assets/Guard_Tower_Red.png" : "/royaka-2025-fe/assets/Guard_Tower_Blue.png");
 
         return (
             <div
@@ -571,23 +571,6 @@ export default function GameSimple() {
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-500 to-blue-900">
-            {game.playerHealth['king'] > 0 && game.opponentHealth['king'] > 0 &&
-                showLargeAnimation && (
-                    <div
-                        className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
-                        style={{
-                            fontFamily: "'ClashDisplay', sans-serif",
-                            textShadow: "2px 2px 10px rgba(0, 0, 0, 0.5)",
-                            transform: "translateY(-92px)",
-                        }}
-                    >
-                        <div className="text-6xl font-bold text-white px-12 py-6 animate-turnAlert">
-                            {game.playerTurn === localStorage.getItem("username")
-                                ? "YOUR TURN"
-                                : "OPPONENT'S TURN"}
-                        </div>
-                    </div>
-                )}
             <div
                 className="game-container bg-gradient-to-b from-blue-400 to-blue-600 p-2 rounded-lg shadow-xl max-w-2xl mx-auto relative overflow-hidden border-4 border-yellow-500"
                 style={{ fontFamily: "'ClashDisplay', sans-serif" }}
@@ -610,7 +593,7 @@ export default function GameSimple() {
                     <div className="opponent-stats flex items-center">
                         <div className="opponent-avatar relative mx-2">
                             <img
-                                src={`/assets/avatars/Avatar${opponent.user?.avatar}.png`}
+                                src={`/royaka-2025-fe/assets/avatars/Avatar${opponent.user?.avatar}.png`}
                                 alt="avatar"
                                 className="w-12 h-12 rounded-full border-2 border-red-700 shadow-md transform hover:scale-105 transition-transform object-cover"
                             />
@@ -630,7 +613,7 @@ export default function GameSimple() {
                     {/* TURN DISPLAY */}
                     <div className="turn-display text-center transform hover:scale-105 transition-transform mx-2">
                         <div
-                            className={`text-lg px-4 pt-1 rounded-full ${game.playerTurn === user.user?.username
+                            className={`text-sm pt-2 pb-1 md:text-lg px-4 rounded-full ${game.playerTurn === user.user?.username
                                 ? "bg-green-600 text-white animate-pulse"
                                 : "bg-red-600 text-white"
                                 }`}
@@ -643,7 +626,33 @@ export default function GameSimple() {
                 </div>
 
                 {/* BATTLEFIELD - GRID LAYOUT */}
-                <div className="battle-container rounded-lg shadow-inner border-4 border-green-700 overflow-hidden relative w-full aspect-[10/8]">
+                <div className="battle-container rounded-lg shadow-inner border-4 border-green-700 relative w-full aspect-[10/8]">
+                    {game.playerHealth['king'] > 0 && game.opponentHealth['king'] > 0 &&
+                        showLargeAnimation && (
+                            <div
+                                className="absolute flex items-center justify-center z-50 pointer-events-none w-full h-full"
+                                style={{
+                                    fontFamily: "'ClashDisplay', sans-serif",
+                                    textShadow: "2px 2px 10px rgba(0, 0, 0, 0.5)",
+                                }}
+                            >
+                                <div className="text-2xl md:text-5xl text-white animate-turnAlert">
+                                    {game.playerTurn === localStorage.getItem("username")
+                                        ? "YOUR TURN"
+                                        : "OPPONENT'S TURN"}
+                                </div>
+                            </div>
+                        )
+                    }
+
+                    {game.selectedTroop && (
+                        <div className="target-indicators absolute flex items-center justify-center z-50 pointer-events-none w-full h-full">
+                            <div className="text-sm md:text-3xl text-white animate-turnAlert bg-blue-800 bg-opacity-70 px-4 py-2 rounded-full">
+                                🎯 Pick a Target!
+                            </div>
+                        </div>
+                    )}
+
                     {/* Grid background */}
                     <div className="absolute inset-0 grid grid-cols-10 grid-rows-8">
                         {tileMap.map((row, rowIndex) =>
@@ -652,12 +661,12 @@ export default function GameSimple() {
                                     key={`r${rowIndex}-c${colIndex}`}
                                     className="bg-cover flex items-center justify-center"
                                     style={{
-                                        backgroundImage: `url(/assets/tiles/tile_00${tile}.png)`,
+                                        backgroundImage: `url(/royaka-2025-fe/assets/tiles/tile_00${tile}.png)`,
                                     }}
                                 >
                                     {colIndex === 0 && rowIndex === 0 && (
                                         <img
-                                            src="/assets/tiles/tile_0092.png"
+                                            src="/royaka-2025-fe/assets/tiles/tile_0092.png"
                                             alt="Tree"
                                             className="w-full h-full pointer-events-none select-none"
                                             style={{ objectFit: "contain" }}
@@ -665,7 +674,7 @@ export default function GameSimple() {
                                     )}
                                     {colIndex === 0 && rowIndex === 1 && (
                                         <img
-                                            src="/assets/tiles/tile_0090.png"
+                                            src="/royaka-2025-fe/assets/tiles/tile_0090.png"
                                             alt="Tree"
                                             className="w-full h-full pointer-events-none select-none"
                                             style={{ objectFit: "contain" }}
@@ -673,7 +682,7 @@ export default function GameSimple() {
                                     )}
                                     {colIndex === 1 && rowIndex === 0 && (
                                         <img
-                                            src="/assets/tiles/tile_0090.png"
+                                            src="/royaka-2025-fe/assets/tiles/tile_0090.png"
                                             alt="Tree"
                                             className="w-full h-full pointer-events-none select-none"
                                             style={{ objectFit: "contain" }}
@@ -759,13 +768,7 @@ export default function GameSimple() {
                     </div>
 
                     {/* Target indicators */}
-                    {game.selectedTroop && (
-                        <div className="target-indicators absolute top-0 left-0 w-full h-full pointer-events-none">
-                            <div className="text-center text-white text-lg absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-800 bg-opacity-70 px-4 py-2 rounded-full">
-                                🎯 Pick a Target!
-                            </div>
-                        </div>
-                    )}
+
                 </div>
 
                 {/* MANA BAR */}
@@ -808,7 +811,7 @@ export default function GameSimple() {
                         </button>
                     </div>
 
-                    <div className="troop-selection flex flex-wrap justify-center gap-3">
+                    <div className="troop-selection flex flex-wrap justify-between">
                         {Object.entries(game.troops).map(([troopName, troop], index) => (
                             <div key={index} className="relative"
                                 onMouseEnter={() => setHoveredTroop(troopName)}
@@ -861,8 +864,8 @@ export default function GameSimple() {
                                 >
                                     <div className="w-full relative">
                                         <img
-                                            className="w-35 h-37 object-cover"
-                                            src={`/assets/cards/Card_${troop.image}.png`}
+                                            className="w-20 h-22 md:w-37 md:h-37 object-cover"
+                                            src={`/royaka-2025-fe/assets/cards/Card_${troop.image}.png`}
                                             alt={troopName}
                                         />
 
@@ -872,7 +875,7 @@ export default function GameSimple() {
                                         </div>
                                     </div>
                                     <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-1 text-center">
-                                        <span className="text-white text-sm font-semibold truncate block">{troopName}</span>
+                                        <span className="text-white text-[9px] md:text-sm font-semibold truncate block">{troopName}</span>
                                     </div>
                                 </div>
                             </div>
@@ -931,8 +934,8 @@ export default function GameSimple() {
                                         : ""}
                                 </div>
                                 <img src={game.winner === user.user?.username
-                                    ? "/assets/win.png"
-                                    : "/assets/lose.png"}
+                                    ? "/royaka-2025-fe/assets/win.png"
+                                    : "/royaka-2025-fe/assets/lose.png"}
                                     alt={game.winner === user.user?.username
                                         ? "Winner"
                                         : "Loser"} className="w-40 h-40 mx-auto" />

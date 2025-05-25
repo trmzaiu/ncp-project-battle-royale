@@ -34,7 +34,7 @@
     "createdAt": "2025-05-10T01:53:15.2001063+07:00",
     "lastLogin": "2025-05-10T01:53:15.2001063+07:00",
     "isActive": true,
-    "exp": 191,
+    "exp": 221,
     "level": 9,
     "gamesPlayed": 76,
     "gamesWon": 36,
@@ -50,7 +50,7 @@
     "isActive": true,
     "exp": 100,
     "level": 7,
-    "gamesPlayed": 68,
+    "gamesPlayed": 69,
     "gamesWon": 32,
     "avatar": "5",
     "gold": 0

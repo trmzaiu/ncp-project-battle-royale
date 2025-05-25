@@ -55,7 +55,7 @@ export default function Entry() {
                     >
                         <img
                             className="w-60 pointer-events-none"
-                            src="/assets/icon_crown.png"
+                            src="/royaka-2025-fe/assets/icon_crown.png"
                             alt=""
                         />
                     </div>
