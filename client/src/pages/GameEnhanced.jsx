@@ -18,6 +18,7 @@ export default function GameEnhanced() {
     const [isGameInitialized, setIsGameInitialized] = useState(false);
     const [hoveredTroop, setHoveredTroop] = useState(null);
     const [tileSize, setTileSize] = useState(0);
+    const [showLargeAnimation, setShowLargeAnimation] = useState(false);
 
     const [notification, setNotification] = useState({
         show: false,
@@ -36,7 +37,8 @@ export default function GameEnhanced() {
             gameOver: false,
             winner: null,
             message: "",
-            map: []
+            map: [],
+            time: 0,
         };
     }
 
@@ -119,7 +121,7 @@ export default function GameEnhanced() {
                 break;
 
             case "game_state":
-                console.log("Battle Map:", res.data.battleMap);
+                // console.log("Battle Map:", res.data.battleMap);
                 if (res.success) {
                     handleSetMap(res.data);
                 } else {
@@ -137,7 +139,7 @@ export default function GameEnhanced() {
     };
 
     // === Game Initialization ===
-    const initializeGame = (map, player1, troops, userData) => {
+    const initializeGame = (time, map, player1, troops, userData) => {
         setGame({
             isPlayer1: player1 === localStorage.getItem("username"),
             playerMana: userData.mana,
@@ -147,10 +149,16 @@ export default function GameEnhanced() {
             gameOver: false,
             winner: "",
             message: "",
-            map: map
+            map: map,
+            time: time,
         });
 
         setIsGameInitialized(true);
+
+        setShowLargeAnimation(true);
+        setTimeout(() => {
+            setShowLargeAnimation(false);
+        }, 2000);
     };
 
     // === Leave Game ===
@@ -200,12 +208,13 @@ export default function GameEnhanced() {
 
     // === Handle Set Game Response ===
     const handleSetGameState = (msg) => {
-        const { user, opponent, player1, map } = msg;
+        const { user, opponent, player1, map, time } = msg;
         setUser(user);
         setOpponent(opponent);
 
         if (!isGameInitialized) {
             initializeGame(
+                time,
                 map,
                 player1,
                 user.troops,
@@ -240,19 +249,20 @@ export default function GameEnhanced() {
     }
 
     const handleSetMap = (msg) => {
-        const { battleMap } = msg;
+        const { battleMap, timeLeft } = msg;
 
         setGame((prev) => ({
             ...prev,
-            map: battleMap
+            map: battleMap,
+            time: timeLeft
         }));
     };
 
     // === Handle Game Over ===
-    const handleGameOver = (msg) => {
+    const handleGameOver = (res) => {
         setTimeout(() => {
-            setGame((prev) => ({ ...prev, gameOver: true, winner: msg.data.winner.user.username }));
-        }, 4000)
+            setGame((prev) => ({ ...prev, gameOver: true, winner: res.data.winner, message: res.message }));
+        }, 1000)
     };
 
     // === Play Again ===
@@ -274,6 +284,17 @@ export default function GameEnhanced() {
     function isValidDrop(row) {
         return row >= 10;
     }
+
+    function formatDuration(duration) {
+        const maxSeconds = 180; // 3 phút = 180 giây
+        const totalSeconds = Math.min(Math.floor(duration / 1000), maxSeconds);
+
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    }
+
 
     // Tower component for reusability 
     const Tower = ({ type, health, maxHealth, isOpponent }) => {
@@ -397,17 +418,31 @@ export default function GameEnhanced() {
                     </div>
 
                     {/* TIME DISPLAY */}
-                    <div className="time-display text-center transform hover:scale-105 transition-transform mx-2">
+                    <div className="time-display text-center transform hover:scale-105 transition-transform mx-2 pointer-events-none">
                         <div
                             className={`text-lg px-4 pt-1 rounded-full bg-green-600 text-white`}
                         >
-                            12:20
+                            {formatDuration(game.time)}
                         </div>
                     </div>
                 </div>
 
                 {/* BATTLEFIELD - GRID LAYOUT */}
                 <div ref={containerRef} className="battle-container rounded-lg shadow-inner border-4 border-stone-600 overflow-hidden relative w-full aspect-square">
+                    {showLargeAnimation && (
+                        <div
+                            className="absolute flex items-center justify-center z-50 pointer-events-none w-full h-full"
+                            style={{
+                                fontFamily: "'ClashDisplay', sans-serif",
+                                textShadow: "2px 2px 10px rgba(0, 0, 0, 0.5)",
+                            }}
+                        >
+                            <div className="text-2xl md:text-5xl text-white animate-turnAlert">
+                                FIGHT!
+                            </div>
+                        </div>
+                    )}
+
                     {/* Grid background */}
                     <div className="absolute inset-0 grid grid-cols-22 grid-rows-22 group">
                         {tileMap.map((row, rowIndex) =>

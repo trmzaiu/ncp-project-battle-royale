@@ -56,7 +56,7 @@ func NewGame(p1, p2 *model.Player, mode string) *Game {
 		BattleMap:      initialEntities,
 		MapMutex:       sync.RWMutex{},
 		TickerStopChan: make(chan struct{}),
-		TickRate:       1000 * time.Millisecond, // hoặc tùy bạn
+		TickRate:       100 * time.Millisecond, // hoặc tùy bạn
 	}
 
 	game := &Game{
@@ -71,8 +71,11 @@ func NewGame(p1, p2 *model.Player, mode string) *Game {
 
 	if game.Enhanced {
 		game.StartTime = time.Now()
-		game.MaxTime = 3 * time.Minute
-		go game.startTicker()
+		game.MaxTime = 1 * time.Minute
+		time.AfterFunc(3*time.Second, func() {
+			game.StartTime = time.Now()
+			go game.startTicker()
+		})
 	}
 
 	return game
@@ -114,7 +117,7 @@ func (g *Game) SkipTurn(player *model.Player) {
 // ===================== Game Outcome =====================
 
 func (g *Game) CheckWinner() (*model.Player, string) {
-	g.StopGameLoop()
+
 	if g.Player1.Towers["king"].HP <= 0.0 {
 		g.Started = false
 		if !g.Started {
@@ -128,6 +131,7 @@ func (g *Game) CheckWinner() (*model.Player, string) {
 		if !g.Started {
 			AwardEXP(g.Player1.User, g.Player2.User, false)
 		}
+
 		return g.Player1, g.Player1.User.Username + " wins!"
 	}
 
@@ -156,7 +160,6 @@ func (g *Game) CheckWinner() (*model.Player, string) {
 
 func (g *Game) SetWinner(winner *model.Player) {
 	g.StopGameLoop()
-	g.Started = false
 	if winner == g.Player1 {
 		AwardEXP(g.Player1.User, g.Player2.User, false)
 	} else if winner == g.Player2 {
@@ -185,13 +188,11 @@ func AwardEXP(winner, loser *model.User, isDraw bool) {
 func (g *Game) startTicker() {
 	// log.Println("[Game] Ticker started")
 
-	tickTicker := time.NewTicker(200 * time.Millisecond)
-	updateTicker := time.NewTicker(g.BattleSystem.TickRate)
+	tickTicker := time.NewTicker(g.BattleSystem.TickRate)
 	cleanupTicker := time.NewTicker(5 * time.Second) // Dọn dẹp mỗi 5 giây
 
 	defer func() {
 		tickTicker.Stop()
-		updateTicker.Stop()
 		cleanupTicker.Stop()
 		// log.Println("[Game] Ticker stopped")
 	}()
@@ -200,14 +201,9 @@ func (g *Game) startTicker() {
 		select {
 		case <-tickTicker.C:
 			// log.Println("[Game] Tick triggered")
-			g.Tick()
-
-		case <-updateTicker.C:
-			// log.Println("[BattleSystem] Updating battle map...")
+			g.UpdateMana()
 			g.UpdateBattleMap()
-			// log.Println("[BattleSystem] Broadcasting game state...")
 			g.BroadcastGameState()
-
 		case <-cleanupTicker.C:
 			// log.Println("[BattleSystem] Cleaning up dead entities...")
 			g.BattleSystem.CleanupDeadEntities()
@@ -226,7 +222,7 @@ func (g *Game) StopGameLoop() {
 	}
 }
 
-func (g *Game) Tick() {
+func (g *Game) UpdateMana() {
 	now := time.Now()
 
 	// Apply mana regen for both players
@@ -249,6 +245,13 @@ func (g *Game) Tick() {
 // ===================== Game Utility =====================
 
 func (g *Game) BroadcastGameState() {
+	elapsed := time.Since(g.StartTime)
+
+	timeLeft := g.MaxTime - elapsed
+	if timeLeft < 0 {
+		timeLeft = 0
+	}
+
 	for _, player := range []*model.Player{g.Player1, g.Player2} {
 		sendToClient(player.User.Username, utils.Response{
 			Type:    "game_state",
@@ -256,8 +259,25 @@ func (g *Game) BroadcastGameState() {
 			Message: "Game updated",
 			Data: map[string]interface{}{
 				"battleMap": g.BattleSystem.GetEntityList(),
+				"timeLeft":  timeLeft.Milliseconds(),
 			},
 		})
+	}
+
+	if g.Started {
+		if winner, message := g.CheckWinner(); winner != nil || message != "" {
+			for _, player := range []*model.Player{g.Player1, g.Player2} {
+				sendToClient(player.User.Username, utils.Response{
+					Type:    "game_over_response",
+					Success: true,
+					Message: message,
+					Data: map[string]interface{}{
+						"winner": winner,
+					},
+				})
+			}
+			g.StopGameLoop()
+		}
 	}
 }
 

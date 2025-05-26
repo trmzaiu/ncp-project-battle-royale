@@ -160,6 +160,8 @@ export default function GameSimple() {
 
         setIsGameInitialized(true);
 
+        
+
         setShowLargeAnimation(true);
         setTimeout(() => {
             setShowLargeAnimation(false);
@@ -217,7 +219,7 @@ export default function GameSimple() {
         if (game.playerMana < troop.mana)
             return showNotification("Not enough mana.");
 
-        if (troop.type === "heal") {
+        if (troop.type === "healer") {
             sendMessage({
                 type: "heal",
                 data: {

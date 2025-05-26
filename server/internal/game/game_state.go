@@ -53,18 +53,27 @@ func HandleGetGame(conn *websocket.Conn, data json.RawMessage) {
 		return
 	}
 
-	conn.WriteJSON(utils.Response{
+	dataPayload := map[string]interface{}{
+		"user":     currentUser,
+		"opponent": opponent,
+	}
+
+	if room.Game.Enhanced {
+		dataPayload["player1"] = room.Player1.User.Username
+		dataPayload["map"] = room.Game.BattleSystem.GetEntityList()
+		dataPayload["time"] = room.Game.MaxTime.Milliseconds()
+	} else {
+		dataPayload["turn"] = room.Game.Turn
+	}
+
+	payload := utils.Response{
 		Type:    "game_response",
 		Success: true,
 		Message: "Game info loaded",
-		Data: map[string]interface{}{
-			"user":     currentUser,
-			"opponent": opponent,
-			"turn":     room.Game.Turn,
-			"player1":  room.Player1.User.Username,
-			"map":      room.Game.BattleSystem.GetEntityList(),
-		},
-	})
+		Data:    dataPayload,
+	}
+
+	conn.WriteJSON(payload)
 
 	log.Printf("[INFO][GAME] sent game state to %s in room %s", req.Username, req.RoomID)
 }

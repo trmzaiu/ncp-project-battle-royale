@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 
 const WebSocketContext = createContext(null);
+const HOST = import.meta.env.VITE_WS_URL;
 
 export function WebSocketProvider({ children }) {
     const socketRef = useRef(null);
@@ -11,7 +12,7 @@ export function WebSocketProvider({ children }) {
     const WS_URL =
         import.meta.env.PROD
             ? "wss://golang-ws-1067243106608.asia-southeast1.run.app/ws"
-            : "ws://localhost:8080/ws";
+            : HOST || "ws://localhost:8080/ws";
 
 
     // Store all onMessage callbacks to support multiple listeners

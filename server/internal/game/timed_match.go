@@ -16,7 +16,7 @@ import (
 
 const (
 	MAP_SIZE           = 21.0
-	MIN_TROOP_DISTANCE = 0.8
+	MIN_TROOP_DISTANCE = 0.3
 	RIVER_TOP          = 9.0
 	RIVER_BOTTOM       = 12.0
 	BRIDGE_TOLERANCE   = 0.5
@@ -98,7 +98,7 @@ func (g *Game) updateTroop(troop *model.TroopInstance) {
 	}
 
 	// Lấy tốc độ di chuyển cơ bản của troop
-	speed := troop.Template.Speed
+	speed := troop.Template.Speed * 0.1
 
 	// Tìm enemy gần nhất trong phạm vi tấn công
 	enemyInRange, closestEnemy, minDist := g.findClosestEnemyInRange(troop)
@@ -242,18 +242,18 @@ func (g *Game) canAttackTower(troop *model.TroopInstance) (bool, *model.TowerIns
 			}
 
 			// Tính khoảng cách đến tower địch
-			distance := calculateDistance(troop.Position, e.GetPosition())
+			// towerPos := e.GetPosition()
+			dist := calculateDistanceToTower(troop.Position, e.Area)
 
 			// Kiểm tra trong tầm và gần hơn target hiện tại
-			if distance <= troop.Template.Range && distance < minDist {
+			if dist <= troop.Template.Range && dist < minDist {
 				closestTower = e
-				minDist = distance
-				return true, closestTower, minDist
+				minDist = dist
 			}
 		}
 	}
 
-	return false, nil, minDist
+	return closestTower != nil, closestTower, minDist
 }
 
 // findAllyInRange - Tìm bất kỳ đồng minh nào trong phạm vi cho trước
@@ -480,7 +480,7 @@ func (g *Game) updateHealerTroop(troop *model.TroopInstance, isPlayer1 bool) {
 		return
 	}
 
-	speed := troop.Template.Speed
+	speed := troop.Template.Speed * 0.1
 
 	// Kiểm tra xem healer có đang ở phe địch không
 	if g.isHealerInEnemyTerritory(troop, isPlayer1) {
@@ -580,13 +580,13 @@ func (g *Game) followAlly(healer *model.TroopInstance, ally *model.TroopInstance
 		return
 	}
 
-	idealDistance := healer.Template.Range - 1 // Khoảng cách lý tưởng để follow (không quá gần, không quá xa)
+	idealDistance := healer.Template.Range  // Khoảng cách lý tưởng để follow (không quá gần, không quá xa)
 	currentDist := calculateDistance(healer.Position, ally.Position)
 
-	if currentDist > idealDistance+0.5 {
+	if currentDist > idealDistance {
 		// Quá xa -> di chuyển lại gần
 		g.moveTowardPosition(healer, ally.Position, speed*0.9)
-	} else if currentDist < idealDistance-0.5 {
+	} else if currentDist < idealDistance {
 		// Quá gần -> lùi lại một chút để tránh chen chúc
 		g.moveAwayFromPosition(healer, ally.Position, speed*0.5)
 	} else {
@@ -661,8 +661,8 @@ func (g *Game) handleCombatMovement(troop, closestEnemy *model.TroopInstance, mi
 
 		if dist > 0 {
 			// Lùi lại một chút để tránh quá gần
-			newX := troop.Position.X + (dx/dist)*moveSpeed*0.3
-			newY := troop.Position.Y + (dy/dist)*moveSpeed*0.3
+			newX := troop.Position.X + (dx/dist)*moveSpeed*0.5
+			newY := troop.Position.Y + (dy/dist)*moveSpeed*0.5
 
 			if !g.checkCollision(troop, newX, newY) && g.isValidPosition(newX, newY) {
 				troop.Position.X = newX
@@ -681,6 +681,47 @@ func (g *Game) calculateNextPosition(troop *model.TroopInstance, moveSpeed, dire
 	currentX := troop.Position.X
 	currentY := troop.Position.Y
 
+	enemy := g.getClosestEnemy(troop)
+	if enemy != nil {
+		dx := troop.Position.X - enemy.Position.X
+		dy := troop.Position.Y - enemy.Position.Y
+		dist := math.Sqrt(dx*dx + dy*dy)
+
+		rangeVal := troop.Template.Range
+		if dist <= rangeVal {
+			if dist < rangeVal*0.5 {
+				// QUÁ GẦN: lùi nhẹ
+				newX := troop.Position.X + (dx/dist)*moveSpeed*0.5
+				newY := troop.Position.Y + (dy/dist)*moveSpeed*0.5
+
+				if g.isValidPosition(newX, newY) && !g.checkCollision(troop, newX, newY) {
+					return newX, newY
+				}
+			}
+			// Trong tầm vừa đủ: đứng yên đánh
+			return currentX, currentY
+		}
+	}
+
+	// Lấy mục tiêu hiện tại
+	var targetY float64
+	if troop.Template.AggroPriority == "troop" {
+		if enemy := g.getClosestEnemy(troop); enemy != nil {
+			targetY = enemy.Position.Y
+		} else {
+			area := getTargetTowerArea(troop, g)
+			targetY = (area.TopLeft.Y + area.BottomRight.Y) / 2
+		}
+	} else {
+		area := getTargetTowerArea(troop, g)
+		targetY = (area.TopLeft.Y + area.BottomRight.Y) / 2
+	}
+
+	// Nếu mục tiêu ở phía bên kia sông → đi tới cầu gần nhất
+	if isTargetAcrossRiver(troop, targetY) {
+		return g.moveTowardsBridge(currentX, currentY, moveSpeed, directionY)
+	}
+
 	// Kiểm tra trạng thái băng sông
 	isNearRiver := (directionY > 0 && currentY < RIVER_TOP && currentY+moveSpeed >= RIVER_TOP) ||
 		(directionY < 0 && currentY > RIVER_BOTTOM && currentY-moveSpeed <= RIVER_BOTTOM)
@@ -690,6 +731,11 @@ func (g *Game) calculateNextPosition(troop *model.TroopInstance, moveSpeed, dire
 
 	// Trước khi đến sông, di chuyển về phía cầu gần nhất
 	if isNearRiver && !isCrossingRiver && !hasPassedRiver {
+		if !isBridgeColumn(currentX) {
+			// Chỉ move theo trục X nếu chưa đứng đúng cầu
+			return g.strafeToBridge(currentX, currentY, moveSpeed)
+		}
+		// Nếu đã đứng đúng cầu thì đi chéo như thường
 		return g.moveTowardsBridge(currentX, currentY, moveSpeed, directionY)
 	}
 
@@ -702,30 +748,58 @@ func (g *Game) calculateNextPosition(troop *model.TroopInstance, moveSpeed, dire
 	return g.moveTowardsTarget(troop, currentX, currentY, moveSpeed, isPlayer1)
 }
 
-// moveTowardsBridge - Di chuyển về phía cầu gần nhất
-func (g *Game) moveTowardsBridge(currentX, currentY, moveSpeed, directionY float64) (float64, float64) {
+func (g *Game) strafeToBridge(currentX, currentY, moveSpeed float64) (float64, float64) {
 	closestBridge := closestBridgeColumn(currentX)
 	dx := closestBridge - currentX
 
-	newX := currentX
-	newY := currentY
-
-	if utils.AbsFloat(dx) > 0.1 {
-		// Di chuyển chéo về phía cầu
-		if dx > 0 {
-			newX = currentX + min(moveSpeed, dx)
-		} else {
-			newX = currentX + max(-moveSpeed, dx)
-		}
-		// Di chuyển Y chậm hơn khi đi tới cầu
-		newY = currentY + directionY*moveSpeed*0.5
+	var moveX float64
+	if dx > 0 {
+		moveX = min(moveSpeed, dx)
 	} else {
-		// Gần cầu, căn chỉnh và tiến về phía trước
-		newX = closestBridge
-		newY = currentY + directionY*moveSpeed
+		moveX = max(-moveSpeed, dx)
+	}
+
+	return currentX + moveX, currentY // Chỉ đổi X, không đổi Y
+}
+
+// moveTowardsBridge - Di chuyển về phía cầu gần nhất
+func (g *Game) moveTowardsBridge(currentX, currentY, moveSpeed, directionY float64) (float64, float64) {
+	closestBridge := closestBridgeColumn(currentX)
+
+	// Vector hướng đến cầu
+	dx := closestBridge - currentX
+	dy := directionY * 1.0 // luôn muốn đi về phía sông theo Y
+
+	// Chuẩn hóa vector
+	mag := math.Sqrt(dx*dx + dy*dy)
+	if mag == 0 {
+		return currentX, currentY
+	}
+	nx := dx / mag
+	ny := dy / mag
+
+	// Di chuyển theo hướng đó
+	newX := currentX + nx*moveSpeed
+	newY := currentY + ny*moveSpeed
+
+	if newY >= RIVER_TOP && newY <= RIVER_BOTTOM {
+		// Clamp lại X nếu đang ở trong sông
+		newX = closestBridge*moveSpeed
 	}
 
 	return newX, newY
+}
+
+func isAcrossRiver(currentY, targetY float64) bool {
+	// Một bên ở trên RIVER_TOP và một bên ở dưới RIVER_BOTTOM → khác phía
+	return (currentY < RIVER_TOP && targetY > RIVER_BOTTOM) || (currentY > RIVER_BOTTOM && targetY < RIVER_TOP)
+}
+
+func isTargetAcrossRiver(troop *model.TroopInstance, targetY float64) bool {
+	y := troop.Position.Y
+
+	// Player 1 từ dưới lên, Player 2 từ trên xuống
+	return (y < RIVER_TOP && targetY > RIVER_BOTTOM) || (y > RIVER_BOTTOM && targetY < RIVER_TOP)
 }
 
 // moveAcrossRiver - Di chuyển băng sông trên cầu
@@ -766,10 +840,10 @@ func (g *Game) moveTowardsTarget(troop *model.TroopInstance, currentX, currentY,
 		enemy := g.getClosestEnemy(troop)
 		if enemy != nil {
 			// Tạo khu vực nhỏ xung quanh enemy
-			targetArea.TopLeft.X = enemy.Position.X - 0.3
-			targetArea.TopLeft.Y = enemy.Position.Y - 0.3
-			targetArea.BottomRight.X = enemy.Position.X + 0.3
-			targetArea.BottomRight.Y = enemy.Position.Y + 0.3
+			targetArea.TopLeft.X = enemy.Position.X - MIN_TROOP_DISTANCE
+			targetArea.TopLeft.Y = enemy.Position.Y - MIN_TROOP_DISTANCE
+			targetArea.BottomRight.X = enemy.Position.X + MIN_TROOP_DISTANCE
+			targetArea.BottomRight.Y = enemy.Position.Y + MIN_TROOP_DISTANCE
 		} else {
 			targetArea = getTargetTowerArea(troop, g)
 		}
@@ -781,20 +855,38 @@ func (g *Game) moveTowardsTarget(troop *model.TroopInstance, currentX, currentY,
 	targetCenterX := (targetArea.TopLeft.X + targetArea.BottomRight.X) / 2
 	targetCenterY := (targetArea.TopLeft.Y + targetArea.BottomRight.Y) / 2
 
-	// Tính vector di chuyển
+	// Nếu mục tiêu ở bên kia sông → đi về cầu gần nhất
+	if isAcrossRiver(currentY, targetCenterY) {
+		closestBridge := closestBridgeColumn(currentX)
+		dx := closestBridge - currentX
+		dy := targetCenterY - currentY
+		dist := math.Sqrt(dx*dx + dy*dy)
+		if dist > 0 {
+			dx /= dist
+			dy /= dist
+		}
+
+		moveX := dx * moveSpeed
+		moveY := dy * moveSpeed
+
+		newX := currentX + moveX
+		newY := currentY + moveY
+		return newX, newY
+	}
+
+	// Nếu cùng phía sông → di chuyển thẳng
 	dx := targetCenterX - currentX
 	dy := targetCenterY - currentY
 	dist := math.Sqrt(dx*dx + dy*dy)
 
-	// Chuẩn hóa hướng
 	if dist > 0 {
 		dx /= dist
 		dy /= dist
 	}
 
 	// Áp dụng di chuyển với tránh khu vực tower
-	moveX := dx * moveSpeed * MIN_TROOP_DISTANCE
-	moveY := dy * moveSpeed * MIN_TROOP_DISTANCE
+	moveX := dx * moveSpeed
+	moveY := dy * moveSpeed
 
 	newX := currentX + moveX
 	newY := currentY + moveY
@@ -878,23 +970,6 @@ func (g *Game) moveInSameDirection(healer *model.TroopInstance, ally *model.Troo
 	}
 }
 
-// moveToFindAllies - Di chuyển để tìm đồng minh khi không có ai để follow
-func (g *Game) moveToFindAllies(healer *model.TroopInstance, speed float64, isPlayer1 bool) {
-	// Di chuyển chậm về phía giữa map để có thể gặp đồng minh
-	centerX := MAP_SIZE / 2
-	directionY := getDirectionY(isPlayer1)
-
-	// Di chuyển về trung tâm theo trục X
-	if healer.Position.X < centerX {
-		healer.Position.X += speed * 0.3
-	} else if healer.Position.X > centerX {
-		healer.Position.X -= speed * 0.3
-	}
-
-	// Di chuyển chậm về phía trước
-	healer.Position.Y += directionY * speed * 0.4
-}
-
 // moveHealerBackToSafety - Di chuyển healer về vùng an toàn qua cầu
 func (g *Game) moveHealerBackToSafety(healer *model.TroopInstance, speed float64, isPlayer1 bool) {
 	currentX := healer.Position.X
@@ -913,7 +988,7 @@ func (g *Game) moveHealerBackToSafety(healer *model.TroopInstance, speed float64
 
 	// Nếu đã ở vùng an toàn, dừng lại và chờ đồng minh
 	if (isPlayer1 && currentY < safeZoneY) || (!isPlayer1 && currentY > safeZoneY) {
-		g.waitForAlliesAtSafeZone(healer, speed*0.3, isPlayer1)
+		g.waitForAlliesAtSafeZone(healer, speed*0.8, isPlayer1)
 		return
 	}
 
@@ -936,7 +1011,7 @@ func (g *Game) moveHealerBackToSafety(healer *model.TroopInstance, speed float64
 		closestBridge := closestBridgeColumn(currentX)
 		dx := closestBridge - currentX
 
-		if utils.AbsFloat(dx) > 0.5 {
+		if utils.AbsFloat(dx) > 0.05 {
 			// Di chuyển chéo về phía cầu
 			if dx > 0 {
 				healer.Position.X += min(speed*0.7, dx)
@@ -1297,9 +1372,9 @@ func decideAttackTargets(aggroPriority string, enemyInRange, canAttackTower bool
 // adjustMoveSpeed - Điều chỉnh tốc độ di chuyển dựa trên trạng thái combat
 func adjustMoveSpeed(speed float64, shouldAttackTroop, shouldAttackTower bool) float64 {
 	if shouldAttackTroop {
-		return speed * 0.3
+		return speed * 0.8
 	} else if shouldAttackTower {
-		return speed * 0.5
+		return speed * 0.6
 	}
 	return speed
 }
@@ -1356,12 +1431,20 @@ func calculateDistance(pos1, pos2 model.Position) float64 {
 	return math.Sqrt(dx*dx + dy*dy)
 }
 
+func calculateDistanceToTower(pos model.Position, area model.Area) float64 {
+	// Tính điểm gần nhất trên hình chữ nhật tower
+	closestX := utils.ClampFloat(pos.X, area.TopLeft.X, area.BottomRight.X)
+	closestY := utils.ClampFloat(pos.Y, area.TopLeft.Y, area.BottomRight.Y)
+
+	dx := pos.X - closestX
+	dy := pos.Y - closestY
+	return math.Sqrt(dx*dx + dy*dy)
+}
+
 // isBridgeColumn - Kiểm tra có phải cột cầu không với tolerance được điều chỉnh
 func isBridgeColumn(x float64) bool { // Vị trí 2 cầu
-	bridgeTolerance := 0.5 // Tăng tolerance để dễ dàng đi qua cầu hơn
-
 	for _, col := range BRIDGE_COLUMNS {
-		if math.Abs(x-col) <= bridgeTolerance {
+		if math.Abs(x-col) <= 0.5 {
 			return true
 		}
 	}
