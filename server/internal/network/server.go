@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"royaka/internal/game"
 	"royaka/internal/utils"
@@ -41,7 +42,21 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("[WS] WebSocket connection established")
 
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+		for {
+			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(10*time.Second)); err != nil {
+				log.Printf("[ERROR][WS] Ping failed: %v", err)
+				conn.Close()
+				return
+			}
+			<-ticker.C
+		}
+	}()
+
 	for {
+
 		if !readAndProcessMessage(conn) {
 			break
 		}

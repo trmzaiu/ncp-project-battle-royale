@@ -16,7 +16,7 @@ func HandleLeaveGame(conn *websocket.Conn, data json.RawMessage) {
 		conn.WriteJSON(utils.Response{
 			Type:    "leave_game_response",
 			Success: false,
-			Message: "",
+			Message: "......",
 		})
 		return
 	}
