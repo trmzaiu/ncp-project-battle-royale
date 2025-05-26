@@ -22,11 +22,11 @@ export default function Lobby() {
     };
 
     useEffect(() => {
-        if (!localStorage.getItem("session_id")) {
-            showNotification("Session expired. Redirecting to login...");
-            setTimeout(() => navigate("/auth"), 1500);
-            return;
-        }
+        // if (!localStorage.getItem("session_id")) {
+        //     showNotification("Session expired. Redirecting to login...");
+        //     setTimeout(() => navigate("/auth"), 1500);
+        //     return;
+        // }
 
         const unsubscribe = subscribe((res) => {
             selectedModeRef.current = selectedMode;

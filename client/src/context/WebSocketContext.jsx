@@ -7,11 +7,10 @@ export function WebSocketProvider({ children }) {
     const socketRef = useRef(null);
     const reconnectTimeout = useRef(null);
     const [isConnected, setIsConnected] = useState(false);
-    // Dùng biến môi trường để đổi giữa local & production
     const WS_URL =
         import.meta.env.PROD
             ? "wss://golang-ws-1067243106608.asia-southeast1.run.app/ws"
-            : "ws://localhost:8080/ws";
+            : "ws://zang:8080/ws";
 
 
     // Store all onMessage callbacks to support multiple listeners

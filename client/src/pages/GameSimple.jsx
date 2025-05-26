@@ -72,11 +72,11 @@ export default function GameSimple() {
             return;
         }
 
-        if (!localStorage.getItem("room_id")) {
-            showNotification("Room not found. Redirecting to lobby...");
-            navigate("/lobby")
-            return;
-        }
+        // if (!localStorage.getItem("room_id")) {
+        //     showNotification("Room not found. Redirecting to lobby...");
+        //     navigate("/lobby")
+        //     return;
+        // }
 
         const unsubscribe = subscribe(handleMessage);
         sendMessage({
@@ -217,7 +217,7 @@ export default function GameSimple() {
         if (game.playerMana < troop.mana)
             return showNotification("Not enough mana.");
 
-        if (troop.type === "heal") {
+        if (troop.type === "healer") {
             sendMessage({
                 type: "heal",
                 data: {
@@ -891,18 +891,18 @@ export default function GameSimple() {
                 )}
 
                 {/* GAME OVER MODAL */}
-                {game.gameOver && (
-                    <div className="game-over-modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-                        <div className="modal-content bg-gradient-to-b from-blue-800 to-blue-900 rounded-lg shadow-xl p-6 max-w-md w-full border-4 border-yellow-500 transform scale-105 animate-pulse">
+                { game.gameOver && (
+                    <div className="game-over-modal fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+                        <div className="modal-content bg-gradient-to-b from-blue-800 to-blue-900 rounded-lg shadow-xl p-6 max-w-md w-full border-4 border-yellow-500 transform scale-105">
                             {/* Crown decoration */}
-                            <div className="crown-decoration absolute -top-10 left-1/2 transform -translate-x-1/2 text-6xl">
+                            <div className="crown-decoration absolute -top-10 left-1/2 transform -translate-x-1/2 text-6xl animate-pulse">
                                 {game.winner === localStorage.getItem("username")
                                     ? "👑"
                                     : "☠️"}
                             </div>
 
                             <h2
-                                className={`modal-title text-3xl mb-4 text-center ${game.winner === localStorage.getItem("username")
+                                className={`modal-title text-3xl mb-4 text-center animate-pulse ${game.winner === localStorage.getItem("username")
                                     ? "text-yellow-400"
                                     : "text-red-400"
                                     }`}
@@ -912,7 +912,7 @@ export default function GameSimple() {
                                     : "DEFEAT"}
                             </h2>
 
-                            <div className="modal-body text-center">
+                            <div className="modal-body text-center animate-pulse">
                                 {(() => {
                                     let victoryMessage = "";
                                     if (game.winner === localStorage.getItem("username")) {
@@ -941,7 +941,7 @@ export default function GameSimple() {
                                         : "Loser"} className="w-40 h-40 mx-auto" />
                             </div>
 
-                            <div className="modal-buttons text-center">
+                            <div className="modal-buttons text-center animate-pulse">
                                 <button
                                     className="play-again-btn bg-gradient-to-r from-yellow-400 to-yellow-500 text-blue-900 px-8 py-3 rounded-full text-lg border-4 border-yellow-600 shadow-lg transform hover:scale-105 transition-transform"
                                     onClick={handlePlayAgain}
