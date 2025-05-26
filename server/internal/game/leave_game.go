@@ -16,7 +16,7 @@ func HandleLeaveGame(conn *websocket.Conn, data json.RawMessage) {
 		conn.WriteJSON(utils.Response{
 			Type:    "leave_game_response",
 			Success: false,
-			Message: "......",
+			Message: "",
 		})
 		return
 	}
@@ -60,12 +60,13 @@ func HandleLeaveGame(conn *websocket.Conn, data json.RawMessage) {
 		sendToClient(winner.User.Username, payload)
 	}
 
+	room.Game.StopGameLoop()
+
 	conn.WriteJSON(utils.Response{
 		Type:    "leave_game_response",
 		Success: true,
 		Message: "Left room and winner set if applicable",
 	})
-	room.Game.StopGameLoop()
 }
 
 func HandleDisconnect(conn *websocket.Conn) {

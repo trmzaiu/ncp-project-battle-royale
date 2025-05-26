@@ -104,12 +104,12 @@
     "createdAt": "2025-05-26T17:04:10.7793889+07:00",
     "lastLogin": "2025-05-26T17:04:10.7793889+07:00",
     "isActive": true,
-    "exp": 90,
-    "level": 2,
-    "gamesPlayed": 12,
-    "gamesWon": 5,
+    "exp": 6014,
+    "level": 12,
+    "gamesPlayed": 778,
+    "gamesWon": 768,
     "avatar": "12",
-    "gold": 16
+    "gold": 304616
   },
   {
     "id": "20250526170430RRNNOi7A",
@@ -118,9 +118,9 @@
     "createdAt": "2025-05-26T17:04:30.7718887+07:00",
     "lastLogin": "2025-05-26T17:04:30.7718887+07:00",
     "isActive": true,
-    "exp": 30,
+    "exp": 60,
     "level": 2,
-    "gamesPlayed": 12,
+    "gamesPlayed": 778,
     "gamesWon": 3,
     "avatar": "10",
     "gold": 110

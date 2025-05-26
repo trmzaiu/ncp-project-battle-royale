@@ -10,7 +10,7 @@ export default function GameEnhanced() {
     const containerRef = useRef(null);
     const damageTimeoutRef = useRef(null);
     const healTimeoutRef = useRef(null);
-    // const hasLeftGameRef = useRef(false);
+    const hasLeftGameRef = useRef(false);
 
     const [user, setUser] = useState({});
     const [opponent, setOpponent] = useState({});
@@ -83,7 +83,7 @@ export default function GameEnhanced() {
 
         return () => {
             unsubscribe();
-            // leaveGame();
+            leaveGame();
             if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
             if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
         };
@@ -162,19 +162,19 @@ export default function GameEnhanced() {
     };
 
     // === Leave Game ===
-    // const leaveGame = () => {
-    //     if (hasLeftGameRef.current) return;
+    const leaveGame = () => {
+        if (hasLeftGameRef.current) return;
 
-    //     hasLeftGameRef.current = true;
-    //     sendMessage({
-    //         type: "leave_game",
-    //         data: {
-    //             room_id: localStorage.getItem("room_id"),
-    //             username: localStorage.getItem("username"),
-    //         },
-    //     });
-    //     localStorage.removeItem("room_id");
-    // };
+        hasLeftGameRef.current = true;
+        sendMessage({
+            type: "leave_game",
+            data: {
+                room_id: localStorage.getItem("room_id"),
+                username: localStorage.getItem("username"),
+            },
+        });
+        localStorage.removeItem("room_id");
+    };
 
     // === Select Troop ===
     const selectTroop = (troopName) => {
@@ -231,12 +231,9 @@ export default function GameEnhanced() {
             setGame((prev) => ({
                 ...prev,
                 troops: player.troops,
+                playerMana: player.mana,
             }));
         }
-        // setGame((prev) => ({
-        //     ...prev,
-        //     map: map
-        // }));
     }
 
     // === Handle Set Mana ===
@@ -260,8 +257,9 @@ export default function GameEnhanced() {
 
     // === Handle Game Over ===
     const handleGameOver = (res) => {
+        console.log()
         setTimeout(() => {
-            setGame((prev) => ({ ...prev, gameOver: true, winner: res.data.winner, message: res.message }));
+            setGame((prev) => ({ ...prev, gameOver: true, winner: res.data.winner.user.username ?? "", message: res.message }));
         }, 1000)
     };
 
@@ -732,47 +730,67 @@ export default function GameEnhanced() {
                             <div className="crown-decoration absolute -top-10 left-1/2 transform -translate-x-1/2 text-6xl animate-pulse">
                                 {game.winner === user.user?.username
                                     ? "👑"
-                                    : "☠️"}
+                                    : game.winner === ""
+                                        ? "⚔️"
+                                        : "☠️"}
                             </div>
 
                             <h2
-                                className={`modal-title text-3xl mb-4 text-center animate-pulse ${game.winner === user.user?.username
+                                className={`modal-title text-3xl mb-4 text-center ${game.winner === user.user?.username
                                     ? "text-yellow-400"
-                                    : "text-red-400"
+                                    : game.winner === ""
+                                        ? "text-gray-300"
+                                        : "text-red-400"
                                     }`}
                             >
                                 {game.winner === user.user?.username
                                     ? "VICTORY!"
-                                    : "DEFEAT"}
+                                    : game.winner === ""
+                                        ? "DRAW"
+                                        : "DEFEAT"}
                             </h2>
 
                             <div className="modal-body text-center animate-pulse">
                                 {(() => {
-                                    let victoryMessage = "";
-                                    if (game.winner === localStorage.getItem("username")) {
-                                        victoryMessage = game.message !== ""
+                                    let message = "";
+                                    if (game.winner === user.user?.username) {
+                                        message = game.message !== ""
                                             ? "You have conquered your opponent's kingdom!"
                                             : "You won by opponent leaving the battle!";
+                                    } else if (game.winner === "") {
+                                        message = "Both kingdoms fought bravely. No victor today.";
                                     } else {
-                                        victoryMessage = "Your kingdom has fallen to the enemy!";
+                                        message = "Your kingdom has fallen to the enemy!";
                                     }
                                     return (
                                         <p className="text-white text-lg mb-3">
-                                            {victoryMessage}
+                                            {message}
                                         </p>
                                     );
                                 })()}
                                 <div className="exp-gain text-yellow-300 text-2xl mt-3 animate-pulse">
                                     {game.winner === user.user?.username
                                         ? "+30 XP"
-                                        : ""}
+                                        : game.winner === ""
+                                            ? "+10 XP"
+                                            : ""}
                                 </div>
-                                <img src={game.winner === user.user?.username
-                                    ? "/royaka-2025-fe/assets/win.png"
-                                    : "/royaka-2025-fe/assets/lose.png"}
-                                    alt={game.winner === user.user?.username
-                                        ? "Winner"
-                                        : "Loser"} className="w-40 h-40 mx-auto" />
+                                <img
+                                    src={
+                                        game.winner === user.user?.username
+                                            ? "/royaka-2025-fe/assets/win.png"
+                                            : game.winner === ""
+                                                ? "/royaka-2025-fe/assets/dra.png"
+                                                : "/royaka-2025-fe/assets/lose.png"
+                                    }
+                                    alt={
+                                        game.winner === user.user?.username
+                                            ? "Winner"
+                                            : game.winner === ""
+                                                ? "Draw"
+                                                : "Loser"
+                                    }
+                                    className="w-40 h-40 mx-auto" />
                             </div>
 
                             <div className="modal-buttons text-center animate-pulse">

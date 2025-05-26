@@ -1316,18 +1316,22 @@ func (g *Game) addTowerDestroyReward(playerName string, killedTower *model.Tower
 // CheckWinCondition - Kiểm tra điều kiện thắng
 func (g *Game) checkWinCondition() {
 	// Chuyển gold cho users (lưu vào database)
-	g.Player1.User.Gold += g.Player1.Gold
-	g.Player2.User.Gold += g.Player2.Gold
-
-	// Kiểm tra điều kiện thắng: phá được King Tower
-	if g.Player2.Towers["king"].HP <= 0 {
-		fmt.Printf("Player 1 (%s) wins by destroying the King Tower!\n", g.Player1.User.Username)
-		return
-	}
-
-	if g.Player1.Towers["king"].HP <= 0 {
-		fmt.Printf("Player 2 (%s) wins by destroying the King Tower!\n", g.Player2.User.Username)
-		return
+	if g.Player2.Towers["king"].HP <= 0 || g.Player1.Towers["king"].HP <= 0 {
+		winner, result := g.CheckWinner()
+		if result == "" {
+			return
+		}
+		gameOverPayload := utils.Response{
+			Type:    "game_over_response",
+			Success: true,
+			Message: result,
+			Data: map[string]interface{}{
+				"winner": winner,
+			},
+		}
+		g.StopGameLoop()
+		sendToClient(g.Player1.User.Username, gameOverPayload)
+		sendToClient(g.Player2.User.Username, gameOverPayload)
 	}
 }
 

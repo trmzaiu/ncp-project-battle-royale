@@ -100,12 +100,8 @@ func (p *Player) RotateTroop(usedTroopName string) {
 			break
 		}
 	}
-	if usedIndex == -1 || p.Mana < p.Troops[usedIndex].MANA || len(p.TroopQueue) == 0 {
-		return
-	}
 
 	usedTroop := p.Troops[usedIndex]
-	p.Mana -= usedTroop.MANA
 
 	newTroop := p.TroopQueue[0]
 	p.TroopQueue = p.TroopQueue[1:]

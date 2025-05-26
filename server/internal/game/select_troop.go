@@ -105,6 +105,8 @@ func HandleSelectTroop(conn *websocket.Conn, data json.RawMessage) {
 		return
 	}
 
+	player.Mana -= selectedTemplate.MANA
+
 	player.RotateTroop(req.Troop)
 
 	// Tạo troop instance
