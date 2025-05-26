@@ -104,10 +104,10 @@
     "createdAt": "2025-05-26T17:04:10.7793889+07:00",
     "lastLogin": "2025-05-26T17:04:10.7793889+07:00",
     "isActive": true,
-    "exp": 6014,
+    "exp": 6044,
     "level": 12,
-    "gamesPlayed": 778,
-    "gamesWon": 768,
+    "gamesPlayed": 780,
+    "gamesWon": 769,
     "avatar": "12",
     "gold": 304616
   },
@@ -118,10 +118,10 @@
     "createdAt": "2025-05-26T17:04:30.7718887+07:00",
     "lastLogin": "2025-05-26T17:04:30.7718887+07:00",
     "isActive": true,
-    "exp": 60,
+    "exp": 90,
     "level": 2,
-    "gamesPlayed": 778,
-    "gamesWon": 3,
+    "gamesPlayed": 780,
+    "gamesWon": 4,
     "avatar": "10",
     "gold": 110
   }

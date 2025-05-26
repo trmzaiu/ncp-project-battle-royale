@@ -29,63 +29,49 @@ func NewBattleSystem(tickRate time.Duration) *BattleSystem {
 	}
 }
 
-// AddEntity safely adds a new entity
-func (bs *BattleSystem) AddEntity(entity BattleEntity) {
+func (bs *BattleSystem) AddEntity(e BattleEntity) {
 	bs.MapMutex.Lock()
 	defer bs.MapMutex.Unlock()
-	positionKey := entity.GetPosition().String() // Make sure Position.String() returns "x_y" format
-	bs.BattleMap[positionKey] = append(bs.BattleMap[positionKey], entity)
+	pos := e.GetPosition().String()
+	bs.BattleMap[pos] = append(bs.BattleMap[pos], e)
 }
 
-// GetEntities safely returns a copy of all entities
 func (bs *BattleSystem) GetEntities() []BattleEntity {
-    bs.MapMutex.RLock()
-    defer bs.MapMutex.RUnlock()
-
-    var entities []BattleEntity
-    for _, list := range bs.BattleMap {
-        // log.Printf("[DEBUG] Pos %s has %d entities", k, len(list))
-        entities = append(entities, list...)
-    }
-    return entities
+	bs.MapMutex.RLock()
+	defer bs.MapMutex.RUnlock()
+	var result []BattleEntity
+	for _, list := range bs.BattleMap {
+		result = append(result, list...)
+	}
+	return result
 }
 
 func (bs *BattleSystem) GetEntityList() []BattleEntity {
-    bs.MapMutex.RLock()
-    defer bs.MapMutex.RUnlock()
-
-    var entities []BattleEntity
-    for _, list := range bs.BattleMap {
-        entities = append(entities, list...)
-    }
-    return entities
+	return bs.GetEntities() // alias
 }
 
 func (bs *BattleSystem) CleanupDeadEntities() {
 	bs.MapMutex.Lock()
 	defer bs.MapMutex.Unlock()
 
-	for posKey, ents := range bs.BattleMap {
-		alive := ents[:0] // reuse underlying array
-		for _, e := range ents {
+	for key, list := range bs.BattleMap {
+		live := list[:0]
+		for _, e := range list {
 			if e.IsAlive() {
-				alive = append(alive, e)
+				live = append(live, e)
 			}
 		}
-		if len(alive) == 0 {
-			delete(bs.BattleMap, posKey)
+		if len(live) == 0 {
+			delete(bs.BattleMap, key)
 		} else {
-			bs.BattleMap[posKey] = alive
+			bs.BattleMap[key] = live
 		}
 	}
 }
 
-// Stop safely stops the battle system
 func (bs *BattleSystem) Stop() {
 	select {
 	case bs.TickerStopChan <- struct{}{}:
-		// Stop signal sent
 	default:
-		// Already stopping or stopped
 	}
 }

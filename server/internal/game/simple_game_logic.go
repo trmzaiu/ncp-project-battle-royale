@@ -5,6 +5,9 @@ import (
 	"royaka/internal/model"
 )
 
+// ===================== Public Turn APIs =====================
+
+// PlayTurnSimple handles attacking a tower using a troop.
 func (g *Game) PlayTurnSimple(player *model.Player, troop *model.Troop, tower string) (int, bool, string) {
 	if player.Mana < troop.MANA {
 		return 0, false, manaRequestMessage
@@ -32,31 +35,27 @@ func (g *Game) PlayTurnSimple(player *model.Player, troop *model.Troop, tower st
 	}
 	if destroyed {
 		message += " and destroyed it!"
-	}
-
-	player.Turn++
-
-	if !destroyed {
-		g.SwitchTurn()
-	} else {
 		player.Mana += 3
 		if player.Mana > 10 {
 			player.Mana = 10
 		}
+	} else {
+		g.SwitchTurn()
 	}
 
+	player.Turn++
 	return int(damage), isCrit, message
 }
 
+// HealTower allows a healing troop to heal the lowest-HP tower.
 func (g *Game) HealTower(player *model.Player, troop *model.Troop) (int, *model.Tower, string) {
 	if player.Mana < troop.MANA {
 		return 0, nil, manaRequestMessage
 	}
-	player.Mana -= troop.MANA
-
 	if troop.Type != "heal" {
 		return 0, nil, "Only healing troop can heal towers"
 	}
+	player.Mana -= troop.MANA
 
 	lowest := model.GetLowestHPTower(player)
 	if lowest == nil {
@@ -64,7 +63,6 @@ func (g *Game) HealTower(player *model.Player, troop *model.Troop) (int, *model.
 	}
 
 	healAmount, isCrit := troop.CalculateHeal(player.User.Level)
-
 	lowest.HP += float64(healAmount)
 	if lowest.HP > lowest.MaxHP {
 		lowest.HP = lowest.MaxHP
@@ -81,14 +79,17 @@ func (g *Game) HealTower(player *model.Player, troop *model.Troop) (int, *model.
 	return int(healAmount), lowest, message
 }
 
-// ===================== Combat =====================
 
+// ===================== Combat Core =====================
+
+// AttackTower applies damage from troop to tower and returns result.
 func (g *Game) AttackTower(player *model.Player, troop *model.Troop, tower *model.Tower) (float64, bool, bool) {
 	atk, isCrit := troop.CalculateDamage(player.User.Level)
 	damageDealt, destroyed := tower.TakeDamage(atk, player.User.Level)
 	return damageDealt, isCrit, destroyed
 }
 
+// getTargetTower returns the opponent's tower based on target string.
 func (g *Game) getTargetTower(p *model.Player, towerType string) (*model.Tower, error) {
 	op := g.Opponent(p)
 	switch towerType {

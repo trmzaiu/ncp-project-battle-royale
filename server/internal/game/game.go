@@ -41,7 +41,6 @@ func NewGame(p1, p2 *model.Player, mode string) *Game {
 	p1.TowerInstances = model.CreateTowerInstances(p1.Towers, p1.User.Username, true)
 	p2.TowerInstances = model.CreateTowerInstances(p2.Towers, p2.User.Username, false)
 
-	// Combine all tower instances
 	initialEntities := make(map[string][]BattleEntity)
 	for _, ti := range p1.TowerInstances {
 		posKey := ti.GetPosition().String()
@@ -56,7 +55,7 @@ func NewGame(p1, p2 *model.Player, mode string) *Game {
 		BattleMap:      initialEntities,
 		MapMutex:       sync.RWMutex{},
 		TickerStopChan: make(chan struct{}),
-		TickRate:       100 * time.Millisecond, // hoặc tùy bạn
+		TickRate:       100 * time.Millisecond,
 	}
 
 	game := &Game{
@@ -85,7 +84,7 @@ func NewGame(p1, p2 *model.Player, mode string) *Game {
 
 func (g *Game) CurrentPlayer() *model.Player {
 	if g.Enhanced {
-		return nil // No turn-based play in enhanced mode
+		return nil
 	}
 	if g.Turn == g.Player1.User.Username {
 		return g.Player1
@@ -114,10 +113,63 @@ func (g *Game) SkipTurn(player *model.Player) {
 	g.SwitchTurn()
 }
 
+// ===================== Game Tick & Loop =====================
+
+func (g *Game) startTicker() {
+	manaTicker := time.NewTicker(200 * time.Millisecond)
+	tickTicker := time.NewTicker(g.BattleSystem.TickRate)
+	cleanupTicker := time.NewTicker(5 * time.Second)
+
+	defer func() {
+		tickTicker.Stop()
+		cleanupTicker.Stop()
+	}()
+
+	for {
+		select {
+		case <-tickTicker.C:
+			g.UpdateBattleMap()
+			g.BroadcastGameState()
+		case <-manaTicker.C:
+			g.UpdateMana()
+		case <-cleanupTicker.C:
+			g.BattleSystem.CleanupDeadEntities()
+		case <-g.BattleSystem.TickerStopChan:
+			return
+		}
+	}
+}
+
+func (g *Game) StopGameLoop() {
+	if !g.Started {
+		g.Started = false
+		close(g.TickerStopChan)
+	}
+}
+
+func (g *Game) UpdateMana() {
+	now := time.Now()
+
+	for _, player := range []*model.Player{g.Player1, g.Player2} {
+		if player.Mana < 10 && now.Sub(player.LastManaRegen) >= 2*time.Second {
+			player.Mana++
+			player.LastManaRegen = now
+
+			sendToClient(player.User.Username, utils.Response{
+				Type:    "mana_update",
+				Success: true,
+				Message: fmt.Sprintf("Mana: %d", player.Mana),
+				Data: map[string]interface{}{
+					"player": player,
+				},
+			})
+		}
+	}
+}
+
 // ===================== Game Outcome =====================
 
 func (g *Game) CheckWinner() (*model.Player, string) {
-
 	if g.Enhanced {
 		g.Player1.User.Gold += g.Player1.Gold
 		g.Player2.User.Gold += g.Player2.Gold
@@ -182,66 +234,10 @@ func AwardEXP(winner, loser *model.User, isDraw bool) {
 	model.SaveUser(loser)
 }
 
-// ===================== Game Tick =====================
-
-func (g *Game) startTicker() {
-	manaTicker := time.NewTicker(200 * time.Millisecond) // Cập nhật mana mỗi 200ms
-	tickTicker := time.NewTicker(g.BattleSystem.TickRate)
-	cleanupTicker := time.NewTicker(5 * time.Second) // Dọn dẹp mỗi 5 giây
-
-	defer func() {
-		tickTicker.Stop()
-		cleanupTicker.Stop()
-	}()
-
-	for {
-		select {
-		case <-tickTicker.C:
-			g.UpdateBattleMap()
-			g.BroadcastGameState()
-		case <-manaTicker.C:
-			g.UpdateMana()
-		case <-cleanupTicker.C:
-			g.BattleSystem.CleanupDeadEntities()
-
-		case <-g.BattleSystem.TickerStopChan:
-			return
-		}
-	}
-}
-
-func (g *Game) StopGameLoop() {
-	if g.Started {
-		g.Started = false
-		close(g.TickerStopChan)
-	}
-}
-
-func (g *Game) UpdateMana() {
-	now := time.Now()
-
-	// Apply mana regen for both players
-	for _, player := range []*model.Player{g.Player1, g.Player2} {
-		if player.Mana < 10 && now.Sub(player.LastManaRegen) >= 2*time.Second {
-			player.Mana++
-			player.LastManaRegen = now
-			sendToClient(player.User.Username, utils.Response{
-				Type:    "mana_update",
-				Success: true,
-				Message: fmt.Sprintf("Mana: %d", player.Mana),
-				Data: map[string]interface{}{
-					"player": player,
-				},
-			})
-		}
-	}
-}
-
-// ===================== Game Utility =====================
+// ===================== Game State Broadcasting =====================
 
 func (g *Game) BroadcastGameState() {
 	elapsed := time.Since(g.StartTime)
-
 	timeLeft := g.MaxTime - elapsed
 	if timeLeft < 0 {
 		timeLeft = 0
@@ -265,9 +261,27 @@ func (g *Game) BroadcastGameState() {
 	}
 }
 
+// ===================== Utility =====================
+
 func (g *Game) Opponent(p *model.Player) *model.Player {
 	if g.Player1.User.Username == p.User.Username {
 		return g.Player2
 	}
 	return g.Player1
+}
+
+
+func (g *Game) getPlayerID(isPlayer1 bool) string {
+	if isPlayer1 {
+		return g.Player1.User.Username
+	}
+	return g.Player2.User.Username
+}
+
+func (g *Game) isInSafeZone(currentY, safeZoneY float64, isPlayer1 bool) bool {
+	return (isPlayer1 && currentY < safeZoneY) || (!isPlayer1 && currentY > safeZoneY)
+}
+
+func (g *Game) isInRiver(currentY float64) bool {
+	return currentY >= RIVER_TOP && currentY <= RIVER_BOTTOM
 }

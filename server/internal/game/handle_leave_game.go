@@ -45,6 +45,8 @@ func HandleLeaveGame(conn *websocket.Conn, data json.RawMessage) {
 		winner = player1
 	}
 
+	room.Game.Started = false
+
 	if winner != nil {
 		room.Game.SetWinner(winner)
 
