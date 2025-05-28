@@ -7,7 +7,7 @@ export default function GameSimple() {
     const { sendMessage, subscribe } = useWebSocketContext();
     const damageTimeoutRef = useRef(null);
     const healTimeoutRef = useRef(null);
-    const hasLeftGameRef = useRef(false);
+    // const hasLeftGameRef = useRef(false);
 
     const [user, setUser] = useState({});
     const [opponent, setOpponent] = useState({});
@@ -89,7 +89,7 @@ export default function GameSimple() {
 
         return () => {
             unsubscribe();
-            leaveGame();
+            // leaveGame();
             if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
             if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
         };
@@ -181,19 +181,19 @@ export default function GameSimple() {
     });
 
     // === Leave Game ===
-    const leaveGame = () => {
-        if (hasLeftGameRef.current) return;
+    // const leaveGame = () => {
+    //     if (hasLeftGameRef.current) return;
 
-        hasLeftGameRef.current = true;
-        sendMessage({
-            type: "leave_game",
-            data: {
-                room_id: localStorage.getItem("room_id"),
-                username: localStorage.getItem("username"),
-            },
-        });
-        localStorage.removeItem("room_id");
-    };
+    //     hasLeftGameRef.current = true;
+    //     sendMessage({
+    //         type: "leave_game",
+    //         data: {
+    //             room_id: localStorage.getItem("room_id"),
+    //             username: localStorage.getItem("username"),
+    //         },
+    //     });
+    //     localStorage.removeItem("room_id");
+    // };
 
     // === Skip Turn ===
     const skipTurn = () => {
@@ -520,12 +520,12 @@ export default function GameSimple() {
                                 className="relative -bottom-3 w-full h-full object-contain px-1 py-1 drop-shadow-lg transition-transform duration-200 hover:scale-105"
                             />
                             <div className="relative -bottom-5 tower-hp w-5/6">
-                                <div className="hp-bar bg-gray-700 w-full h-3 rounded-full shadow-inner overflow-hidden border border-gray-800">
+                                <div className="hp-bar bg-gray-700 w-full h-3 rounded-sm shadow-inner overflow-hidden border border-gray-800">
                                     <div
                                         className={`hp-fill bg-gradient-to-r ${health <= maxHealth / 3
                                             ? "from-red-500 to-red-400"
                                             : "from-green-500 to-green-400"
-                                            } h-full rounded-full transition-all duration-500`}
+                                            } h-full rounded-xs transition-all duration-500`}
                                         style={{
                                             width: `${Math.max(0, (health / maxHealth) * 100)}%`,
                                         }}
@@ -536,12 +536,12 @@ export default function GameSimple() {
                     ) : (
                         <>
                             <div className="relative -top-3 tower-hp w-5/6">
-                                <div className="hp-bar bg-gray-700 w-full h-3 rounded-full shadow-inner overflow-hidden border border-gray-800">
+                                <div className="hp-bar bg-gray-700 w-full h-3 rounded-sm shadow-inner overflow-hidden border border-gray-800">
                                     <div
                                         className={`hp-fill bg-gradient-to-r ${health <= maxHealth / 3
                                             ? "from-red-500 to-red-400"
                                             : "from-green-500 to-green-400"
-                                            } h-full rounded-full transition-all duration-500`}
+                                            } h-full rounded-xs transition-all duration-500`}
                                         style={{
                                             width: `${Math.max(0, (health / maxHealth) * 100)}%`,
                                         }}
@@ -572,7 +572,7 @@ export default function GameSimple() {
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-500 to-blue-900">
+        <div className="min-h-screen bg-gradient-to-b from-blue-900 via-blue-500 to-blue-900 flex justify-center items-center">
             <div
                 className="game-container bg-gradient-to-b from-blue-400 to-blue-600 p-2 rounded-lg shadow-xl max-w-2xl mx-auto relative overflow-hidden border-4 border-yellow-500"
                 style={{ fontFamily: "'ClashDisplay', sans-serif" }}
@@ -613,7 +613,7 @@ export default function GameSimple() {
                     </div>
 
                     {/* TURN DISPLAY */}
-                    <div className="turn-display text-center transform hover:scale-105 transition-transform mx-2">
+                    <div className="turn-display text-center transform hover:scale-105 transition-transform mx-2 pointer-events-none">
                         <div
                             className={`text-sm pt-2 pb-1 md:text-lg px-4 rounded-full ${game.playerTurn === user.user?.username
                                 ? "bg-green-600 text-white animate-pulse"
@@ -628,7 +628,7 @@ export default function GameSimple() {
                 </div>
 
                 {/* BATTLEFIELD - GRID LAYOUT */}
-                <div className="battle-container rounded-lg shadow-inner border-4 border-green-700 relative w-full aspect-[10/8]">
+                <div className="battle-container rounded-lg shadow-inner border-4 border-stone-600 relative w-full overflow-hidden aspect-[10/8]">
                     {game.playerHealth['king'] > 0 && game.opponentHealth['king'] > 0 &&
                         showLargeAnimation && (
                             <div
@@ -799,7 +799,7 @@ export default function GameSimple() {
                 {/* TROOP SELECTION */}
                 <div className="troops-container bg-gradient-to-r from-blue-900 to-blue-800 p-2 rounded-lg mt-2 shadow-md border-2 border-blue-700">
                     <div className="section-header flex justify-between items-center mb-2 px-1">
-                        <h3 className="text-xl text-yellow-400 drop-shadow-md">TROOPS</h3>
+                        <h3 className="text-xl text-yellow-400 drop-shadow-md ms-1">TROOPS</h3>
 
                         <button
                             className={`skip-btn px-4 py-0.5 rounded-full font-semibold transition-all transform hover:scale-105 ${game.playerTurn === user.user?.username
@@ -813,7 +813,7 @@ export default function GameSimple() {
                         </button>
                     </div>
 
-                    <div className="troop-selection flex flex-wrap justify-between">
+                    <div className="troop-selection flex flex-wrap justify-around">
                         {Object.entries(game.troops).map(([troopName, troop], index) => (
                             <div key={index} className="relative"
                                 onMouseEnter={() => setHoveredTroop(troopName)}
@@ -866,7 +866,7 @@ export default function GameSimple() {
                                 >
                                     <div className="w-full relative">
                                         <img
-                                            className="w-20 h-22 md:w-37 md:h-37 object-cover"
+                                            className="w-20 h-22 md:w-35 md:h-37 object-cover"
                                             src={`/royaka-2025-fe/assets/cards/Card_${troop.image}.png`}
                                             alt={troopName}
                                         />

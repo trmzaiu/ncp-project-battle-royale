@@ -196,9 +196,9 @@ func (g *Game) followAlly(healer *model.TroopInstance, ally *model.TroopInstance
 	idealDistance := healer.Template.Range  // Khoảng cách lý tưởng để follow (không quá gần, không quá xa)
 	currentDist := calculateDistance(healer.Position, ally.Position)
 
-	if currentDist > idealDistance {
+	if currentDist > idealDistance + 0.5 {
 		// Quá xa -> di chuyển lại gần
-		g.moveTowardPosition(healer, ally.Position, speed*0.9)
+		g.moveTowardPosition(healer, ally.Position, speed*0.5)
 	} else if currentDist < idealDistance {
 		// Quá gần -> lùi lại một chút để tránh chen chúc
 		g.moveAwayFromPosition(healer, ally.Position, speed*0.5)

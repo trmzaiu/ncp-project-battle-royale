@@ -10,7 +10,7 @@ export default function GameEnhanced() {
     const containerRef = useRef(null);
     const damageTimeoutRef = useRef(null);
     const healTimeoutRef = useRef(null);
-    const hasLeftGameRef = useRef(false);
+    // const hasLeftGameRef = useRef(false);
 
     const [user, setUser] = useState({});
     const [opponent, setOpponent] = useState({});
@@ -39,6 +39,10 @@ export default function GameEnhanced() {
             message: "",
             map: [],
             time: 0,
+            playerGuard1: false,
+            playerGuard2: false,
+            opponentGuard1: false,
+            opponentGuard2: false,
         };
     }
 
@@ -83,7 +87,7 @@ export default function GameEnhanced() {
 
         return () => {
             unsubscribe();
-            leaveGame();
+            // leaveGame();
             if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
             if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
         };
@@ -151,6 +155,10 @@ export default function GameEnhanced() {
             message: "",
             map: map,
             time: time,
+            playerGuard1: false,
+            playerGuard2: false,
+            opponentGuard1: false,
+            opponentGuard2: false,
         });
 
         setIsGameInitialized(true);
@@ -162,19 +170,19 @@ export default function GameEnhanced() {
     };
 
     // === Leave Game ===
-    const leaveGame = () => {
-        if (hasLeftGameRef.current) return;
+    // const leaveGame = () => {
+    //     if (hasLeftGameRef.current) return;
 
-        hasLeftGameRef.current = true;
-        sendMessage({
-            type: "leave_game",
-            data: {
-                room_id: localStorage.getItem("room_id"),
-                username: localStorage.getItem("username"),
-            },
-        });
-        localStorage.removeItem("room_id");
-    };
+    //     hasLeftGameRef.current = true;
+    //     sendMessage({
+    //         type: "leave_game",
+    //         data: {
+    //             room_id: localStorage.getItem("room_id"),
+    //             username: localStorage.getItem("username"),
+    //         },
+    //     });
+    //     localStorage.removeItem("room_id");
+    // };
 
     // === Select Troop ===
     const selectTroop = (troopName) => {
@@ -246,12 +254,14 @@ export default function GameEnhanced() {
     }
 
     const handleSetMap = (msg) => {
-        const { battleMap, timeLeft } = msg;
+        const { battleMap, timeLeft, player1Guard1, player1Guard2, player2Guard1, player2Guard2 } = msg;
 
         setGame((prev) => ({
             ...prev,
             map: battleMap,
-            time: timeLeft
+            time: timeLeft,
+            opponentGuard1: game.isPlayer1 ? player2Guard2 : player1Guard1,
+            opponentGuard2: game.isPlayer1 ? player2Guard1 : player1Guard2,
         }));
     };
 
@@ -259,7 +269,7 @@ export default function GameEnhanced() {
     const handleGameOver = (res) => {
         console.log()
         setTimeout(() => {
-            setGame((prev) => ({ ...prev, gameOver: true, winner: res.data.winner.user.username ?? "", message: res.message }));
+            setGame((prev) => ({ ...prev, gameOver: true, winner: res.data.winner?.user.username ?? "", message: res.message }));
         }, 1000)
     };
 
@@ -314,6 +324,7 @@ export default function GameEnhanced() {
                                 alt={type}
                                 className="relative -top-1.5 object-cover px-3 py-3 drop-shadow-lg"
                             />
+                            <div>{type}</div>
                             <div className="absolute -bottom-2 tower-hp w-5/6">
                                 <div className="hp-bar bg-red-950 w-full h-2.5 rounded-sm shadow-inner overflow-hidden border border-red-950">
                                     <div
@@ -337,6 +348,7 @@ export default function GameEnhanced() {
                                     />
                                 </div>
                             </div>
+                            <div>{type}</div>
                             <img
                                 src={towerImage}
                                 alt={type}
@@ -354,23 +366,23 @@ export default function GameEnhanced() {
         ["00", "00", "00", "00", "00", "00", "00", "00", "00", "87", "80", "80", "88", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
         ["00", "00", "02", "81", "82", "83", "00", "00", "00", "87", "80", "80", "88", "00", "00", "00", "81", "82", "83", "00", "00", "00"],
         ["00", "01", "00", "87", "80", "88", "00", "00", "00", "85", "84", "84", "86", "00", "00", "00", "87", "80", "88", "00", "00", "00"],
-        ["00", "00", "00", "85", "80", "86", "00", "00", "00", "00", "00", "00", "00", "00", "00", "01", "85", "80", "86", "00", "01", "00"],
-        ["00", "00", "00", "00", "08", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "08", "00", "00", "00", "00"],
-        ["00", "01", "00", "00", "08", "00", "00", "00", "00", "00", "00", "00", "00", "02", "00", "00", "00", "08", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "08", "01", "00", "00", "00", "00", "00", "00", "01", "00", "00", "00", "00", "08", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "08", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "08", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "08", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "08", "00", "00", "00", "00"],
-        ["19", "19", "19", "19", "08", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "08", "19", "19", "19", "19"],
-        ["55", "55", "55", "55", "08", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "08", "55", "55", "55", "55"],
-        ["00", "00", "00", "00", "08", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "08", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "08", "00", "00", "00", "00", "02", "00", "00", "00", "00", "00", "00", "00", "08", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "08", "00", "00", "00", "00", "00", "00", "00", "01", "00", "00", "01", "00", "08", "00", "00", "00", "00"],
-        ["00", "00", "00", "00", "08", "00", "00", "00", "01", "00", "00", "00", "00", "00", "00", "00", "00", "08", "00", "00", "00", "00"],
-        ["00", "02", "00", "00", "08", "00", "00", "00", "00", "00", "00", "00", "00", "01", "00", "00", "00", "08", "00", "00", "00", "00"],
-        ["00", "00", "00", "81", "80", "83", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "81", "80", "83", "00", "00", "00"],
+        ["00", "00", "00", "14", "80", "15", "00", "00", "00", "00", "00", "00", "00", "00", "00", "01", "14", "80", "15", "00", "01", "00"],
+        ["00", "00", "00", "12", "80", "13", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "12", "80", "13", "00", "00", "00"],
+        ["00", "01", "00", "12", "80", "13", "00", "00", "00", "00", "00", "00", "00", "02", "00", "00", "12", "80", "13", "00", "00", "00"],
+        ["00", "00", "00", "12", "80", "13", "00", "00", "00", "00", "00", "00", "01", "00", "00", "00", "12", "80", "13", "00", "00", "00"],
+        ["00", "00", "00", "12", "80", "13", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "12", "80", "13", "00", "00", "00"],
+        ["00", "00", "00", "12", "80", "13", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "12", "80", "13", "00", "00", "00"],
+        ["19", "19", "19", "19", "80", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "19", "80", "19", "19", "19", "19"],
+        ["55", "55", "55", "55", "80", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "55", "80", "55", "55", "55", "55"],
+        ["00", "00", "00", "12", "80", "13", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "12", "80", "13", "00", "00", "00"],
+        ["00", "00", "00", "12", "80", "13", "00", "00", "00", "02", "00", "00", "00", "00", "00", "00", "12", "80", "13", "00", "00", "00"],
+        ["00", "00", "00", "12", "80", "13", "00", "00", "00", "00", "00", "00", "01", "00", "00", "01", "12", "80", "13", "00", "00", "00"],
+        ["00", "00", "00", "12", "80", "13", "00", "00", "01", "00", "00", "00", "00", "00", "00", "00", "12", "80", "13", "00", "00", "00"],
+        ["00", "02", "00", "12", "80", "13", "00", "00", "00", "00", "00", "00", "00", "01", "00", "00", "12", "80", "13", "00", "00", "00"],
+        ["00", "00", "00", "16", "80", "17", "00", "00", "00", "00", "00", "00", "00", "00", "00", "00", "16", "80", "17", "00", "00", "00"],
         ["00", "00", "00", "87", "80", "88", "00", "00", "00", "81", "82", "82", "83", "00", "00", "00", "87", "80", "88", "00", "00", "00"],
         ["00", "00", "00", "85", "84", "86", "02", "00", "00", "87", "80", "80", "88", "00", "00", "00", "85", "84", "86", "00", "00", "01"],
-        ["00", "00", "00", "00", "00", "00", "00", "00", "00", "87", "80", "80", "88", "00", "00", "00", "00", "02", "00", "00", "00", "00"],
+        ["01", "00", "00", "00", "00", "00", "00", "00", "00", "87", "80", "80", "88", "00", "00", "00", "00", "02", "00", "00", "00", "00"],
         ["00", "00", "00", "00", "00", "00", "00", "00", "00", "85", "84", "84", "86", "00", "00", "00", "00", "00", "00", "00", "00", "00"],
     ];
 
@@ -389,7 +401,7 @@ export default function GameEnhanced() {
                     <h1 className="text-3xl text-yellow-400 drop-shadow-md transform rotate-2 mb-1">
                         ROYAKA
                     </h1>
-                    <div className="w-32 h-1 bg-yellow-400 mx-auto rounded-full mb-2"></div>
+                    <div className="w-32 h-1 bg-yellow-400 mx-auto rounded-full"></div>
                 </div>
 
                 {/* STATS BAR */}
@@ -418,7 +430,7 @@ export default function GameEnhanced() {
                     {/* TIME DISPLAY */}
                     <div className="time-display text-center transform hover:scale-105 transition-transform mx-2 pointer-events-none">
                         <div
-                            className={`text-lg px-4 pt-1 rounded-full bg-green-600 text-white`}
+                            className={`text-sm pt-2 pb-1 md:text-lg px-4 rounded-full bg-green-600 text-white`}
                         >
                             {formatDuration(game.time)}
                         </div>
@@ -449,17 +461,54 @@ export default function GameEnhanced() {
                                 const isEnemySide = !isPlayerSide;
                                 const hasSelectedTroop = !!game.selectedTroop;
 
-                                const canClick = isPlayerSide && hasSelectedTroop;
+                                // Hàm kiểm tra xem tile có phải là "sông" bị chặn
+                                const isRiverBlocked =
+                                    (rowIndex === 10 || rowIndex === 11) && (colIndex !== 4 && colIndex !== 17);
+
+                                // Hàm kiểm tra nếu tile thuộc vùng spawn chuẩn
+                                const isInBasicSpawnZone = rowIndex >= 12 && rowIndex <= 21;
+
+                                // Vùng mở rộng tùy guard chết
+                                const leftZoneUnlocked = game.opponentGuard1;  // guard1 chết => mở
+                                const rightZoneUnlocked = game.opponentGuard2; // guard2 chết => mở
+
+                                // Vùng 0-6 luôn đỏ, cấm spawn
+                                const isInLeftBlockedZone = rowIndex >= 0 && rowIndex <= 6 && colIndex >= 0 && colIndex <= 10;
+                                const isInRightBlockedZone = rowIndex >= 0 && rowIndex <= 6 && colIndex >= 11 && colIndex <= 21;
+
+                                // Vùng 7-9 mở khi guard chết tương ứng
+                                const isInLeftAdvancedZone = rowIndex >= 7 && rowIndex <= 11 && colIndex >= 0 && colIndex <= 10;
+                                const isInRightAdvancedZone = rowIndex >= 7 && rowIndex <= 11 && colIndex >= 11 && colIndex <= 21;
+
+                                // Tính xem tile enemy đã mở khóa chưa (để cho click spawn)
+                                const isUnlockedEnemyTile =
+                                    isEnemySide && hasSelectedTroop &&
+                                    ((leftZoneUnlocked && isInLeftAdvancedZone) || (rightZoneUnlocked && isInRightAdvancedZone));
+
+                                // Tính có thể click spawn hay không
+                                const canClick =
+                                    hasSelectedTroop &&
+                                    ((isPlayerSide && (isInBasicSpawnZone)) || isUnlockedEnemyTile) &&
+                                    !isRiverBlocked;
+
+                                // Tính overlay đỏ
+                                let shouldShowRedOverlay = false;
+                                if (isEnemySide && hasSelectedTroop) {
+                                    const isWithinRedZone = rowIndex <= 11; // vùng 0-9 luôn đỏ khi chưa mở
+
+                                    const leftZoneBlocked = isInLeftBlockedZone || (isInLeftAdvancedZone && !leftZoneUnlocked);
+                                    const rightZoneBlocked = isInRightBlockedZone || (isInRightAdvancedZone && !rightZoneUnlocked);
+
+                                    shouldShowRedOverlay = isWithinRedZone && (leftZoneBlocked || rightZoneBlocked);
+                                }
 
                                 return (
                                     <div
                                         key={`r${rowIndex}-c${colIndex}`}
                                         className={clsx(
                                             "relative bg-cover flex items-center justify-center",
-                                            canClick && isPlayerSide && "cursor-pointer hover:brightness-110",
-                                            !canClick && isPlayerSide && "pointer-events-none",
-                                            isEnemySide && !hasSelectedTroop && "pointer-events-none",
-                                            isEnemySide && hasSelectedTroop ? "group-hover:pointer-events-none group-hover:cursor-not-allowed" : ""
+                                            canClick ? "cursor-pointer hover:brightness-110" : "pointer-events-none",
+                                            isEnemySide && hasSelectedTroop && !isUnlockedEnemyTile && "group-hover:cursor-not-allowed"
                                         )}
                                         style={{
                                             backgroundImage: `url(/royaka-2025-fe/assets/tiles/tile_00${tile}.png)`,
@@ -469,8 +518,89 @@ export default function GameEnhanced() {
                                             spawnTroop(rowIndex, colIndex);
                                         }}
                                     >
-                                        {isEnemySide && hasSelectedTroop && (
+                                        {shouldShowRedOverlay && (
                                             <div className="absolute inset-0 bg-red-700 opacity-0 group-hover:opacity-50 transition-opacity pointer-events-none" />
+                                        )}
+
+                                        {(colIndex === 3 || colIndex === 16) && rowIndex === 9 && (
+                                            <img
+                                                src="/royaka-2025-fe/assets/tiles/tile_0027.png"
+                                                alt="Tree"
+                                                className="w-full h-full pointer-events-none select-none z-5"
+                                                style={{ objectFit: "cover" }}
+                                            />
+                                        )}
+
+                                        {(colIndex === 3 || colIndex === 16) && (rowIndex === 10 || rowIndex === 11) && (
+                                            <img
+                                                src="/royaka-2025-fe/assets/tiles/tile_0030.png"
+                                                alt="Tree"
+                                                className="w-full h-full pointer-events-none select-none z-5"
+                                                style={{ objectFit: "cover" }}
+                                            />
+                                        )}
+
+                                        {(colIndex === 3 || colIndex === 16) && rowIndex === 12 && (
+                                            <img
+                                                src="/royaka-2025-fe/assets/tiles/tile_0033.png"
+                                                alt="Tree"
+                                                className="w-full h-full pointer-events-none select-none z-5"
+                                                style={{ objectFit: "cover" }}
+                                            />
+                                        )}
+
+                                        {(colIndex === 4 || colIndex === 17) && rowIndex === 9 && (
+                                            <img
+                                                src="/royaka-2025-fe/assets/tiles/tile_0029.png"
+                                                alt="Tree"
+                                                className="w-full h-full pointer-events-none select-none z-5"
+                                                style={{ objectFit: "cover" }}
+                                            />
+                                        )}
+
+                                        {(colIndex === 4 || colIndex === 17) && (rowIndex === 10 || rowIndex === 11) && (
+                                            <img
+                                                src="/royaka-2025-fe/assets/tiles/tile_0032.png"
+                                                alt="Tree"
+                                                className="w-full h-full pointer-events-none select-none z-5"
+                                                style={{ objectFit: "cover" }}
+                                            />
+                                        )}
+
+                                        {(colIndex === 4 || colIndex === 17) && rowIndex === 12 && (
+                                            <img
+                                                src="/royaka-2025-fe/assets/tiles/tile_0035.png"
+                                                alt="Tree"
+                                                className="w-full h-full pointer-events-none select-none z-5"
+                                                style={{ objectFit: "cover" }}
+                                            />
+                                        )}
+
+                                        {(colIndex === 5 || colIndex === 18) && rowIndex === 9 && (
+                                            <img
+                                                src="/royaka-2025-fe/assets/tiles/tile_0028.png"
+                                                alt="Tree"
+                                                className="w-full h-full pointer-events-none select-none z-5"
+                                                style={{ objectFit: "cover" }}
+                                            />
+                                        )}
+
+                                        {(colIndex === 5 || colIndex === 18) && (rowIndex === 10 || rowIndex === 11) && (
+                                            <img
+                                                src="/royaka-2025-fe/assets/tiles/tile_0031.png"
+                                                alt="Tree"
+                                                className="w-full h-full pointer-events-none select-none z-5"
+                                                style={{ objectFit: "cover" }}
+                                            />
+                                        )}
+
+                                        {(colIndex === 5 || colIndex === 18) && rowIndex === 12 && (
+                                            <img
+                                                src="/royaka-2025-fe/assets/tiles/tile_0034.png"
+                                                alt="Tree"
+                                                className="w-full h-full pointer-events-none select-none z-5"
+                                                style={{ objectFit: "cover" }}
+                                            />
                                         )}
                                     </div>
                                 );
@@ -552,19 +682,6 @@ export default function GameEnhanced() {
                                         </div>
                                     )}
 
-                                    {/* Vòng tròn range nằm dưới ảnh */}
-                                    <div
-                                        className="absolute bottom-1/2 left-1/2 -translate-x-1/2 pointer-events-none z-10"
-                                        style={{
-                                            width: `${troop.template.range * troopWidth * 2}px`,
-                                            height: `${troop.template.range * troopHeight * 2}px`,
-                                            borderRadius: "9999px",
-                                            border: `2px dashed ${isEnemyTroop ? "rgba(239, 68, 68, 0.5)" : "rgba(59, 130, 246, 0.5)"}`,
-                                            backgroundColor: isEnemyTroop ? "rgba(239, 68, 68, 0.1)" : "rgba(59, 130, 246, 0.1)",
-                                            transform: "translateY(50%)",
-                                        }}
-                                    ></div>
-
                                     {/* Hình ảnh troop nằm trên */}
                                     <img
                                         src={`/royaka-2025-fe/assets/images/${troop.template.image}.png`}
@@ -582,9 +699,9 @@ export default function GameEnhanced() {
                 <div className="mana-container bg-gradient-to-r from-blue-900 to-blue-800 p-2 rounded-lg border-2 border-blue-700 my-2 shadow-md">
                     <div className="flex items-center justify-between mb-1">
                         <div className="text-lg text-yellow-400 flex items-center">
-                            <span className="text-xl mr-1">⚡</span> MANA
+                            <span className="text-lg mr-1">⚡</span> MANA
                         </div>
-                        <div className="text-xl text-white me-1">
+                        <div className="text-lg text-white me-1">
                             {game.playerMana}/{game.maxMana}
                         </div>
                     </div>
@@ -602,12 +719,12 @@ export default function GameEnhanced() {
                 </div>
 
                 {/* TROOP SELECTION */}
-                <div className="troops-container bg-gradient-to-r from-blue-900 to-blue-800 p-2 pb-1 rounded-lg mt-2 shadow-md border-2 border-blue-700">
-                    <div className="section-header flex justify-between items-center mb-0.5 px-1">
+                <div className="troops-container bg-gradient-to-r from-blue-900 to-blue-800 p-2 rounded-lg mt-2 shadow-md border-2 border-blue-700">
+                    {/* <div className="section-header flex justify-between items-center mb-0.5 px-1">
                         <h3 className="text-lg text-yellow-400 drop-shadow-md">TROOPS</h3>
-                    </div>
+                    </div> */}
 
-                    <div className="troop-selection flex flex-wrap justify-center gap-3">
+                    <div className="troop-selection flex flex-wrap justify-around">
                         {Object.entries(game.troops).map(([troopName, troop], index) => {
                             if (!troop) return null;
 
@@ -670,14 +787,14 @@ export default function GameEnhanced() {
                                     )}
                                     <div
                                         className={`troop relative rounded-xl shadow-lg overflow-hidden cursor-pointer transition-all duration-200 
-                                            ${isSelected ? "border-4 border-yellow-400 transform scale-105" : "border-2 border-gray-700"}
+                                            ${isSelected ? "border-4 border-yellow-400 transform scale-104" : "border-2 border-gray-700"}
                                             ${isDisabled ? "opacity-60 grayscale" : "hover:scale-105"}
                                         `}
                                         onClick={() => !isDisabled && selectTroop(troopName)}
                                     >
                                         <div className="w-full relative">
                                             <img
-                                                className="w-35 h-36 object-cover"
+                                                className="w-20 h-22 md:w-34 md:h-34 object-cover"
                                                 src={`/royaka-2025-fe/assets/cards/Card_${troop.image}.png`}
                                                 alt={troopName}
                                             />
@@ -706,7 +823,7 @@ export default function GameEnhanced() {
 
                                         </div>
                                         <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-1 text-center">
-                                            <span className="text-white text-sm font-semibold truncate block">{troop.name}</span>
+                                            <span className="text-white text-[9px] md:text-sm font-semibold truncate block">{troop.name}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -724,7 +841,7 @@ export default function GameEnhanced() {
 
                 {/* GAME OVER MODAL */}
                 {game.gameOver && (
-                    <div className="game-over-modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+                    <div className="game-over-modal fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
                         <div className="modal-content bg-gradient-to-b from-blue-800 to-blue-900 rounded-lg shadow-xl p-6 max-w-md w-full border-4 border-yellow-500 transform scale-105">
                             {/* Crown decoration */}
                             <div className="crown-decoration absolute -top-10 left-1/2 transform -translate-x-1/2 text-6xl animate-pulse">

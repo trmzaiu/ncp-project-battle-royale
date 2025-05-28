@@ -31,35 +31,8 @@ func (g *Game) hasEnemyInRange(troop *model.TroopInstance) bool {
 	return false // Không có con nào trong tầm
 }
 
-// getClosestEnemy - Lấy enemy troop gần nhất (không cần trong tầm đánh)
-func (g *Game) getClosestEnemy(troop *model.TroopInstance) *model.TroopInstance {
-	if troop == nil {
-		return nil
-	}
-
-	var closestEnemy *model.TroopInstance // Biến lưu con enemy gần nhất
-	minDist := math.MaxFloat64            // Khoảng cách nhỏ nhất ban đầu set là vô cực
-
-	for _, entities := range g.BattleSystem.BattleMap { // Duyệt từng entity trên bản đồ
-		for _, entity := range entities {
-			otherTroop, ok := entity.(*model.TroopInstance)
-			if !ok || otherTroop == nil || otherTroop.IsDead || otherTroop.Owner == troop.Owner {
-				continue // Bỏ qua nếu không phải troop, đã chết hoặc cùng phe
-			}
-
-			dist := calculateDistance(troop.Position, otherTroop.Position) // Tính khoảng cách giữa 2 troop
-			if dist < minDist {                                            // Nếu khoảng cách này nhỏ hơn khoảng cách trước đó
-				closestEnemy = otherTroop // Cập nhật con enemy gần nhất
-				minDist = dist
-			}
-		}
-	}
-
-	return closestEnemy // Trả về con enemy gần nhất
-}
-
-// findClosestEnemyInRange - Tìm enemy troop gần nhất trong phạm vi tấn công
-func (g *Game) findClosestEnemyInRange(troop *model.TroopInstance) (bool, *model.TroopInstance, float64) {
+// getClosestEnemyInRange - Tìm enemy troop gần nhất trong phạm vi tấn công
+func (g *Game) getClosestEnemyInRange(troop *model.TroopInstance) (bool, *model.TroopInstance, float64) {
 	if troop == nil || troop.Template == nil {
 		return false, nil, 0
 	}
@@ -180,11 +153,10 @@ func (g *Game) calculateNextPosition(troop *model.TroopInstance, moveSpeed, dire
 	currentX := troop.Position.X
 	currentY := troop.Position.Y
 
-	enemy := g.getClosestEnemy(troop)
+	enemyInRange, enemy, dist := g.getClosestEnemyInRange(troop)
 	if enemy != nil {
 		dx := troop.Position.X - enemy.Position.X
 		dy := troop.Position.Y - enemy.Position.Y
-		dist := math.Sqrt(dx*dx + dy*dy)
 
 		rangeVal := troop.Template.Range
 		if dist <= rangeVal {
@@ -205,7 +177,7 @@ func (g *Game) calculateNextPosition(troop *model.TroopInstance, moveSpeed, dire
 	// Lấy mục tiêu hiện tại
 	var targetY float64
 	if troop.Template.AggroPriority == "troop" {
-		if enemy := g.getClosestEnemy(troop); enemy != nil {
+		if enemyInRange {
 			targetY = enemy.Position.Y
 		} else {
 			area := getTargetTowerArea(troop, g)
@@ -283,7 +255,7 @@ func (g *Game) moveTowardsBridge(currentX, currentY, moveSpeed, directionY float
 
 	if newY >= RIVER_TOP && newY <= RIVER_BOTTOM {
 		// Clamp lại X nếu đang ở trong sông
-		newX = closestBridge*moveSpeed
+		newX = closestBridge
 	}
 
 	return newX, newY
@@ -330,13 +302,13 @@ func (g *Game) moveTowardsTarget(troop *model.TroopInstance, currentX, currentY,
 	var targetArea model.Area
 
 	// Xác định mục tiêu dựa trên aggro priority và tình huống hiện tại
-	canAttackTower, _, _ := g.canAttackTower(troop)
+	canAttackTower, targetTower, _ := g.canAttackTower(troop)
 	enemyInRange := g.hasEnemyInRange(troop)
 
 	if troop.Template.AggroPriority == "tower" && canAttackTower {
 		targetArea = getTargetTowerArea(troop, g)
 	} else if troop.Template.AggroPriority == "troop" && enemyInRange {
-		enemy := g.getClosestEnemy(troop)
+		_, enemy, _ := g.getClosestEnemyInRange(troop)
 		if enemy != nil {
 			// Tạo khu vực nhỏ xung quanh enemy
 			targetArea.TopLeft.X = enemy.Position.X - MIN_TROOP_DISTANCE
@@ -348,6 +320,17 @@ func (g *Game) moveTowardsTarget(troop *model.TroopInstance, currentX, currentY,
 		}
 	} else {
 		targetArea = getTargetTowerArea(troop, g)
+	}
+
+	if canAttackTower && targetTower != nil {
+		distToTower := calculateDistanceToTower(troop.Position, targetTower.Area)
+		if distToTower <= troop.Template.Range {
+			// Đã ở trong tầm tấn công tower, dừng lại
+			return currentX, currentY
+		}
+
+		// Nếu chưa ở trong tầm, di chuyển đến EDGE của tower area, không phải center
+		return g.moveToTowerEdge(troop, currentX, currentY, moveSpeed, targetTower.Area)
 	}
 
 	// Tính trung tâm mục tiêu
@@ -398,6 +381,88 @@ func (g *Game) moveTowardsTarget(troop *model.TroopInstance, currentX, currentY,
 	return newX, newY
 }
 
+// moveToTowerEdge - Di chuyển đến edge của tower area thay vì center
+func (g *Game) moveToTowerEdge(troop *model.TroopInstance, currentX, currentY, moveSpeed float64, towerArea model.Area) (float64, float64) {
+	// Tìm điểm gần nhất trên edge của tower area mà troop có thể tấn công từ đó
+	closestPoint := g.findClosestAttackPoint(troop.Position, towerArea, troop.Template.Range)
+	
+	// Di chuyển về điểm đó
+	dx := closestPoint.X - currentX
+	dy := closestPoint.Y - currentY
+	dist := math.Sqrt(dx*dx + dy*dy)
+	
+	if dist <= moveSpeed {
+		// Đã gần đến điểm mục tiêu, di chuyển trực tiếp
+		return closestPoint.X, closestPoint.Y
+	}
+	
+	// Chuẩn hóa vector và di chuyển
+	if dist > 0 {
+		dx /= dist
+		dy /= dist
+	}
+	
+	return currentX + dx*moveSpeed, currentY + dy*moveSpeed
+}
+
+// findClosestAttackPoint - Tìm điểm gần nhất mà troop có thể đứng để tấn công tower
+func (g *Game) findClosestAttackPoint(troopPos model.Position, towerArea model.Area, attackRange float64) model.Position {
+	// Tìm điểm trên edge của tower area gần với troop nhất
+	centerX := (towerArea.TopLeft.X + towerArea.BottomRight.X) / 2
+	centerY := (towerArea.TopLeft.Y + towerArea.BottomRight.Y) / 2
+	
+	// Vector từ center tower đến troop
+	dx := troopPos.X - centerX
+	dy := troopPos.Y - centerY
+	dist := math.Sqrt(dx*dx + dy*dy)
+	
+	if dist == 0 {
+		// Troop đang ở chính giữa tower, chọn một hướng bất kỳ
+		return model.Position{X: towerArea.BottomRight.X + attackRange*0.8, Y: centerY}
+	}
+	
+	// Chuẩn hóa vector
+	dx /= dist
+	dy /= dist
+	
+	// Tìm điểm trên edge của rectangle gần troop nhất
+	var edgePoint model.Position
+	
+	// Kiểm tra 4 cạnh của rectangle
+	if dx > 0 {
+		// Troop ở bên phải tower
+		edgePoint.X = towerArea.BottomRight.X
+	} else {
+		// Troop ở bên trái tower
+		edgePoint.X = towerArea.TopLeft.X
+	}
+	
+	if dy > 0 {
+		// Troop ở phía dưới tower
+		edgePoint.Y = towerArea.BottomRight.Y
+	} else {
+		// Troop ở phía trên tower
+		edgePoint.Y = towerArea.TopLeft.Y
+	}
+	
+	// Đảm bảo điểm này ở trong tầm tấn công
+	// Di chuyển ra ngoài một khoảng nhỏ để đảm bảo không đứng sát edge
+	margin := attackRange * 0.1 // 10% của tầm tấn công làm margin
+	if dx > 0 {
+		edgePoint.X += margin
+	} else {
+		edgePoint.X -= margin
+	}
+	
+	if dy > 0 {
+		edgePoint.Y += margin
+	} else {
+		edgePoint.Y -= margin
+	}
+	
+	return edgePoint
+}
+
 // =============================================================================
 // 3. HỆ THỐNG TẤN CÔNG
 // =============================================================================
@@ -435,13 +500,6 @@ func (g *Game) attackTroop(attacker *model.TroopInstance, target *model.TroopIns
 	// Kiểm tra target có chết không
 	if target.Template.HP <= 0 {
 		target.IsDead = true
-
-		// Thưởng gold cho người tấn công (bằng EXP của target)
-		if attacker.Owner == g.Player1.User.Username {
-			g.Player1.Gold += target.Template.EXP
-		} else {
-			g.Player2.Gold += target.Template.EXP
-		}
 
 		// Thêm reward cho việc giết troop
 		g.addKillReward(attacker.Owner, target)
@@ -487,6 +545,8 @@ func (g *Game) attackTower(troop *model.TroopInstance) {
 		troop.Template.Name, closestTower.Template.Type, damage, closestTower.Template.HP)
 
 	if closestTower.Template.HP <= 0 {
+		closestTower.IsDestroyed = true
+
 		fmt.Printf("Tower %s destroyed!\n", closestTower.Template.Type)
 		g.addTowerDestroyReward(troop.Owner, closestTower)
 		g.checkWinCondition()

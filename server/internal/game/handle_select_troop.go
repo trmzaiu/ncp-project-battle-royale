@@ -158,14 +158,24 @@ func (g *Game) IsValidSpawnPosition(username string, x, y float64) bool {
 		}
 	}
 
-	isPlayer1, validPlayer := g.getPlayerType(username)
-	if !validPlayer {
+	isPlayer1, valid := g.getPlayerType(username)
+	if !valid {
 		log.Printf("[INVALID_POS] Unknown player: %s", username)
 		return false
 	}
 
-	if !isValidSpawnZone(isPlayer1, y, username) {
-		return false
+	if isPlayer1 && g.isInAdvanceZone(g.Player2, x, y, true) {
+		log.Printf("[VALID_POS] Special advance spawn for Player 1 at (%.2f, %.2f)", x, y)
+		return true
+	} else if !isPlayer1 && g.isInAdvanceZone(g.Player1, x, y, false) {
+		log.Printf("[VALID_POS] Special advance spawn for Player 2 at (%.2f, %.2f)", x, y)
+		return true
+	}
+
+	if !(isPlayer1 && g.isInAdvanceZone(g.Player2, x, y, true)) && !(!isPlayer1 && g.isInAdvanceZone(g.Player1, x, y, false)) {
+		if !isValidSpawnZone(isPlayer1, y, username) {
+			return false
+		}
 	}
 
 	if !isValidRiverArea(y) {
@@ -184,6 +194,34 @@ func (g *Game) getPlayerType(username string) (bool, bool) {
 		return false, true
 	}
 	return false, false
+}
+
+func (g *Game) isInAdvanceZone(enemyPlayer *model.Player, x, y float64, isPlayer1 bool) bool {
+	var yMin, yMax float64
+	if isPlayer1 {
+		yMin, yMax = 12, 14
+	} else {
+		yMin, yMax = 7, 9
+	}
+
+	if y < yMin || y > yMax || !isValidRiverArea(y) {
+		return false
+	}
+
+	guard1Dead := enemyPlayer.Towers["guard1"].HP <= 0
+	guard2Dead := enemyPlayer.Towers["guard2"].HP <= 0
+
+	// Áp dụng theo logic đúng
+	switch {
+	case guard1Dead && guard2Dead:
+		return x >= 0 && x <= 21
+	case guard1Dead:
+		return x >= 0 && x <= 10
+	case guard2Dead:
+		return x >= 11 && x <= 21
+	default:
+		return false
+	}
 }
 
 func isValidSpawnZone(isPlayer1 bool, y float64, username string) bool {

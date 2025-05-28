@@ -21,6 +21,7 @@ type Game struct {
 	LastTick       time.Time
 	TickerStopChan chan struct{}
 	BattleSystem   *BattleSystem
+	WinnerDeclared bool
 }
 
 // ===================== Game Initialization =====================
@@ -66,6 +67,7 @@ func NewGame(p1, p2 *model.Player, mode string) *Game {
 		Enhanced:       (mode == "enhanced"),
 		BattleSystem:   battleSystem,
 		TickerStopChan: battleSystem.TickerStopChan,
+		WinnerDeclared: false,
 	}
 
 	if game.Enhanced {
@@ -141,7 +143,7 @@ func (g *Game) startTicker() {
 }
 
 func (g *Game) StopGameLoop() {
-	if !g.Started {
+	if g.Started {
 		g.Started = false
 		close(g.TickerStopChan)
 	}
@@ -170,43 +172,70 @@ func (g *Game) UpdateMana() {
 // ===================== Game Outcome =====================
 
 func (g *Game) CheckWinner() (*model.Player, string) {
-	if g.Enhanced {
-		g.Player1.User.Gold += g.Player1.Gold
-		g.Player2.User.Gold += g.Player2.Gold
+	if g.WinnerDeclared {
+		return nil, ""
 	}
 
+	// Kiểm tra King Tower bị phá
 	if g.Player1.Towers["king"].HP <= 0.0 {
-		AwardEXP(g.Player2.User, g.Player1.User, false)
+		g.WinnerDeclared = true
 		g.StopGameLoop()
+
+		if g.Enhanced {
+			g.Player1.User.Gold += g.Player1.Gold
+			g.Player2.User.Gold += g.Player2.Gold
+		}
+
+		AwardEXP(g.Player2.User, g.Player1.User, false)
+		fmt.Printf("Winner: %s\n", g.Player2.User.Username)
 		return g.Player2, g.Player2.User.Username + " wins!"
 	}
 
 	if g.Player2.Towers["king"].HP <= 0.0 {
-		AwardEXP(g.Player1.User, g.Player2.User, false)
+		g.WinnerDeclared = true
 		g.StopGameLoop()
+
+		if g.Enhanced {
+			g.Player1.User.Gold += g.Player1.Gold
+			g.Player2.User.Gold += g.Player2.Gold
+		}
+
+		AwardEXP(g.Player1.User, g.Player2.User, false)
+		fmt.Printf("Winner: %s\n", g.Player1.User.Username)
 		return g.Player1, g.Player1.User.Username + " wins!"
 	}
 
+	// Hết giờ trong enhanced mode => xử lý tính điểm
 	if g.Enhanced && time.Since(g.StartTime) > g.MaxTime {
 		p1Score := g.Player1.DestroyedCount()
 		p2Score := g.Player2.DestroyedCount()
 
+		g.WinnerDeclared = true
+		g.StopGameLoop()
+
+		// Cộng gold
+		g.Player1.User.Gold += g.Player1.Gold
+		g.Player2.User.Gold += g.Player2.Gold
+
 		if p1Score > p2Score {
 			AwardEXP(g.Player1.User, g.Player2.User, false)
-			g.StopGameLoop()
+			fmt.Printf("Winner by score: %s\n", g.Player1.User.Username)
 			return g.Player1, g.Player1.User.Username + " wins by score!"
 		}
+
 		if p2Score > p1Score {
 			AwardEXP(g.Player2.User, g.Player1.User, false)
-			g.StopGameLoop()
+			fmt.Printf("Winner by score: %s\n", g.Player2.User.Username)
 			return g.Player2, g.Player2.User.Username + " wins by score!"
 		}
 
+		// Hòa điểm
 		AwardEXP(g.Player1.User, g.Player2.User, true)
-		g.StopGameLoop()
+		fmt.Println("Game ended in a draw by score")
 		return nil, "It's a draw!"
 	}
 
+	// Nếu chưa có ai thắng
 	return nil, ""
 }
 
@@ -251,13 +280,16 @@ func (g *Game) BroadcastGameState() {
 			Data: map[string]interface{}{
 				"battleMap": g.BattleSystem.GetEntityList(),
 				"timeLeft":  timeLeft.Milliseconds(),
+				"player1Guard1": g.Player1.Towers["guard1"].HP <= 0,
+				"player1Guard2": g.Player1.Towers["guard2"].HP <= 0,
+				"player2Guard1": g.Player2.Towers["guard1"].HP <= 0,
+				"player2Guard2": g.Player2.Towers["guard2"].HP <= 0,
 			},
 		})
 	}
 
-	if timeLeft == 0 {
-		g.CheckWinner()
-		g.StopGameLoop()
+	if timeLeft == 0 && !g.WinnerDeclared {
+		g.checkWinCondition()
 	}
 }
 
@@ -269,7 +301,6 @@ func (g *Game) Opponent(p *model.Player) *model.Player {
 	}
 	return g.Player1
 }
-
 
 func (g *Game) getPlayerID(isPlayer1 bool) string {
 	if isPlayer1 {

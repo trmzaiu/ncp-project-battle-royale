@@ -99,7 +99,7 @@ func (g *Game) updateTroop(troop *model.TroopInstance) {
 	speed := troop.Template.Speed * 0.1
 
 	// Tìm enemy gần nhất trong phạm vi tấn công
-	enemyInRange, closestEnemy, minDist := g.findClosestEnemyInRange(troop)
+	enemyInRange, closestEnemy, minDist := g.getClosestEnemyInRange(troop)
 
 	// Kiểm tra xem troop này có thể tấn công tower không
 	canAttackTower, _, _ := g.canAttackTower(troop)
@@ -351,24 +351,20 @@ func adjustPositionOutsideTowerAreas(x, y float64, towerAreas []model.Area) (flo
 
 // CheckWinCondition - Kiểm tra điều kiện thắng
 func (g *Game) checkWinCondition() {
-	// Chuyển gold cho users (lưu vào database)
-	if g.Player2.Towers["king"].HP <= 0 || g.Player1.Towers["king"].HP <= 0 {
-		winner, result := g.CheckWinner()
-		if result == "" {
-			return
-		}
-		gameOverPayload := utils.Response{
-			Type:    "game_over_response",
-			Success: true,
-			Message: result,
-			Data: map[string]interface{}{
-				"winner": winner,
-			},
-		}
-		g.StopGameLoop()
-		sendToClient(g.Player1.User.Username, gameOverPayload)
-		sendToClient(g.Player2.User.Username, gameOverPayload)
+	winner, result := g.CheckWinner()
+	if result == "" {
+		return
 	}
+	gameOverPayload := utils.Response{
+		Type:    "game_over_response",
+		Success: true,
+		Message: result,
+		Data: map[string]interface{}{
+			"winner": winner,
+		},
+	}
+	sendToClient(g.Player1.User.Username, gameOverPayload)
+	sendToClient(g.Player2.User.Username, gameOverPayload)
 }
 
 // AddKillReward - Thêm phần thưởng khi giết troop
@@ -396,6 +392,7 @@ func (g *Game) addTowerDestroyReward(playerName string, killedTower *model.Tower
 // =============================================================================
 // PHẦN 10: HÀM TIỆN ÍCH
 // =============================================================================
+
 // getDirectionY - Lấy hướng Y dựa trên player (1 hoặc -1)
 func getDirectionY(isPlayer1 bool) float64 {
 	if isPlayer1 {
@@ -499,13 +496,39 @@ func calculateDistance(pos1, pos2 model.Position) float64 {
 	return math.Sqrt(dx*dx + dy*dy)
 }
 
-func calculateDistanceToTower(pos model.Position, area model.Area) float64 {
-	// Tính điểm gần nhất trên hình chữ nhật tower
-	closestX := utils.ClampFloat(pos.X, area.TopLeft.X, area.BottomRight.X)
-	closestY := utils.ClampFloat(pos.Y, area.TopLeft.Y, area.BottomRight.Y)
+func calculateDistanceToTower(troopPos model.Position, towerArea model.Area) float64 {
+	// Tính khoảng cách từ troop đến edge gần nhất của tower area
 
-	dx := pos.X - closestX
-	dy := pos.Y - closestY
+	// Kiểm tra xem troop có ở trong area không
+	if troopPos.X >= towerArea.TopLeft.X && troopPos.X <= towerArea.BottomRight.X &&
+		troopPos.Y >= towerArea.TopLeft.Y && troopPos.Y <= towerArea.BottomRight.Y {
+		return 0 // Troop đang ở trong tower area
+	}
+
+	// Tìm điểm gần nhất trên edge của rectangle
+	var closestX, closestY float64
+
+	// Clamp X coordinate
+	if troopPos.X < towerArea.TopLeft.X {
+		closestX = towerArea.TopLeft.X
+	} else if troopPos.X > towerArea.BottomRight.X {
+		closestX = towerArea.BottomRight.X
+	} else {
+		closestX = troopPos.X
+	}
+
+	// Clamp Y coordinate
+	if troopPos.Y < towerArea.TopLeft.Y {
+		closestY = towerArea.TopLeft.Y
+	} else if troopPos.Y > towerArea.BottomRight.Y {
+		closestY = towerArea.BottomRight.Y
+	} else {
+		closestY = troopPos.Y
+	}
+
+	// Tính khoảng cách Euclidean
+	dx := troopPos.X - closestX
+	dy := troopPos.Y - closestY
 	return math.Sqrt(dx*dx + dy*dy)
 }
 

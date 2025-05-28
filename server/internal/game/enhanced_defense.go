@@ -80,6 +80,8 @@ func (g *Game) towerAttackTroop(tower *model.TowerInstance, target *model.TroopI
 	// Kiểm tra troop có chết không
 	if target.Template.HP <= 0 {
 		target.IsDead = true
+
+		g.addKillReward(tower.Owner, target)
 		fmt.Printf("Troop %s killed by tower!\n", target.Template.Name)
 	}
 }

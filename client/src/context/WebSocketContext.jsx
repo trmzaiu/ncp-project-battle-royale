@@ -11,7 +11,7 @@ export function WebSocketProvider({ children }) {
     const WS_URL =
         import.meta.env.PROD
             ? "wss://golang-ws-1067243106608.asia-southeast1.run.app/ws"
-            : HOST || "ws://localhost:8080/ws";
+            : HOST || "ws://LAPTOPCUATUI:8080/ws";
 
 
     // Store all onMessage callbacks to support multiple listeners
