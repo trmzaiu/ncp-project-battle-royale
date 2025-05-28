@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useWebSocketContext } from "../context/WebSocketContext";
 
 export default function Auth() {
+    const url = process.env.NODE_ENV === 'production' ? "/royaka-2025-fe/" : "/";
     const navigate = useNavigate();
     const { sendMessage, subscribe, isConnected } = useWebSocketContext();
     const [animationComplete, setAnimationComplete] = useState(false);
@@ -91,17 +92,17 @@ export default function Auth() {
                 <div className="absolute bottom-1/3 right-1/4 w-24 h-24 bg-orange-400 rounded-full opacity-50 animate-bounce"></div>
             </div>
 
-            <div className="relative z-10 w-full max-w-md">
+            <div className="relative z-10 max-w-lg">
                 {/* Crown Logo */}
                 {/* Crown animation that comes from top - responsive sizing */}
-                <div className="relative flex justify-center mb-2 sm:mb-4">
+                <div className="relative flex justify-center items-center mb-8">
                     <div
                         className={`transition-all duration-1000 ease-out transform
                         ${animationComplete ? 'translate-y-0 opacity-100' : '-translate-y-24 opacity-0'}`}
                     >
                         <img
-                            className="w-45 pointer-events-none"
-                            src="/royaka-2025-fe/assets/icon_crown.png"
+                            className="w-44 pointer-events-none"
+                            src={`${url}assets/icon_crown.png`}
                             alt=""
                         />
                     </div>
@@ -135,7 +136,7 @@ export default function Auth() {
                 </div>
 
                 {/* Card Container */}
-                <div className="bg-gradient-to-b from-blue-600/95 to-purple-600/95 rounded-xl shadow-2xl overflow-hidden border-4 border-yellow-400 transform transition-all duration-300">
+                <div className="bg-gradient-to-b from-blue-600/95 to-purple-600/95 rounded-xl shadow-2xl overflow-hidden border-4 border-yellow-400 transform transition-all duration-300 m-4 md:m-8">
                     {/* Header */}
                     <div className="flex flex-col items-center p-6 bg-gradient-to-b from-blue-800 to-blue-900 border-b-4 border-yellow-400">
                         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-blue-200 via-blue-100 to-yellow-200 mb-2 sm:mb-3 tracking-wide select-none drop-shadow-lg">
@@ -166,7 +167,7 @@ export default function Auth() {
                     {activeTab === "login" ? (
                         <div className="p-6 animate-fadeIn bg-gradient-to-b from-blue-800 to-blue-900">
                             <div className="text-center mb-6">
-                                <h2 className="text-3xl font-bold text-yellow-300 mb-2">Welcome Back, Warrior!</h2>
+                                <h2 className="text-xl md:text-3xl font-bold text-yellow-300 mb-2">Welcome Back, Warrior!</h2>
                                 <p className="text-cyan-200 text-base">Enter your credentials to join the battle</p>
                             </div>
 
@@ -213,7 +214,7 @@ export default function Auth() {
                     ) : (
                         <div className="p-6 animate-fadeIn bg-gradient-to-b from-blue-800 to-blue-900">
                             <div className="text-center mb-6">
-                                <h2 className="text-3xl font-bold text-yellow-300 mb-2">Join The Arena!</h2>
+                                <h2 className="text-xl md:text-3xl font-bold text-yellow-300 mb-2 pl-14 pr-14">Join The Arena!</h2>
                                 <p className="text-cyan-200 text-base">Create your warrior account</p>
                             </div>
 

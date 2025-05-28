@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 
 export default function Entry() {
+    const url = process.env.NODE_ENV === 'production' ? "/royaka-2025-fe/" : "/";
     const [animationComplete, setAnimationComplete] = useState(false);
     const [showTitle, setShowTitle] = useState(false);
     const [showButton, setShowButton] = useState(false);
@@ -55,7 +56,7 @@ export default function Entry() {
                     >
                         <img
                             className="w-60 pointer-events-none"
-                            src="/royaka-2025-fe/assets/icon_crown.png"
+                            src={`${url}assets/icon_crown.png`}
                             alt=""
                         />
                     </div>
@@ -128,7 +129,7 @@ export default function Entry() {
 
             {/* Mobile portrait mode notification - kept for small screens */}
             <div className="absolute bottom-6 left-0 w-full text-center text-xs text-blue-200 opacity-60 px-4 md:hidden">
-                <p>Best experienced in landscape mode</p>
+                <p>Best experienced on a laptop - landscape size</p>
             </div>
         </div>
     );

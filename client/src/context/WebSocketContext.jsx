@@ -10,8 +10,8 @@ export function WebSocketProvider({ children }) {
     const [isConnected, setIsConnected] = useState(false);
     const WS_URL =
         import.meta.env.PROD
-            ? "wss://golang-ws-1067243106608.asia-southeast1.run.app/ws"
-            : HOST || "ws://LAPTOPCUATUI:8080/ws";
+            ? "wss://royaka-2025.as.r.appspot.com/ws"
+            : HOST || "ws://zang:8080/ws" || "ws://LAPTOPCUATUI:8080/ws";
 
 
     // Store all onMessage callbacks to support multiple listeners
