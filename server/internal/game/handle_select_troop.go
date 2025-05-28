@@ -140,49 +140,51 @@ func HandleSelectTroop(conn *websocket.Conn, data json.RawMessage) {
 }
 
 func (g *Game) IsValidSpawnPosition(username string, x, y float64) bool {
-	// Check map boundaries
+	// 1. Check map boundaries
 	if x < 0 || x >= 21 || y < 0 || y >= 21 {
-		log.Printf("[INVALID_POS] (%f, %f) is out of bounds (map: 0-21)", x, y)
+		log.Printf("[INVALID_POS] (%.2f, %.2f) is out of bounds", x, y)
 		return false
 	}
 
-	// Check if position is already occupied
+	// 2. Check entity collision
 	for _, entities := range g.BattleSystem.BattleMap {
 		for _, entity := range entities {
 			pos := entity.GetPosition()
 			if calculateDistance(pos, model.Position{X: x, Y: y}) < 0.5 {
-				log.Printf("[INVALID_POS] (%.2f, %.2f) too close to existing entity at (%.2f, %.2f)",
-					x, y, pos.X, pos.Y)
+				log.Printf("[INVALID_POS] (%.2f, %.2f) too close to existing entity at (%.2f, %.2f)", x, y, pos.X, pos.Y)
 				return false
 			}
 		}
 	}
 
+	// 3. Determine player type
 	isPlayer1, valid := g.getPlayerType(username)
 	if !valid {
 		log.Printf("[INVALID_POS] Unknown player: %s", username)
 		return false
 	}
 
+	// 4. Check if in ADVANCE ZONE
 	if isPlayer1 && g.isInAdvanceZone(g.Player2, x, y, true) {
-		log.Printf("[VALID_POS] Special advance spawn for Player 1 at (%.2f, %.2f)", x, y)
+		log.Printf("[VALID_POS] Advance spawn for Player 1 at (%.2f, %.2f)", x, y)
 		return true
-	} else if !isPlayer1 && g.isInAdvanceZone(g.Player1, x, y, false) {
-		log.Printf("[VALID_POS] Special advance spawn for Player 2 at (%.2f, %.2f)", x, y)
+	}
+	if !isPlayer1 && g.isInAdvanceZone(g.Player1, x, y, false) {
+		log.Printf("[VALID_POS] Advance spawn for Player 2 at (%.2f, %.2f)", x, y)
 		return true
 	}
 
-	if !(isPlayer1 && g.isInAdvanceZone(g.Player2, x, y, true)) && !(!isPlayer1 && g.isInAdvanceZone(g.Player1, x, y, false)) {
-		if !isValidSpawnZone(isPlayer1, y, username) {
-			return false
-		}
-	}
-
-	if !isValidRiverArea(y) {
+	// 5. Check normal spawn zone
+	if !isValidSpawnZone(isPlayer1, y, username) {
 		return false
 	}
 
-	log.Printf("[VALID_POS] Position (%f, %f) is valid for %s", x, y, username)
+	// 6. Disallow spawning in river unless on bridges
+	if !isValidRiverArea(x, y) {
+		return false
+	}
+
+	log.Printf("[VALID_POS] Normal spawn for %s at (%.2f, %.2f)", username, x, y)
 	return true
 }
 
@@ -199,12 +201,12 @@ func (g *Game) getPlayerType(username string) (bool, bool) {
 func (g *Game) isInAdvanceZone(enemyPlayer *model.Player, x, y float64, isPlayer1 bool) bool {
 	var yMin, yMax float64
 	if isPlayer1 {
-		yMin, yMax = 12, 14
+		yMin, yMax = 10, 14 // mở rộng xuống cầu
 	} else {
-		yMin, yMax = 7, 9
+		yMin, yMax = 7, 11 // mở rộng lên cầu
 	}
 
-	if y < yMin || y > yMax || !isValidRiverArea(y) {
+	if y < yMin || y > yMax || !isValidRiverArea(x, y) {
 		return false
 	}
 
@@ -241,10 +243,10 @@ func isValidSpawnZone(isPlayer1 bool, y float64, username string) bool {
 	return true
 }
 
-func isValidRiverArea(y float64) bool {
+func isValidRiverArea(x, y float64) bool {
 	// Check river area (Y: 10-11) - no spawning in river
-	if y >= 10 && y <= 11 {
-		log.Printf("[INVALID_POS] Cannot spawn in river area at Y=%f", y)
+	if (y == 10 || y == 11) && (int(x) != 4 && int(x) != 17) {
+		log.Printf("[INVALID_POS] Cannot spawn in river area at (%.0f, %.0f), except on bridges at x=4 or x=17", x, y)
 		return false
 	}
 	return true

@@ -11,15 +11,19 @@ export default function GameEnhanced() {
     const containerRef = useRef(null);
     const damageTimeoutRef = useRef(null);
     const healTimeoutRef = useRef(null);
-    // const hasLeftGameRef = useRef(false);
+    const isPlayer1Ref = useRef(false);
+    const hasShownTimeAnimRef = useRef(false);
+    const hasLeftGameRef = useRef(false);
 
     const [user, setUser] = useState({});
     const [opponent, setOpponent] = useState({});
+    const [isPlayer1, setIsPlayer1] = useState(false);
     const [game, setGame] = useState(getInitialGameState());
     const [isGameInitialized, setIsGameInitialized] = useState(false);
     const [hoveredTroop, setHoveredTroop] = useState(null);
     const [tileSize, setTileSize] = useState(0);
     const [showLargeAnimation, setShowLargeAnimation] = useState(false);
+    const [showTimeAnimation, setShowTimeAnimation] = useState(false);
 
     const [notification, setNotification] = useState({
         show: false,
@@ -29,7 +33,6 @@ export default function GameEnhanced() {
     // === Initial Game State ===
     function getInitialGameState() {
         return {
-            isPlayer1: false,
             playerMana: 5,
             maxMana: 10,
             troops: {},
@@ -40,8 +43,6 @@ export default function GameEnhanced() {
             message: "",
             map: [],
             time: 0,
-            playerGuard1: false,
-            playerGuard2: false,
             opponentGuard1: false,
             opponentGuard2: false,
         };
@@ -88,7 +89,7 @@ export default function GameEnhanced() {
 
         return () => {
             unsubscribe();
-            // leaveGame();
+            leaveGame();
             if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
             if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
         };
@@ -144,9 +145,8 @@ export default function GameEnhanced() {
     };
 
     // === Game Initialization ===
-    const initializeGame = (time, map, player1, troops, userData) => {
+    const initializeGame = (time, map, troops, userData) => {
         setGame({
-            isPlayer1: player1 === localStorage.getItem("username"),
             playerMana: userData.mana,
             maxMana: 10,
             troops: troops,
@@ -156,11 +156,10 @@ export default function GameEnhanced() {
             message: "",
             map: map,
             time: time,
-            playerGuard1: false,
-            playerGuard2: false,
             opponentGuard1: false,
             opponentGuard2: false,
         });
+
 
         setIsGameInitialized(true);
 
@@ -171,19 +170,19 @@ export default function GameEnhanced() {
     };
 
     // === Leave Game ===
-    // const leaveGame = () => {
-    //     if (hasLeftGameRef.current) return;
+    const leaveGame = () => {
+        if (hasLeftGameRef.current) return;
 
-    //     hasLeftGameRef.current = true;
-    //     sendMessage({
-    //         type: "leave_game",
-    //         data: {
-    //             room_id: localStorage.getItem("room_id"),
-    //             username: localStorage.getItem("username"),
-    //         },
-    //     });
-    //     localStorage.removeItem("room_id");
-    // };
+        hasLeftGameRef.current = true;
+        sendMessage({
+            type: "leave_game",
+            data: {
+                room_id: localStorage.getItem("room_id"),
+                username: localStorage.getItem("username"),
+            },
+        });
+        localStorage.removeItem("room_id");
+    };
 
     // === Select Troop ===
     const selectTroop = (troopName) => {
@@ -196,8 +195,6 @@ export default function GameEnhanced() {
 
     const spawnTroop = (row, col) => {
         if (!game.selectedTroop) return;
-
-        if (!isValidDrop(row)) return;
 
         sendMessage({
             type: "select_troop",
@@ -218,17 +215,16 @@ export default function GameEnhanced() {
     // === Handle Set Game Response ===
     const handleSetGameState = (msg) => {
         const { user, opponent, player1, map, time } = msg;
+        console.log(user);
         setUser(user);
         setOpponent(opponent);
 
+        const isP1 = player1 === user.user.username;
+        isPlayer1Ref.current = isP1;   // <-- update ref
+        setIsPlayer1(isP1);
+
         if (!isGameInitialized) {
-            initializeGame(
-                time,
-                map,
-                player1,
-                user.troops,
-                user,
-            );
+            initializeGame(time, map, user.troops, user);
         }
     }
 
@@ -257,18 +253,26 @@ export default function GameEnhanced() {
     const handleSetMap = (msg) => {
         const { battleMap, timeLeft, player1Guard1, player1Guard2, player2Guard1, player2Guard2 } = msg;
 
+
         setGame((prev) => ({
             ...prev,
             map: battleMap,
             time: timeLeft,
-            opponentGuard1: game.isPlayer1 ? player2Guard2 : player1Guard1,
-            opponentGuard2: game.isPlayer1 ? player2Guard1 : player1Guard2,
+            opponentGuard1: isPlayer1Ref.current ? player2Guard2 <= 0 : player1Guard1 <= 0,
+            opponentGuard2: isPlayer1Ref.current ? player2Guard1 <= 0 : player1Guard2 <= 0,
         }));
+
+        if (!hasShownTimeAnimRef.current && timeLeft <= 61000) {
+            hasShownTimeAnimRef.current = true;
+            setShowTimeAnimation(true);
+            setTimeout(() => {
+                setShowTimeAnimation(false);
+            }, 2000);
+        }
     };
 
     // === Handle Game Over ===
     const handleGameOver = (res) => {
-        console.log()
         setTimeout(() => {
             setGame((prev) => ({ ...prev, gameOver: true, winner: res.data.winner?.user.username ?? "", message: res.message }));
         }, 1000)
@@ -289,10 +293,6 @@ export default function GameEnhanced() {
         localStorage.removeItem("room_id");
         navigate("/lobby");
     };
-
-    function isValidDrop(row) {
-        return row >= 10;
-    }
 
     function formatDuration(duration) {
         const maxSeconds = 180; // 3 phút = 180 giây
@@ -325,7 +325,6 @@ export default function GameEnhanced() {
                                 alt={type}
                                 className="relative -top-1.5 object-cover px-3 py-3 drop-shadow-lg"
                             />
-                            <div>{type}</div>
                             <div className="absolute -bottom-2 tower-hp w-5/6">
                                 <div className="hp-bar bg-red-950 w-full h-2.5 rounded-sm shadow-inner overflow-hidden border border-red-950">
                                     <div
@@ -349,7 +348,6 @@ export default function GameEnhanced() {
                                     />
                                 </div>
                             </div>
-                            <div>{type}</div>
                             <img
                                 src={towerImage}
                                 alt={type}
@@ -454,6 +452,20 @@ export default function GameEnhanced() {
                         </div>
                     )}
 
+                    {showTimeAnimation && (
+                        <div
+                            className="absolute flex items-center justify-center z-50 pointer-events-none w-full h-full"
+                            style={{
+                                fontFamily: "'ClashDisplay', sans-serif",
+                                textShadow: "2px 2px 10px rgba(165, 6, 6, 0.5)",
+                            }}
+                        >
+                            <div className="text-2xl md:text-5xl text-white animate-turnAlert">
+                                60 SECONDS LEFT
+                            </div>
+                        </div>
+                    )}
+
                     {/* Grid background */}
                     <div className="absolute inset-0 grid grid-cols-22 grid-rows-22 group">
                         {tileMap.map((row, rowIndex) =>
@@ -465,9 +477,6 @@ export default function GameEnhanced() {
                                 // Hàm kiểm tra xem tile có phải là "sông" bị chặn
                                 const isRiverBlocked =
                                     (rowIndex === 10 || rowIndex === 11) && (colIndex !== 4 && colIndex !== 17);
-
-                                // Hàm kiểm tra nếu tile thuộc vùng spawn chuẩn
-                                const isInBasicSpawnZone = rowIndex >= 12 && rowIndex <= 21;
 
                                 // Vùng mở rộng tùy guard chết
                                 const leftZoneUnlocked = game.opponentGuard1;  // guard1 chết => mở
@@ -489,8 +498,11 @@ export default function GameEnhanced() {
                                 // Tính có thể click spawn hay không
                                 const canClick =
                                     hasSelectedTroop &&
-                                    ((isPlayerSide && (isInBasicSpawnZone)) || isUnlockedEnemyTile) &&
-                                    !isRiverBlocked;
+                                    (
+                                        (isPlayerSide) ||
+                                        isUnlockedEnemyTile
+                                    ) &&
+                                    (!isRiverBlocked || colIndex === 4 || colIndex === 17);
 
                                 // Tính overlay đỏ
                                 let shouldShowRedOverlay = false;
@@ -508,13 +520,15 @@ export default function GameEnhanced() {
                                         key={`r${rowIndex}-c${colIndex}`}
                                         className={clsx(
                                             "relative bg-cover flex items-center justify-center",
-                                            canClick ? "cursor-pointer hover:brightness-110" : "pointer-events-none",
-                                            isEnemySide && hasSelectedTroop && !isUnlockedEnemyTile && "group-hover:cursor-not-allowed"
+                                            canClick && "cursor-pointer hover:brightness-110",
+                                            !canClick && "pointer-events-none",
+                                            isEnemySide && hasSelectedTroop && !canClick && "group-hover:cursor-not-allowed"
                                         )}
                                         style={{
                                             backgroundImage: `url(${url}assets/tiles/tile_00${tile}.png)`,
                                         }}
                                         onClick={() => {
+                                            console.log("CLICK", rowIndex, colIndex, canClick);
                                             if (!canClick) return;
                                             spawnTroop(rowIndex, colIndex);
                                         }}
@@ -614,10 +628,10 @@ export default function GameEnhanced() {
                         {game?.map?.filter(e => e.type_entity === "tower").map((tower) => {
                             const isEnemyTower = tower.owner !== localStorage.getItem("username");
 
-                            const colStart = game.isPlayer1 ? 21 - tower.area.bottom_right.x + 1 : tower.area.top_left.x + 1;
-                            const rowStart = game.isPlayer1 ? 21 - tower.area.bottom_right.y + 1 : tower.area.top_left.y + 1;
-                            const colEnd = game.isPlayer1 ? 21 - tower.area.top_left.x + 1 : tower.area.bottom_right.x + 1;
-                            const rowEnd = game.isPlayer1 ? 21 - tower.area.top_left.y + 1 : tower.area.bottom_right.y + 1;
+                            const colStart = isPlayer1 ? 21 - tower.area.bottom_right.x + 1 : tower.area.top_left.x + 1;
+                            const rowStart = isPlayer1 ? 21 - tower.area.bottom_right.y + 1 : tower.area.top_left.y + 1;
+                            const colEnd = isPlayer1 ? 21 - tower.area.top_left.x + 1 : tower.area.bottom_right.x + 1;
+                            const rowEnd = isPlayer1 ? 21 - tower.area.top_left.y + 1 : tower.area.bottom_right.y + 1;
 
                             return (
                                 <div
@@ -642,8 +656,8 @@ export default function GameEnhanced() {
                         {game?.map?.filter(e => e.type_entity === "troop").map((troop) => {
                             const isEnemyTroop = troop.owner !== user?.user.username;
 
-                            const displayX = game.isPlayer1 ? 21 - troop.position.x : troop.position.x;
-                            const displayY = game.isPlayer1 ? 21 - troop.position.y : troop.position.y;
+                            const displayX = isPlayer1 ? 21 - troop.position.x : troop.position.x;
+                            const displayY = isPlayer1 ? 21 - troop.position.y : troop.position.y;
 
                             const troopWidth = 48;
                             const troopHeight = 48;
