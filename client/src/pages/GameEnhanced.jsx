@@ -11,7 +11,8 @@ export default function GameEnhanced() {
     const damageTimeoutRef = useRef(null);
     const healTimeoutRef = useRef(null);
     const isPlayer1Ref = useRef(false);
-    // const hasLeftGameRef = useRef(false);
+    const hasShownTimeAnimRef = useRef(false);
+    const hasLeftGameRef = useRef(false);
 
     const [user, setUser] = useState({});
     const [opponent, setOpponent] = useState({});
@@ -21,6 +22,7 @@ export default function GameEnhanced() {
     const [hoveredTroop, setHoveredTroop] = useState(null);
     const [tileSize, setTileSize] = useState(0);
     const [showLargeAnimation, setShowLargeAnimation] = useState(false);
+    const [showTimeAnimation, setShowTimeAnimation] = useState(false);
 
     const [notification, setNotification] = useState({
         show: false,
@@ -86,7 +88,7 @@ export default function GameEnhanced() {
 
         return () => {
             unsubscribe();
-            // leaveGame();
+            leaveGame();
             if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
             if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
         };
@@ -167,19 +169,19 @@ export default function GameEnhanced() {
     };
 
     // === Leave Game ===
-    // const leaveGame = () => {
-    //     if (hasLeftGameRef.current) return;
+    const leaveGame = () => {
+        if (hasLeftGameRef.current) return;
 
-    //     hasLeftGameRef.current = true;
-    //     sendMessage({
-    //         type: "leave_game",
-    //         data: {
-    //             room_id: localStorage.getItem("room_id"),
-    //             username: localStorage.getItem("username"),
-    //         },
-    //     });
-    //     localStorage.removeItem("room_id");
-    // };
+        hasLeftGameRef.current = true;
+        sendMessage({
+            type: "leave_game",
+            data: {
+                room_id: localStorage.getItem("room_id"),
+                username: localStorage.getItem("username"),
+            },
+        });
+        localStorage.removeItem("room_id");
+    };
 
     // === Select Troop ===
     const selectTroop = (troopName) => {
@@ -259,13 +261,13 @@ export default function GameEnhanced() {
             opponentGuard2: isPlayer1Ref.current ? player2Guard1 <= 0 : player1Guard2 <= 0,
         }));
 
-        // console.log("Player 1 guard 1 status: ", player1Guard1)
-        // console.log("Player 1 guard 2 status: ", player1Guard2)
-        // console.log("Player 2 guard 1 status: ", player2Guard1)
-        // console.log("Player 2 guard 2 status: ", player2Guard2)
-
-        // console.log("Opponent guard 1 status: ", game.isPlayer1 ? player2Guard2 <= 0 : player1Guard1 <= 0);
-        // console.log("Opponent guard 2 status: ", game.isPlayer1 ? player2Guard1 <= 0 : player1Guard2 <= 0);
+        if (!hasShownTimeAnimRef.current && timeLeft <= 61000) {
+            hasShownTimeAnimRef.current = true;
+            setShowTimeAnimation(true);
+            setTimeout(() => {
+                setShowTimeAnimation(false);
+            }, 2000);
+        }
     };
 
     // === Handle Game Over ===
@@ -322,7 +324,6 @@ export default function GameEnhanced() {
                                 alt={type}
                                 className="relative -top-1.5 object-cover px-3 py-3 drop-shadow-lg"
                             />
-                            <div>{type}</div>
                             <div className="absolute -bottom-2 tower-hp w-5/6">
                                 <div className="hp-bar bg-red-950 w-full h-2.5 rounded-sm shadow-inner overflow-hidden border border-red-950">
                                     <div
@@ -346,7 +347,6 @@ export default function GameEnhanced() {
                                     />
                                 </div>
                             </div>
-                            <div>{type}</div>
                             <img
                                 src={towerImage}
                                 alt={type}
@@ -447,6 +447,20 @@ export default function GameEnhanced() {
                         >
                             <div className="text-2xl md:text-5xl text-white animate-turnAlert">
                                 FIGHT!
+                            </div>
+                        </div>
+                    )}
+
+                    {showTimeAnimation && (
+                        <div
+                            className="absolute flex items-center justify-center z-50 pointer-events-none w-full h-full"
+                            style={{
+                                fontFamily: "'ClashDisplay', sans-serif",
+                                textShadow: "2px 2px 10px rgba(165, 6, 6, 0.5)",
+                            }}
+                        >
+                            <div className="text-2xl md:text-5xl text-white animate-turnAlert">
+                                60 SECONDS LEFT
                             </div>
                         </div>
                     )}
