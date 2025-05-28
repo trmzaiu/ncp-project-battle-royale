@@ -280,10 +280,10 @@ func (g *Game) BroadcastGameState() {
 			Data: map[string]interface{}{
 				"battleMap": g.BattleSystem.GetEntityList(),
 				"timeLeft":  timeLeft.Milliseconds(),
-				"player1Guard1": g.Player1.Towers["guard1"].HP <= 0,
-				"player1Guard2": g.Player1.Towers["guard2"].HP <= 0,
-				"player2Guard1": g.Player2.Towers["guard1"].HP <= 0,
-				"player2Guard2": g.Player2.Towers["guard2"].HP <= 0,
+				"player1Guard1": g.Player1.Towers["guard1"].HP,
+				"player1Guard2": g.Player1.Towers["guard2"].HP,
+				"player2Guard1": g.Player2.Towers["guard1"].HP,
+				"player2Guard2": g.Player2.Towers["guard2"].HP,
 			},
 		})
 	}

@@ -6,12 +6,12 @@
     "createdAt": "2025-05-08T23:38:31.6110692+07:00",
     "lastLogin": "2025-05-08T23:38:31.6110692+07:00",
     "isActive": true,
-    "exp": 541,
+    "exp": 771,
     "level": 9,
-    "gamesPlayed": 104,
-    "gamesWon": 57,
+    "gamesPlayed": 116,
+    "gamesWon": 64,
     "avatar": "1",
-    "gold": 21
+    "gold": 407
   },
   {
     "id": "20250509232011abcdefgh",
@@ -20,12 +20,12 @@
     "createdAt": "2025-05-09T23:20:11.7080491+07:00",
     "lastLogin": "2025-05-09T23:20:11.7080491+07:00",
     "isActive": true,
-    "exp": 614,
+    "exp": 734,
     "level": 8,
-    "gamesPlayed": 111,
-    "gamesWon": 49,
+    "gamesPlayed": 119,
+    "gamesWon": 53,
     "avatar": "10",
-    "gold": 851
+    "gold": 1851
   },
   {
     "id": "20250510015315abcdefgh",
@@ -36,7 +36,7 @@
     "isActive": true,
     "exp": 671,
     "level": 9,
-    "gamesPlayed": 107,
+    "gamesPlayed": 109,
     "gamesWon": 51,
     "avatar": "14",
     "gold": 0
@@ -78,10 +78,10 @@
     "isActive": true,
     "exp": 60,
     "level": 1,
-    "gamesPlayed": 3,
+    "gamesPlayed": 5,
     "gamesWon": 2,
     "avatar": "2",
-    "gold": 0
+    "gold": 42
   },
   {
     "id": "2025052615351824ocX8O5",
@@ -104,12 +104,12 @@
     "createdAt": "2025-05-26T17:04:10.7793889+07:00",
     "lastLogin": "2025-05-26T17:04:10.7793889+07:00",
     "isActive": true,
-    "exp": 33859,
+    "exp": 34289,
     "level": 17,
-    "gamesPlayed": 5379,
-    "gamesWon": 4678,
+    "gamesPlayed": 5404,
+    "gamesWon": 4690,
     "avatar": "12",
-    "gold": 1710306
+    "gold": 1711015
   },
   {
     "id": "20250526170430RRNNOi7A",
@@ -118,12 +118,12 @@
     "createdAt": "2025-05-26T17:04:30.7718887+07:00",
     "lastLogin": "2025-05-26T17:04:30.7718887+07:00",
     "isActive": true,
-    "exp": 2750,
+    "exp": 2890,
     "level": 11,
-    "gamesPlayed": 5424,
-    "gamesWon": 336,
+    "gamesPlayed": 5438,
+    "gamesWon": 340,
     "avatar": "8",
-    "gold": 2355
+    "gold": 3155
   },
   {
     "id": "20250527163621L8cSuOto",
@@ -132,11 +132,53 @@
     "createdAt": "2025-05-27T16:36:21.3029476+07:00",
     "lastLogin": "2025-05-27T16:36:21.3029476+07:00",
     "isActive": true,
-    "exp": 295,
-    "level": 4,
-    "gamesPlayed": 46,
-    "gamesWon": 24,
+    "exp": 68,
+    "level": 5,
+    "gamesPlayed": 55,
+    "gamesWon": 27,
     "avatar": "8",
-    "gold": 2470
+    "gold": 2575
+  },
+  {
+    "id": "20250528140234y2sgf1rP",
+    "username": "Qdatne",
+    "password": "$2a$10$bmLQzgr1mpvaBS3byJi2cuLZaWGjZd9GPJg9svj6cQbB.w6npLTBG",
+    "createdAt": "2025-05-28T14:02:34.8785039+07:00",
+    "lastLogin": "2025-05-28T14:02:34.8785039+07:00",
+    "isActive": true,
+    "exp": 60,
+    "level": 1,
+    "gamesPlayed": 3,
+    "gamesWon": 2,
+    "avatar": "7",
+    "gold": 0
+  },
+  {
+    "id": "20250528140248L0v5VRQB",
+    "username": "Aeminhhehehe",
+    "password": "$2a$10$cwF9n92dUbzPhkvnK/UJE.9u4yIGMBAXYHgfxlSOiTc0ncX32Egsu",
+    "createdAt": "2025-05-28T14:02:48.3888907+07:00",
+    "lastLogin": "2025-05-28T14:02:48.3888907+07:00",
+    "isActive": true,
+    "exp": 30,
+    "level": 1,
+    "gamesPlayed": 3,
+    "gamesWon": 1,
+    "avatar": "9",
+    "gold": 0
+  },
+  {
+    "id": "20250528140305RnO98nAt",
+    "username": "PhuCuong",
+    "password": "$2a$10$9i7P0uv3rmoBv/IUmctrm.xROWNmoT0j3fRoYn7dUQErYK8tbd0UG",
+    "createdAt": "2025-05-28T14:03:05.9940594+07:00",
+    "lastLogin": "2025-05-28T14:03:05.9940594+07:00",
+    "isActive": true,
+    "exp": 30,
+    "level": 1,
+    "gamesPlayed": 2,
+    "gamesWon": 1,
+    "avatar": "8",
+    "gold": 0
   }
 ]

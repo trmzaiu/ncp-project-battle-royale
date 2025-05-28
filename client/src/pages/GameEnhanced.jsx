@@ -10,10 +10,12 @@ export default function GameEnhanced() {
     const containerRef = useRef(null);
     const damageTimeoutRef = useRef(null);
     const healTimeoutRef = useRef(null);
+    const isPlayer1Ref = useRef(false);
     // const hasLeftGameRef = useRef(false);
 
     const [user, setUser] = useState({});
     const [opponent, setOpponent] = useState({});
+    const [isPlayer1, setIsPlayer1] = useState(false);
     const [game, setGame] = useState(getInitialGameState());
     const [isGameInitialized, setIsGameInitialized] = useState(false);
     const [hoveredTroop, setHoveredTroop] = useState(null);
@@ -28,7 +30,6 @@ export default function GameEnhanced() {
     // === Initial Game State ===
     function getInitialGameState() {
         return {
-            isPlayer1: false,
             playerMana: 5,
             maxMana: 10,
             troops: {},
@@ -39,8 +40,6 @@ export default function GameEnhanced() {
             message: "",
             map: [],
             time: 0,
-            playerGuard1: false,
-            playerGuard2: false,
             opponentGuard1: false,
             opponentGuard2: false,
         };
@@ -143,9 +142,8 @@ export default function GameEnhanced() {
     };
 
     // === Game Initialization ===
-    const initializeGame = (time, map, player1, troops, userData) => {
+    const initializeGame = (time, map, troops, userData) => {
         setGame({
-            isPlayer1: player1 === localStorage.getItem("username"),
             playerMana: userData.mana,
             maxMana: 10,
             troops: troops,
@@ -155,11 +153,10 @@ export default function GameEnhanced() {
             message: "",
             map: map,
             time: time,
-            playerGuard1: false,
-            playerGuard2: false,
             opponentGuard1: false,
             opponentGuard2: false,
         });
+
 
         setIsGameInitialized(true);
 
@@ -196,8 +193,6 @@ export default function GameEnhanced() {
     const spawnTroop = (row, col) => {
         if (!game.selectedTroop) return;
 
-        if (!isValidDrop(row)) return;
-
         sendMessage({
             type: "select_troop",
             data: {
@@ -217,17 +212,16 @@ export default function GameEnhanced() {
     // === Handle Set Game Response ===
     const handleSetGameState = (msg) => {
         const { user, opponent, player1, map, time } = msg;
+        console.log(user);
         setUser(user);
         setOpponent(opponent);
 
+        const isP1 = player1 === user.user.username;
+        isPlayer1Ref.current = isP1;   // <-- update ref
+        setIsPlayer1(isP1);
+
         if (!isGameInitialized) {
-            initializeGame(
-                time,
-                map,
-                player1,
-                user.troops,
-                user,
-            );
+            initializeGame(time, map, user.troops, user);
         }
     }
 
@@ -256,18 +250,26 @@ export default function GameEnhanced() {
     const handleSetMap = (msg) => {
         const { battleMap, timeLeft, player1Guard1, player1Guard2, player2Guard1, player2Guard2 } = msg;
 
+
         setGame((prev) => ({
             ...prev,
             map: battleMap,
             time: timeLeft,
-            opponentGuard1: game.isPlayer1 ? player2Guard2 : player1Guard1,
-            opponentGuard2: game.isPlayer1 ? player2Guard1 : player1Guard2,
+            opponentGuard1: isPlayer1Ref.current ? player2Guard2 <= 0 : player1Guard1 <= 0,
+            opponentGuard2: isPlayer1Ref.current ? player2Guard1 <= 0 : player1Guard2 <= 0,
         }));
+
+        // console.log("Player 1 guard 1 status: ", player1Guard1)
+        // console.log("Player 1 guard 2 status: ", player1Guard2)
+        // console.log("Player 2 guard 1 status: ", player2Guard1)
+        // console.log("Player 2 guard 2 status: ", player2Guard2)
+
+        // console.log("Opponent guard 1 status: ", game.isPlayer1 ? player2Guard2 <= 0 : player1Guard1 <= 0);
+        // console.log("Opponent guard 2 status: ", game.isPlayer1 ? player2Guard1 <= 0 : player1Guard2 <= 0);
     };
 
     // === Handle Game Over ===
     const handleGameOver = (res) => {
-        console.log()
         setTimeout(() => {
             setGame((prev) => ({ ...prev, gameOver: true, winner: res.data.winner?.user.username ?? "", message: res.message }));
         }, 1000)
@@ -288,10 +290,6 @@ export default function GameEnhanced() {
         localStorage.removeItem("room_id");
         navigate("/lobby");
     };
-
-    function isValidDrop(row) {
-        return row >= 10;
-    }
 
     function formatDuration(duration) {
         const maxSeconds = 180; // 3 phút = 180 giây
@@ -465,9 +463,6 @@ export default function GameEnhanced() {
                                 const isRiverBlocked =
                                     (rowIndex === 10 || rowIndex === 11) && (colIndex !== 4 && colIndex !== 17);
 
-                                // Hàm kiểm tra nếu tile thuộc vùng spawn chuẩn
-                                const isInBasicSpawnZone = rowIndex >= 12 && rowIndex <= 21;
-
                                 // Vùng mở rộng tùy guard chết
                                 const leftZoneUnlocked = game.opponentGuard1;  // guard1 chết => mở
                                 const rightZoneUnlocked = game.opponentGuard2; // guard2 chết => mở
@@ -488,8 +483,11 @@ export default function GameEnhanced() {
                                 // Tính có thể click spawn hay không
                                 const canClick =
                                     hasSelectedTroop &&
-                                    ((isPlayerSide && (isInBasicSpawnZone)) || isUnlockedEnemyTile) &&
-                                    !isRiverBlocked;
+                                    (
+                                        (isPlayerSide) ||
+                                        isUnlockedEnemyTile
+                                    ) &&
+                                    (!isRiverBlocked || colIndex === 4 || colIndex === 17);
 
                                 // Tính overlay đỏ
                                 let shouldShowRedOverlay = false;
@@ -507,13 +505,15 @@ export default function GameEnhanced() {
                                         key={`r${rowIndex}-c${colIndex}`}
                                         className={clsx(
                                             "relative bg-cover flex items-center justify-center",
-                                            canClick ? "cursor-pointer hover:brightness-110" : "pointer-events-none",
-                                            isEnemySide && hasSelectedTroop && !isUnlockedEnemyTile && "group-hover:cursor-not-allowed"
+                                            canClick && "cursor-pointer hover:brightness-110",
+                                            !canClick && "pointer-events-none",
+                                            isEnemySide && hasSelectedTroop && !canClick && "group-hover:cursor-not-allowed"
                                         )}
                                         style={{
                                             backgroundImage: `url(/royaka-2025-fe/assets/tiles/tile_00${tile}.png)`,
                                         }}
                                         onClick={() => {
+                                            console.log("CLICK", rowIndex, colIndex, canClick);
                                             if (!canClick) return;
                                             spawnTroop(rowIndex, colIndex);
                                         }}
@@ -613,10 +613,10 @@ export default function GameEnhanced() {
                         {game?.map?.filter(e => e.type_entity === "tower").map((tower) => {
                             const isEnemyTower = tower.owner !== localStorage.getItem("username");
 
-                            const colStart = game.isPlayer1 ? 21 - tower.area.bottom_right.x + 1 : tower.area.top_left.x + 1;
-                            const rowStart = game.isPlayer1 ? 21 - tower.area.bottom_right.y + 1 : tower.area.top_left.y + 1;
-                            const colEnd = game.isPlayer1 ? 21 - tower.area.top_left.x + 1 : tower.area.bottom_right.x + 1;
-                            const rowEnd = game.isPlayer1 ? 21 - tower.area.top_left.y + 1 : tower.area.bottom_right.y + 1;
+                            const colStart = isPlayer1 ? 21 - tower.area.bottom_right.x + 1 : tower.area.top_left.x + 1;
+                            const rowStart = isPlayer1 ? 21 - tower.area.bottom_right.y + 1 : tower.area.top_left.y + 1;
+                            const colEnd = isPlayer1 ? 21 - tower.area.top_left.x + 1 : tower.area.bottom_right.x + 1;
+                            const rowEnd = isPlayer1 ? 21 - tower.area.top_left.y + 1 : tower.area.bottom_right.y + 1;
 
                             return (
                                 <div
@@ -641,8 +641,8 @@ export default function GameEnhanced() {
                         {game?.map?.filter(e => e.type_entity === "troop").map((troop) => {
                             const isEnemyTroop = troop.owner !== user?.user.username;
 
-                            const displayX = game.isPlayer1 ? 21 - troop.position.x : troop.position.x;
-                            const displayY = game.isPlayer1 ? 21 - troop.position.y : troop.position.y;
+                            const displayX = isPlayer1 ? 21 - troop.position.x : troop.position.x;
+                            const displayY = isPlayer1 ? 21 - troop.position.y : troop.position.y;
 
                             const troopWidth = 48;
                             const troopHeight = 48;
