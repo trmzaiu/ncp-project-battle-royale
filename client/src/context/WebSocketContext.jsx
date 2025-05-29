@@ -18,7 +18,7 @@ export function WebSocketProvider({ children }) {
     const messageListeners = useRef(new Set());
 
     const connectWebSocket = React.useCallback(() => {
-        socketRef.current = new WebSocket("ws://LAPTOPCUATUI:8081/ws");
+        socketRef.current = new WebSocket(WS_URL);
 
         socketRef.current.onopen = () => {
             console.log("[WS] Connected");
