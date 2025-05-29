@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
+import process from 'process'
 
 export default function Entry() {
     const url = process.env.NODE_ENV === 'production' ? "/royaka-2025-fe/" : "/";
