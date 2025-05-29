@@ -134,7 +134,6 @@ export default function GameSimple() {
                 break;
 
             default:
-                res.message && showNotification(res.message);
         }
     };
 

@@ -256,13 +256,13 @@ func (g *Game) CheckWinner() (*model.Player, string) {
 		g.Player1.User.Gold += g.Player1.Gold
 		g.Player2.User.Gold += g.Player2.Gold
 
-		if p1Score > p2Score {
+		if p1Score < p2Score {
 			AwardEXP(g.Player1.User, g.Player2.User, false)
 			fmt.Printf("Winner by score: %s\n", g.Player1.User.Username)
 			return g.Player1, g.Player1.User.Username + " wins by score!"
 		}
 
-		if p2Score > p1Score {
+		if p2Score < p1Score {
 			AwardEXP(g.Player2.User, g.Player1.User, false)
 			fmt.Printf("Winner by score: %s\n", g.Player2.User.Username)
 			return g.Player2, g.Player2.User.Username + " wins by score!"
