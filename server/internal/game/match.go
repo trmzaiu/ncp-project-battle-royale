@@ -2,6 +2,7 @@ package game
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"royaka/internal/model"
 	"royaka/internal/utils"
@@ -72,6 +73,8 @@ func HandleFindMatch(conn *websocket.Conn, data json.RawMessage) {
 
 func queuePlayer(player *model.Player, clientConn *ClientConnection, mode, username string) {
 	queue, ok := matchQueues[mode]
+	fmt.Printf("[INFO][MATCH] player queued for mode %s (queue: %v)\n", mode, matchQueues[mode])
+
 	if !ok {
 		log.Printf("[WARN][MATCH] invalid mode %s for user %s", mode, username)
 		clientConn.SafeWrite(utils.Response{
@@ -86,7 +89,7 @@ func queuePlayer(player *model.Player, clientConn *ClientConnection, mode, usern
 	case queue <- player:
 	case <-time.After(30 * time.Second):
 		log.Printf("[WARN][MATCH] enqueue timeout for user %s", username)
-		cleanupUser(username)
+		CleanupUser(username)
 		return
 	}
 
@@ -98,7 +101,8 @@ func queuePlayer(player *model.Player, clientConn *ClientConnection, mode, usern
 		log.Printf("[INFO][MATCH] user %s matched", username)
 	case <-timer.C:
 		log.Printf("[WARN][MATCH] matchmaking timeout for user %s", username)
-		cleanupUser(username)
+		RemovePlayerFromQueue(player)
+		CleanupUser(username)
 		clientConn.SafeWrite(utils.Response{
 			Type:    "match_timeout",
 			Success: false,
@@ -107,7 +111,37 @@ func queuePlayer(player *model.Player, clientConn *ClientConnection, mode, usern
 	}
 }
 
-func cleanupUser(username string) {
+func RemovePlayerFromQueue(targetPlayer *model.Player) {
+	for mode, queue := range matchQueues {
+		var tempPlayers []*model.Player
+
+		// Drain queue and filter out target player
+		queueLength := len(queue)
+		for i := 0; i < queueLength; i++ {
+			select {
+			case player := <-queue:
+				if player.User.Username != targetPlayer.User.Username {
+					tempPlayers = append(tempPlayers, player)
+				} else {
+					log.Printf("[INFO][QUEUE] removed player %s from %s queue", player.User.Username, mode)
+				}
+			default:
+				break
+			}
+		}
+
+		// Put back remaining players
+		for _, player := range tempPlayers {
+			select {
+			case queue <- player:
+			default:
+				log.Printf("[WARN][QUEUE] failed to restore player %s to queue", player.User.Username)
+			}
+		}
+	}
+}
+
+func CleanupUser(username string) {
 	pendingMu.Lock()
 	delete(pendingPlayers, username)
 	pendingMu.Unlock()

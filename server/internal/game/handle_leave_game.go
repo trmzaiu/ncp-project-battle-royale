@@ -60,7 +60,9 @@ func HandleLeaveGame(conn *websocket.Conn, data json.RawMessage) {
 		sendToClient(winner.User.Username, payload)
 	}
 
-	room.Game.StopGameLoop()
+	if room.Game.TurnTimerCancel != nil {
+		room.Game.TurnTimerCancel()
+	}
 
 	conn.WriteJSON(utils.Response{
 		Type:    "leave_game_response",
@@ -90,3 +92,5 @@ func HandleDisconnect(conn *websocket.Conn) {
 	raw, _ := json.Marshal(req)
 	HandleLeaveGame(conn, raw)
 }
+
+

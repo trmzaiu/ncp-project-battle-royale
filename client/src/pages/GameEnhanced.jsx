@@ -8,8 +8,6 @@ export default function GameEnhanced() {
     const { sendMessage, subscribe } = useWebSocketContext();
 
     const containerRef = useRef(null);
-    const damageTimeoutRef = useRef(null);
-    const healTimeoutRef = useRef(null);
     const isPlayer1Ref = useRef(false);
     const hasShownTimeAnimRef = useRef(false);
     const hasLeftGameRef = useRef(false);
@@ -65,17 +63,17 @@ export default function GameEnhanced() {
 
     // === Effect: Initial Setup & WebSocket Subscription ===
     useEffect(() => {
-        // if (!localStorage.getItem("session_id")) {
-        //     showNotification("Session expired. Redirecting to login...");
-        //     navigate("/auth")
-        //     return;
-        // }
+        if (!localStorage.getItem("session_id")) {
+            showNotification("Session expired. Redirecting to login...");
+            navigate("/auth")
+            return;
+        }
 
-        // if (!localStorage.getItem("room_id")) {
-        //     showNotification("Room not found. Redirecting to lobby...");
-        //     navigate("/lobby")
-        //     return;
-        // }
+        if (!localStorage.getItem("room_id")) {
+            showNotification("Room not found. Redirecting to lobby...");
+            navigate("/lobby")
+            return;
+        }
 
         const unsubscribe = subscribe(handleMessage);
         sendMessage({
@@ -89,8 +87,6 @@ export default function GameEnhanced() {
         return () => {
             unsubscribe();
             leaveGame();
-            if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
-            if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
         };
 
     }, [subscribe, sendMessage, navigate]);
@@ -117,7 +113,6 @@ export default function GameEnhanced() {
                 break;
 
             case "mana_update":
-                // console.log("Mana Update:", res);
                 if (res.success) {
                     handleSetMana(res.data);
                 } else {
@@ -126,7 +121,6 @@ export default function GameEnhanced() {
                 break;
 
             case "game_state":
-                // console.log("Battle Map:", res.data.battleMap);
                 if (res.success) {
                     handleSetMap(res.data);
                 } else {

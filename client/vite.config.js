@@ -7,6 +7,6 @@ export default defineConfig({
   base: '/royaka-2025-fe/',
   server: {
     host: true,
-    port: 5173,
+    port: 3000,
   },
 })
