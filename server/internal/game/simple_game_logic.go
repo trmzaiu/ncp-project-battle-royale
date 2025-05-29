@@ -40,6 +40,9 @@ func (g *Game) PlayTurnSimple(player *model.Player, troop *model.Troop, tower st
 			player.Mana = 10
 		}
 	} else {
+		if g.TurnTimerCancel != nil {
+			g.TurnTimerCancel()
+		}
 		g.SwitchTurn()
 	}
 
@@ -52,7 +55,7 @@ func (g *Game) HealTower(player *model.Player, troop *model.Troop) (int, *model.
 	if player.Mana < troop.MANA {
 		return 0, nil, manaRequestMessage
 	}
-	if troop.Type != "heal" {
+	if troop.Type != "healer" {
 		return 0, nil, "Only healing troop can heal towers"
 	}
 	player.Mana -= troop.MANA
@@ -68,7 +71,7 @@ func (g *Game) HealTower(player *model.Player, troop *model.Troop) (int, *model.
 		lowest.HP = lowest.MaxHP
 	}
 
-	message := fmt.Sprintf("Queen healed %s tower for %f HP", lowest.Type, healAmount)
+	message := fmt.Sprintf("%s healed %s tower for %f HP", troop.Name, lowest.Type, healAmount)
 	if isCrit {
 		message += " (Critical heal!)"
 	}
@@ -78,7 +81,6 @@ func (g *Game) HealTower(player *model.Player, troop *model.Troop) (int, *model.
 
 	return int(healAmount), lowest, message
 }
-
 
 // ===================== Combat Core =====================
 

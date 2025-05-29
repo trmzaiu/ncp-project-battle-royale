@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWebSocketContext } from "../context/WebSocketContext";
+import process from 'process'
 
 export default function Lobby() {
     const url = process.env.NODE_ENV === 'production' ? "/royaka-2025-fe/" : "/";
@@ -23,11 +24,11 @@ export default function Lobby() {
     };
 
     useEffect(() => {
-        // if (!localStorage.getItem("session_id")) {
-        //     showNotification("Session expired. Redirecting to login...");
-        //     setTimeout(() => navigate("/auth"), 1500);
-        //     return;
-        // }
+        if (!localStorage.getItem("session_id")) {
+            showNotification("Session expired. Redirecting to login...");
+            setTimeout(() => navigate("/auth"), 1500);
+            return;
+        }
 
         const unsubscribe = subscribe((res) => {
             selectedModeRef.current = selectedMode;

@@ -11,17 +11,18 @@ import (
 )
 
 type Game struct {
-	Player1        *model.Player
-	Player2        *model.Player
-	Turn           string
-	Started        bool
-	Enhanced       bool
-	StartTime      time.Time
-	MaxTime        time.Duration
-	LastTick       time.Time
-	TickerStopChan chan struct{}
-	BattleSystem   *BattleSystem
-	WinnerDeclared bool
+	Player1         *model.Player
+	Player2         *model.Player
+	Turn            string
+	Started         bool
+	Enhanced        bool
+	StartTime       time.Time
+	MaxTime         time.Duration
+	LastTick        time.Time
+	TickerStopChan  chan struct{}
+	BattleSystem    *BattleSystem
+	WinnerDeclared  bool
+	TurnTimerCancel func()
 }
 
 // ===================== Game Initialization =====================
@@ -77,6 +78,8 @@ func NewGame(p1, p2 *model.Player, mode string) *Game {
 			game.StartTime = time.Now()
 			go game.startTicker()
 		})
+	} else {
+		game.StartTurnTimer()
 	}
 
 	return game
@@ -101,6 +104,11 @@ func (g *Game) SwitchTurn() {
 		g.Turn = g.Player1.User.Username
 	}
 
+	g.LastTick = time.Now()
+
+	// khởi động timer cho lượt mới
+	g.StartTurnTimer()
+
 	nextPlayer := g.CurrentPlayer()
 	if nextPlayer.Turn > 0 {
 		nextPlayer.Mana += 3
@@ -113,6 +121,31 @@ func (g *Game) SwitchTurn() {
 func (g *Game) SkipTurn(player *model.Player) {
 	player.Turn++
 	g.SwitchTurn()
+}
+
+func (g *Game) StartTurnTimer() {
+	// Hủy timer cũ nếu còn
+	if g.TurnTimerCancel != nil {
+		g.TurnTimerCancel()
+	}
+
+	timer := time.NewTimer(30 * time.Second)
+	cancelChan := make(chan struct{})
+
+	g.TurnTimerCancel = func() {
+		timer.Stop()
+		close(cancelChan)
+	}
+
+	go func() {
+		select {
+		case <-timer.C:
+			log.Printf("[TURN] player %s timed out", g.Turn)
+			g.HandleTurnTimeout()
+		case <-cancelChan:
+			// lượt kết thúc hợp lệ
+		}
+	}()
 }
 
 // ===================== Game Tick & Loop =====================
@@ -241,8 +274,12 @@ func (g *Game) CheckWinner() (*model.Player, string) {
 
 func (g *Game) SetWinner(winner *model.Player) {
 	if winner == g.Player1 {
+		g.WinnerDeclared = true
+		g.StopGameLoop()
 		AwardEXP(g.Player1.User, g.Player2.User, false)
 	} else if winner == g.Player2 {
+		g.WinnerDeclared = true
+		g.StopGameLoop()
 		AwardEXP(g.Player2.User, g.Player1.User, false)
 	}
 }
@@ -278,8 +315,8 @@ func (g *Game) BroadcastGameState() {
 			Success: true,
 			Message: "Game updated",
 			Data: map[string]interface{}{
-				"battleMap": g.BattleSystem.GetEntityList(),
-				"timeLeft":  timeLeft.Milliseconds(),
+				"battleMap":     g.BattleSystem.GetEntityList(),
+				"timeLeft":      timeLeft.Milliseconds(),
 				"player1Guard1": g.Player1.Towers["guard1"].HP,
 				"player1Guard2": g.Player1.Towers["guard2"].HP,
 				"player2Guard1": g.Player2.Towers["guard1"].HP,

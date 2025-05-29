@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"royaka/internal/game"
+	"royaka/internal/model"
 	"royaka/internal/utils"
 
 	"github.com/gorilla/websocket"
@@ -35,6 +36,10 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 		}
 		if err := conn.Close(); err != nil {
 			log.Printf("[ERROR][WS] Connection close failed: %v", err)
+		}
+		if player := model.GetPlayerByConn(conn); player != nil {
+			game.RemovePlayerFromQueue(player)
+			game.CleanupUser(player.User.Username)
 		}
 		game.HandleDisconnect(conn)
 		log.Println("[WS] Connection closed")
