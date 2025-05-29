@@ -3,3 +3,4 @@
 /client/src/context
 client/src/context/WebSocketContext.jsx
 client/.env
+server/.env
