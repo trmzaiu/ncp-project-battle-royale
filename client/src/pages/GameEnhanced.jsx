@@ -467,7 +467,7 @@ export default function GameEnhanced() {
                     )}
 
                     {/* Grid background */}
-                    <div className="absolute inset-0 grid grid-cols-22 grid-rows-22 group">
+                    <div className="absolute grid [grid-template-columns:repeat(22,1fr)] [grid-template-rows:repeat(22,1fr)] aspect-square max-w-full group">
                         {tileMap.map((row, rowIndex) =>
                             row.map((tile, colIndex) => {
                                 const isPlayerSide = rowIndex >= 12;
@@ -542,7 +542,7 @@ export default function GameEnhanced() {
                                                 src={`${url}assets/tiles/tile_0027.png`}
                                                 alt="Tree"
                                                 className="w-full h-full pointer-events-none select-none z-5"
-                                                style={{ objectFit: "cover" }}
+                                                style={{ objectFit: "contain" }}
                                             />
                                         )}
 
@@ -624,7 +624,7 @@ export default function GameEnhanced() {
                     </div>
 
                     {/* Battlefield grid layout - 22 columns x 6 rows */}
-                    <div className="grid-battlefield grid grid-cols-22 grid-rows-22 relative w-full aspect-square pointer-events-none">
+                    <div className="grid-battlefield grid [grid-template-columns:repeat(22,1fr)] [grid-template-rows:repeat(22,1fr)] relative w-full aspect-square pointer-events-none">
                         {game?.map?.filter(e => e.type_entity === "tower").map((tower) => {
                             const isEnemyTower = tower.owner !== localStorage.getItem("username");
 
@@ -809,7 +809,7 @@ export default function GameEnhanced() {
                                     >
                                         <div className="w-full relative">
                                             <img
-                                                className="w-20 h-22 md:w-34 md:h-34 object-cover"
+                                                className="w-24 h-28 md:w-36 md:h-40 object-cover"
                                                 src={`${url}assets/cards/Card_${troop.image}.png`}
                                                 alt={troopName}
                                             />

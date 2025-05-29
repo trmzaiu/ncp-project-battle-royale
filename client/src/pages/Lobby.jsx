@@ -278,7 +278,7 @@ export default function Lobby() {
                     {/* Game Options */}
                     <div className="bg-gradient-to-b from-blue-800 to-blue-900 rounded-xl shadow-lg p-6 flex-1 border-4 border-yellow-400 relative overflow-hidden">
                         <img
-                            className="absolute w-35 -left-8 -top-8 opacity-40 -rotate-12 pointer-events-none"
+                            className="absolute w-36 -left-8 -top-8 opacity-40 -rotate-12 pointer-events-none"
                             src={`${url}assets/icon_timed_match.png`}
                             alt=""
                         />
@@ -402,7 +402,7 @@ export default function Lobby() {
                 </div>
 
                 {/* Log Container */}
-                <div className="mt-6 bg-blue-900 rounded-xl p-4 border-4 border-cyan-400 shadow-lg h-40 overflow-y-auto">
+                {/* <div className="mt-6 bg-blue-900 rounded-xl p-4 border-4 border-cyan-400 shadow-lg h-40 overflow-y-auto">
                     <div className="text-center mb-2">
                         <span className="bg-blue-700 px-4 py-1 rounded-full text-white text-sm font-black border-2 border-cyan-300 pointer-events-none">
                             BATTLE LOG
@@ -445,7 +445,7 @@ export default function Lobby() {
                             </div>
                         );
                     })}
-                </div>
+                </div> */}
 
                 {/* Notification */}
                 {notification.show && (
@@ -459,7 +459,7 @@ export default function Lobby() {
 
                 {/* Decorative elements */}
                 <img
-                    className="fixed w-25 top-4 left-4 animate-pulse pointer-events-none"
+                    className="fixed w-28 top-4 left-4 animate-pulse pointer-events-none"
                     src={`${url}assets/icon_badge.png`}
                     alt=""
                 />

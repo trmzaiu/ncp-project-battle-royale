@@ -90,7 +90,7 @@ export default function GameSimple() {
 
         return () => {
             unsubscribe();
-            // leaveGame();
+            leaveGame();
             if (damageTimeoutRef.current) clearTimeout(damageTimeoutRef.current);
             if (healTimeoutRef.current) clearTimeout(healTimeoutRef.current);
         };
@@ -161,7 +161,7 @@ export default function GameSimple() {
 
         setIsGameInitialized(true);
 
-        
+
 
         setShowLargeAnimation(true);
         setTimeout(() => {
@@ -867,7 +867,7 @@ export default function GameSimple() {
                                 >
                                     <div className="w-full relative">
                                         <img
-                                            className="w-20 h-22 object-cover"
+                                            className="w-24 h-28 md:w-36 md:h-40 object-cover rounded-t-xl transition-transform duration-200"
                                             src={`${url}assets/cards/Card_${troop.image}.png`}
                                             alt={troopName}
                                         />
@@ -878,7 +878,7 @@ export default function GameSimple() {
                                         </div>
                                     </div>
                                     <div className="bg-gradient-to-r from-gray-800 to-gray-900 p-1 text-center">
-                                        <span className="text-white text-[9px] md:text-sm font-semibold truncate block">{troopName}</span>
+                                        <span className="text-white text-[9px] md:text-[12px] font-semibold truncate block">{troopName}</span>
                                     </div>
                                 </div>
                             </div>
@@ -894,7 +894,7 @@ export default function GameSimple() {
                 )}
 
                 {/* GAME OVER MODAL */}
-                { game.gameOver && (
+                {game.gameOver && (
                     <div className="game-over-modal fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
                         <div className="modal-content bg-gradient-to-b from-blue-800 to-blue-900 rounded-lg shadow-xl p-6 max-w-md w-full border-4 border-yellow-500 transform scale-105">
                             {/* Crown decoration */}

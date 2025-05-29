@@ -11,7 +11,7 @@ export function WebSocketProvider({ children }) {
     const WS_URL =
         import.meta.env.PROD
             ? "wss://royaka-2025.as.r.appspot.com/ws"
-            : HOST || "ws://zang:8080/ws" || "ws://LAPTOPCUATUI:8080/ws";
+            : HOST || "ws://zang:8080/ws" || "ws://LAPTOPCUATUI:8080/ws" || "ws://192.168.1.4:8080/ws";
 
 
     // Store all onMessage callbacks to support multiple listeners
