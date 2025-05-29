@@ -2,7 +2,6 @@ import clsx from "clsx";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWebSocketContext } from "../context/WebSocketContext";
-import process from 'process'
 
 export default function GameEnhanced() {
     const url = process.env.NODE_ENV === 'production' ? "/royaka-2025-fe/" : "/";
@@ -135,7 +134,7 @@ export default function GameEnhanced() {
                 break;
 
             default:
-                res.message && showNotification(res.message);
+                break;
         }
     };
 
@@ -321,9 +320,9 @@ export default function GameEnhanced() {
                                 className="relative -top-1.5 object-cover px-3 py-3 drop-shadow-lg"
                             />
                             <div className="absolute -bottom-2 tower-hp w-5/6">
-                                <div className="hp-bar bg-red-950 w-full h-2.5 rounded-sm shadow-inner overflow-hidden border border-red-950">
+                                <div className="hp-bar bg-red-950 w-full h-2.5 rounded-md shadow-inner overflow-hidden border border-red-950">
                                     <div
-                                        className="hp-fill bg-gradient-to-r from-red-500 to-red-400 h-full rounded-xs transition-all duration-500"
+                                        className="hp-fill bg-gradient-to-r from-red-500 to-red-400 h-full rounded-sm transition-all duration-500"
                                         style={{
                                             width: `${Math.max(0, (health / maxHealth) * 100)}%`,
                                         }}
@@ -334,9 +333,9 @@ export default function GameEnhanced() {
                     ) : (
                         <>
                             <div className="absolute -top-4 tower-hp w-5/6">
-                                <div className="hp-bar bg-blue-950 w-full h-2.5 rounded-sm shadow-inner overflow-hidden border border-blue-950">
+                                <div className="hp-bar bg-blue-950 w-full h-2.5 rounded-md shadow-inner overflow-hidden border border-blue-950">
                                     <div
-                                        className="hp-fill bg-gradient-to-r from-blue-500 to-blue-400 h-full rounded-xs transition-all duration-500"
+                                        className="hp-fill bg-gradient-to-r from-blue-500 to-blue-400 h-full rounded-sm transition-all duration-500"
                                         style={{
                                             width: `${Math.max(0, (health / maxHealth) * 100)}%`,
                                         }}
@@ -676,7 +675,7 @@ export default function GameEnhanced() {
                                 >
                                     {isDisplayHP && (
                                         <div className="absolute -top-2 w-5/6">
-                                            <div className={`hp-bar ${isEnemyTroop ? "bg-red-900" : "bg-blue-900"} bg-opacity-25 w-full h-1.5 rounded-full shadow-inner overflow-hidden border ${isEnemyTroop ? "border-red-900" : "border-blue-900"}`}>
+                                            <div className={`hp-bar ${isEnemyTroop ? "bg-red-900" : "bg-blue-900"} bg-opacity-25 w-full h-1.5 rounded-md shadow-inner overflow-hidden border ${isEnemyTroop ? "border-red-900" : "border-blue-900"}`}>
                                                 <div
                                                     className={`hp-fill h-full rounded-sm transition-all duration-500
                                                         ${isEnemyTroop

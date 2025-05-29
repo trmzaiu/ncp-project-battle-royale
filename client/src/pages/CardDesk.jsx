@@ -2,7 +2,6 @@ import { Crown, Diamond, Eye, Gem, Heart, Shield, Sparkles, Star, Swords, Zap } 
 import { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { useWebSocketContext } from "../context/WebSocketContext";
-import process from 'process'
 
 const CardDesk = () => {
     const url = process.env.NODE_ENV === 'production' ? "/royaka-2025-fe/" : "/";

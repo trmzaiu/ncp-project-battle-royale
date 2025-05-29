@@ -20,12 +20,12 @@
     "createdAt": "2025-05-09T23:20:11.7080491+07:00",
     "lastLogin": "2025-05-09T23:20:11.7080491+07:00",
     "isActive": true,
-    "exp": 924,
+    "exp": 1014,
     "level": 8,
-    "gamesPlayed": 136,
-    "gamesWon": 59,
+    "gamesPlayed": 142,
+    "gamesWon": 62,
     "avatar": "10",
-    "gold": 1983
+    "gold": 2009
   },
   {
     "id": "20250510015315abcdefgh",
@@ -34,12 +34,12 @@
     "createdAt": "2025-05-10T01:53:15.2001063+07:00",
     "lastLogin": "2025-05-10T01:53:15.2001063+07:00",
     "isActive": true,
-    "exp": 1071,
+    "exp": 1161,
     "level": 9,
-    "gamesPlayed": 126,
-    "gamesWon": 61,
+    "gamesPlayed": 132,
+    "gamesWon": 64,
     "avatar": "14",
-    "gold": 442
+    "gold": 742
   },
   {
     "id": "20250513111521abcdefgh",

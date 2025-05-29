@@ -6,8 +6,8 @@
   "scripts": {
     "lint": "eslint .",
     "preview": "vite preview",
-    "dev": "cross-env NODE_ENV=development vite",
-    "build": "cross-env NODE_ENV=production vite build"
+    "dev": "vite",
+    "build": "vite build"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.7",

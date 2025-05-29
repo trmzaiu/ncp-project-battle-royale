@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWebSocketContext } from "../context/WebSocketContext";
-import process from 'process'
 
 export default function Lobby() {
     const url = process.env.NODE_ENV === 'production' ? "/royaka-2025-fe/" : "/";
@@ -12,9 +11,6 @@ export default function Lobby() {
     const [expMax, setExpMax] = useState(100);
     const [selectedMode, setSelectedMode] = useState("simple");
     const [notification, setNotification] = useState({ show: false, message: "" });
-    const [logs, setLogs] = useState([
-        { timestamp: getCurrentTimestamp(), type: "SYSTEM", message: "Welcome to Royaka!" },
-    ]);
     const [isJoiningGame, setIsJoiningGame] = useState(false);
     const selectedModeRef = useRef(selectedMode);
 
@@ -38,10 +34,9 @@ export default function Lobby() {
                         setUser(res.data.user);
                         setExpMax(res.data.maxExp);
                         localStorage.setItem("username", res.data.user.username);
-                        addLog("SYSTEM", "Fetched user data successfully!");
                     } else {
-                        addLog("ERROR", res.message || "Failed to fetch user data");
-                        showNotification(res.message || "Failed to fetch user data");
+
+                        showNotification("Failed to fetch user data");
                     }
                     break;
 
@@ -49,27 +44,23 @@ export default function Lobby() {
                     if (res.success) {
                         localStorage.setItem("room_id", res.data.room_id);
                         showNotification("Match found! Starting game...");
-                        addLog("GAME", "Match found! Starting game...");
                         if (selectedModeRef.current === "simple") {
                             setTimeout(() => navigate("/game-simple"), 1000);
                         } else {
                             setTimeout(() => navigate("/game-enhanced"), 1000);
                         }
                     } else {
-                        addLog("ERROR", res.message || "Failed to find a match");
-                        showNotification(res.message || "Failed to find a match. Please try again.");
+                        showNotification("Failed to find a match. Please try again.");
                         setIsJoiningGame(false);
                     }
                     break;
 
                 case "match_timeout":
-                    addLog("SYSTEM", "Match timed out. Waiting for new match...");
                     showNotification("Match timed out. Waiting for new match...");
                     setIsJoiningGame(false);
                     break;
 
                 default:
-                    if (res.message) showNotification(res.message);
                     break;
             }
         });
@@ -103,37 +94,21 @@ export default function Lobby() {
             data: { username: user.username, mode: selectedMode },
         });
 
-        addLog("GAME", `Finding ${selectedMode} mode match...`);
         showNotification("Finding a match...");
     }
 
     function handleLogout() {
         localStorage.removeItem("session_id");
-        addLog("SYSTEM", "Logging out...");
         navigate("/auth");
     }
 
     function viewLeaderboard() {
-        addLog("EVENTS", "Moving to card desk...");
         navigate("/card-desk");
     }
 
     const expProgressStyle = {
         width: `${(user.exp / expMax) * 100}%`,
     };
-
-    // === Helper functions ===
-    function getCurrentTimestamp() {
-        const now = new Date();
-        return now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    }
-
-    function addLog(type, message) {
-        setLogs((prev) => [
-            ...prev,
-            { timestamp: getCurrentTimestamp(), type, message },
-        ]);
-    }
 
     return (
         <div
@@ -401,52 +376,6 @@ export default function Lobby() {
                         </div>
                     </div>
                 </div>
-
-                {/* Log Container */}
-                {/* <div className="mt-6 bg-blue-900 rounded-xl p-4 border-4 border-cyan-400 shadow-lg h-40 overflow-y-auto">
-                    <div className="text-center mb-2">
-                        <span className="bg-blue-700 px-4 py-1 rounded-full text-white text-sm font-black border-2 border-cyan-300 pointer-events-none">
-                            BATTLE LOG
-                        </span>
-                    </div>
-                    {logs.map((log, index) => {
-                        let bgColor;
-                        let borderColor;
-                        let icon;
-
-                        if (log.type === "SYSTEM") {
-                            bgColor = "bg-gradient-to-r from-blue-600 to-blue-700";
-                            borderColor = "border-blue-400";
-                            icon = "🔧";
-                        } else if (log.type === "GAME") {
-                            bgColor = "bg-gradient-to-r from-green-600 to-green-700";
-                            borderColor = "border-green-400";
-                            icon = "⚔️";
-                        } else {
-                            bgColor = "bg-gradient-to-r from-yellow-600 to-yellow-700";
-                            borderColor = "border-yellow-400";
-                            icon = "📣";
-                        }
-
-                        return (
-                            <div
-                                key={index}
-                                className={`mb-2 text-sm ${bgColor} p-2 rounded-lg border-2 ${borderColor} transform ${index % 2 === 0 ? "rotate-1" : "-rotate-1"
-                                    }`}
-                            >
-                                <span className="text-white mr-2">
-                                    {log.timestamp}
-                                </span>
-                                <span className="font-black mr-2 text-white">
-                                    {icon} {log.type}
-                                </span>
-                                <span className="text-white font-semibold">
-                                    {log.message}
-                                </span>
-                            </div>
-                        );
-                    })}
-                </div> */}
 
                 {/* Notification */}
                 {notification.show && (

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
-import process from 'process'
 
 export default function Entry() {
     const url = process.env.NODE_ENV === 'production' ? "/royaka-2025-fe/" : "/";
@@ -9,7 +8,11 @@ export default function Entry() {
     const [showButton, setShowButton] = useState(false);
     const navigate = useNavigate();
     const handlePlay = () => {
-        setTimeout(() => navigate("/auth"), 1500);
+         if (localStorage.getItem("session_id")) {
+            navigate("/lobby")
+        } else {
+            navigate("/auth")
+        }
     };
 
     useEffect(() => {

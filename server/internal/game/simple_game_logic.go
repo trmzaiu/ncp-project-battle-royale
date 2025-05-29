@@ -39,10 +39,8 @@ func (g *Game) PlayTurnSimple(player *model.Player, troop *model.Troop, tower st
 		if player.Mana > 10 {
 			player.Mana = 10
 		}
-		// g.TurnTimerCancel()
 		g.StartTurnTimer()
 	} else {
-		// g.TurnTimerCancel()
 		g.SwitchTurn()
 	}
 

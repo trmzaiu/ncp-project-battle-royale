@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWebSocketContext } from "../context/WebSocketContext";
-import process from 'process'
 
 export default function GameSimple() {
     const url = process.env.NODE_ENV === 'production' ? "/royaka-2025-fe/" : "/";
@@ -356,6 +355,10 @@ export default function GameSimple() {
             setHealPopup(prev => ({ ...prev, visible: false }));
         }
 
+        setGame(prev => ({
+                        ...prev,
+                        playerTurn: turn
+                    }));
 
         setGame((prev) => {
             const newState = { ...prev };
@@ -391,12 +394,6 @@ export default function GameSimple() {
 
                 // AFTER damage popup is hidden, update turn and show turn animation
                 setTimeout(() => {
-                    // Update the turn
-                    setGame(prev => ({
-                        ...prev,
-                        playerTurn: turn
-                    }));
-
                     // Only show turn animation if it's the player's turn now
                     setShowLargeAnimation(true);
 
@@ -474,7 +471,7 @@ export default function GameSimple() {
             >
                 {/* Damage Popup */}
                 {damagePopup?.visible && damagePopup.targetId === id && (
-                    <div className={`absolute z-50 ${isOpponent ? "-bottom-15" : "-top-15"} -right-4 transform rotate-10 pointer-events-none`}>
+                    <div className={`absolute z-50 ${isOpponent ? "-bottom-16" : "-top-16"} -right-4 transform rotate-10 pointer-events-none`}>
                         <div className={`
                         flex justify-center items-center
                         ${damagePopup.crit ? "text-yellow-500 animate-clash-crit-popup" : "text-red-500 animate-clash-damage-popup"}
@@ -498,7 +495,7 @@ export default function GameSimple() {
 
                 {/* Heal Popup */}
                 {healPopup?.visible && healPopup.targetId === id && (
-                    <div className={`absolute z-50 ${isOpponent ? "-bottom-15" : "-top-15"} rotate-10 pointer-events-none`}>
+                    <div className={`absolute z-50 ${isOpponent ? "-bottom-16" : "-top-16"} rotate-10 pointer-events-none`}>
                         <div className="flex justify-center items-center text-green-700 animate-clash-heal-popup">
                             <div className="relative">
                                 {["-left-0.5", "-right-0.5", "-top-0.5", "-bottom-0.5"].map((pos, i) => (
@@ -524,12 +521,12 @@ export default function GameSimple() {
                                 className="relative -bottom-3 w-full h-full object-contain px-1 py-1 drop-shadow-lg transition-transform duration-200 hover:scale-105"
                             />
                             <div className="relative -bottom-5 tower-hp w-5/6">
-                                <div className="hp-bar bg-gray-700 w-full h-3 rounded-sm shadow-inner overflow-hidden border border-gray-800">
+                                <div className="hp-bar bg-gray-700 w-full h-3 rounded-md shadow-inner overflow-hidden border border-gray-800">
                                     <div
                                         className={`hp-fill bg-gradient-to-r ${health <= maxHealth / 3
                                             ? "from-red-500 to-red-400"
                                             : "from-green-500 to-green-400"
-                                            } h-full rounded-xs transition-all duration-500`}
+                                            } h-full rounded-sm transition-all duration-500`}
                                         style={{
                                             width: `${Math.max(0, (health / maxHealth) * 100)}%`,
                                         }}
@@ -540,12 +537,12 @@ export default function GameSimple() {
                     ) : (
                         <>
                             <div className="relative -top-3 tower-hp w-5/6">
-                                <div className="hp-bar bg-gray-700 w-full h-3 rounded-sm shadow-inner overflow-hidden border border-gray-800">
+                                <div className="hp-bar bg-gray-700 w-full h-3 rounded-md shadow-inner overflow-hidden border border-gray-800">
                                     <div
                                         className={`hp-fill bg-gradient-to-r ${health <= maxHealth / 3
                                             ? "from-red-500 to-red-400"
                                             : "from-green-500 to-green-400"
-                                            } h-full rounded-xs transition-all duration-500`}
+                                            } h-full rounded-sm transition-all duration-500`}
                                         style={{
                                             width: `${Math.max(0, (health / maxHealth) * 100)}%`,
                                         }}

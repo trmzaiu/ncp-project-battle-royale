@@ -78,7 +78,7 @@ func NewGame(p1, p2 *model.Player, mode string) *Game {
 			game.StartTime = time.Now()
 			go game.startTicker()
 		})
-	} else {
+	} else if !game.Enhanced {
 		game.StartTurnTimer()
 	}
 

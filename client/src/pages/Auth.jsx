@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWebSocketContext } from "../context/WebSocketContext";
-import process from 'process'
 
 export default function Auth() {
     const url = process.env.NODE_ENV === 'production' ? "/royaka-2025-fe/" : "/";
@@ -46,7 +45,6 @@ export default function Auth() {
                     break;
 
                 default:
-                    if (res.message) showNotification(res.message, "info");
                     break;
             }
         });

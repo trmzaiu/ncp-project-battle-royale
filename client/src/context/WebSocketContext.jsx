@@ -1,6 +1,5 @@
 // src/context/WebSocketContext.jsx
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import process from 'process'
 
 const WebSocketContext = createContext(null);
 
@@ -8,9 +7,8 @@ export function WebSocketProvider({ children }) {
     const socketRef = useRef(null);
     const reconnectTimeout = useRef(null);
     const [isConnected, setIsConnected] = useState(false);
-    const WS_URL = process.PROD
-            ? "wss://royaka-2025.as.r.appspot.com/ws"
-            : "ws://LAPTOPCUATUI:8080/ws";
+    const WS_URL = "wss://royaka-2025.as.r.appspot.com/ws" ?? "ws://localhost:8000/ws"; 
+            
 
     // Store all onMessage callbacks to support multiple listeners
     const messageListeners = useRef(new Set());
