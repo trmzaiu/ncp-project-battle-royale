@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useWebSocketContext } from "../context/WebSocketContext";
 
 export default function Lobby() {
+    const url = process.env.NODE_ENV === 'production' ? "/royaka-2025-fe/" : "/";
     const navigate = useNavigate();
     const { sendMessage, subscribe } = useWebSocketContext();
 
@@ -163,12 +164,12 @@ export default function Lobby() {
                         </h1>
                         <img
                             className="absolute w-10 -top-4 -right-4 transform rotate-20 pointer-events-none drop-shadow-[0_0_10px_rgba(255,255,0,0.6)]"
-                            src="/royaka-2025-fe/assets/icon_crown.png"
+                            src={`${url}assets/icon_crown.png`}
                             alt=""
                         />
                         <img
                             className="absolute w-12 -bottom-2 -left-6 transform -rotate-12 pointer-events-none drop-shadow-[0_0_10px_rgba(255,255,0,0.6)]"
-                            src="/royaka-2025-fe/assets/icon_badge.png"
+                            src={`${url}assets/icon_badge.png`}
                             alt=""
                         />
                     </div>
@@ -184,26 +185,26 @@ export default function Lobby() {
                     {/* Player Card */}
                     <div className="bg-gradient-to-b from-blue-800 to-blue-900 rounded-xl shadow-lg p-6 flex-1 border-4 border-yellow-400 relative overflow-hidden">
                         <img
-                            className="absolute w-35 -right-8 -bottom-8 opacity-60 pointer-events-none"
-                            src="/royaka-2025-fe/assets/icon_decorate.png"
+                            className="absolute w-24 -right-4 -bottom-4 opacity-60 pointer-events-none"
+                            src={`${url}assets/icon_decorate.png`}
                             alt=""
                         />
                         <div className="flex flex-col items-center">
                             <div className="relative w-35 h-35 mb-4">
-                                <div className="w-full h-full rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 border-4 border-yellow-400 shadow-lg overflow-hidden relative">
+                                <div className="w-40 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 border-4 border-yellow-400 shadow-lg overflow-hidden relative">
                                     <img
-                                        src={`/royaka-2025-fe/assets/avatars/Avatar${user.avatar}.png`}
+                                        src={`${url}assets/avatars/Avatar${user.avatar}.png`}
                                         alt="avatar"
                                         className="w-full h-full object-cover"
                                     />
                                 </div>
 
                                 {/* Level Badge - overlaps bottom-right */}
-                                <div className="absolute -bottom-2 right-1 w-9 h-9 z-10 shadow-md drop-shadow-[0_0_10px_rgba(255,255,0,0.4)]">
+                                <div className="absolute -bottom-2 right-4 w-10 h-10 z-10 shadow-md drop-shadow-[0_0_10px_rgba(255,255,0,0.4)]">
                                     <div className="relative w-full h-full flex items-center justify-center">
                                         <img
                                             className="pointer-events-none w-full h-full"
-                                            src="/royaka-2025-fe/assets/icon_banner.png"
+                                            src={`${url}assets/icon_banner.png`}
                                             alt=""
                                         />
                                         <span className="absolute text-white text-base font-bold">
@@ -278,7 +279,7 @@ export default function Lobby() {
                     <div className="bg-gradient-to-b from-blue-800 to-blue-900 rounded-xl shadow-lg p-6 flex-1 border-4 border-yellow-400 relative overflow-hidden">
                         <img
                             className="absolute w-35 -left-8 -top-8 opacity-40 -rotate-12 pointer-events-none"
-                            src="/royaka-2025-fe/assets/icon_timed_match.png"
+                            src={`${url}assets/icon_timed_match.png`}
                             alt=""
                         />
 
@@ -299,7 +300,7 @@ export default function Lobby() {
                             >
                                 <img
                                     className=" w-20 mb-2 pointer-events-none"
-                                    src="/royaka-2025-fe/assets/icon_turn_based.png"
+                                    src={`${url}assets/icon_turn_based.png`}
                                     alt=""
                                 />
                                 <div className="text-center mb-1 text-white text-xl">
@@ -320,7 +321,7 @@ export default function Lobby() {
                             >
                                 <img
                                     className=" w-20 mb-2 pointer-events-none"
-                                    src="/royaka-2025-fe/assets/icon_timed_match.png"
+                                    src={`${url}assets/icon_timed_match.png`}
                                     alt=""
                                 />
                                 <div className="text-center mb-1 text-white text-xl">
@@ -459,12 +460,12 @@ export default function Lobby() {
                 {/* Decorative elements */}
                 <img
                     className="fixed w-25 top-4 left-4 animate-pulse pointer-events-none"
-                    src="/royaka-2025-fe/assets/icon_badge.png"
+                    src={`${url}assets/icon_badge.png`}
                     alt=""
                 />
                 <img
                     className="fixed w-20 bottom-4 right-4 animate-bounce pointer-events-none"
-                    src="/royaka-2025-fe/assets/icon_timed_match.png"
+                    src={`${url}assets/icon_timed_match.png`}
                     alt=""
                 />
             </div>

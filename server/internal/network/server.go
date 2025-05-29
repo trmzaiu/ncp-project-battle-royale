@@ -48,7 +48,7 @@ func HandleWebSocket(w http.ResponseWriter, r *http.Request) {
 	log.Println("[WS] WebSocket connection established")
 
 	go func() {
-		ticker := time.NewTicker(30 * time.Second)
+		ticker := time.NewTicker(100 * time.Millisecond)
 		defer ticker.Stop()
 		for {
 			if err := conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(10*time.Second)); err != nil {

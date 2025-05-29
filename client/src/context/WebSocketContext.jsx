@@ -1,18 +1,17 @@
 // src/context/WebSocketContext.jsx
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import process from 'process'
 
 const WebSocketContext = createContext(null);
-const HOST = import.meta.env.VITE_WS_URL;
+const HOST = process.env.VITE_WS_URL;
 
 export function WebSocketProvider({ children }) {
     const socketRef = useRef(null);
     const reconnectTimeout = useRef(null);
     const [isConnected, setIsConnected] = useState(false);
-    const WS_URL =
-        import.meta.env.PROD
-            ? "wss://golang-ws-1067243106608.asia-southeast1.run.app/ws"
+    const WS_URL = process.PROD
+            ? "wss://royaka-2025.as.r.appspot.com/ws"
             : HOST || "ws://10.236.6.16:8081/ws";
-
 
     // Store all onMessage callbacks to support multiple listeners
     const messageListeners = useRef(new Set());

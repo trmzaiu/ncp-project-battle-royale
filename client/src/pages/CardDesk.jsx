@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useWebSocketContext } from "../context/WebSocketContext";
 
 const CardDesk = () => {
+    const url = process.env.NODE_ENV === 'production' ? "/royaka-2025-fe/" : "/";
     const navigate = useNavigate();
     const { sendMessage, subscribe } = useWebSocketContext();
 
@@ -131,12 +132,12 @@ const CardDesk = () => {
                         </h1>
                         <img
                             className="absolute w-10 -top-4 -right-4 transform rotate-20 pointer-events-none drop-shadow-[0_0_10px_rgba(255,255,0,0.6)]"
-                            src="/royaka-2025-fe/assets/icon_crown.png"
+                            src={`${url}assets/icon_crown.png`}
                             alt=""
                         />
                         <img
                             className="absolute w-12 -bottom-2 -left-6 transform -rotate-12 pointer-events-none drop-shadow-[0_0_10px_rgba(255,255,0,0.6)]"
-                            src="/royaka-2025-fe/assets/icon_badge.png"
+                            src={`${url}assets/icon_badge.png`}
                             alt=""
                         />
                     </div>

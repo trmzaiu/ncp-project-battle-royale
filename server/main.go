@@ -4,16 +4,15 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"royaka/config"
 	"royaka/internal/network"
 )
 
 func main() {
-	cfg := config.LoadConfig()
+	// cfg := config.LoadConfig()
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = cfg.ServerPort
+		port = "8080"
 	}
 
 	fs := http.FileServer(http.Dir("./assets"))
