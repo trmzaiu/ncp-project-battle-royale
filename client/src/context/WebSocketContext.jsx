@@ -3,7 +3,6 @@ import React, { createContext, useContext, useEffect, useRef, useState } from "r
 import process from 'process'
 
 const WebSocketContext = createContext(null);
-const HOST = process.env.VITE_WS_URL;
 
 export function WebSocketProvider({ children }) {
     const socketRef = useRef(null);
@@ -11,8 +10,7 @@ export function WebSocketProvider({ children }) {
     const [isConnected, setIsConnected] = useState(false);
     const WS_URL = process.PROD
             ? "wss://royaka-2025.as.r.appspot.com/ws"
-            : HOST || "ws://zang:8080/ws" || "ws://LAPTOPCUATUI:8080/ws" || "ws://192.168.1.4:8080/ws";
-
+            : "ws://LAPTOPCUATUI:8080/ws";
 
     // Store all onMessage callbacks to support multiple listeners
     const messageListeners = useRef(new Set());

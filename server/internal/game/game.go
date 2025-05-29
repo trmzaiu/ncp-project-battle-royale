@@ -137,15 +137,21 @@ func (g *Game) StartTurnTimer() {
 		close(cancelChan)
 	}
 
-	go func() {
+	go func(turn string) {
+
+		time.Sleep(1 * time.Second)
+		
 		select {
 		case <-timer.C:
-			log.Printf("[TURN] player %s timed out", g.Turn)
-			g.HandleTurnTimeout()
+			// Chỉ xử lý timeout nếu vẫn là lượt đó
+			if g.Turn == turn {
+				log.Printf("[TURN] player %s timed out", turn)
+				g.HandleTurnTimeout()
+			}
 		case <-cancelChan:
-			// lượt kết thúc hợp lệ
+			// Lượt kết thúc hợp lệ
 		}
-	}()
+	}(g.Turn)
 }
 
 // ===================== Game Tick & Loop =====================

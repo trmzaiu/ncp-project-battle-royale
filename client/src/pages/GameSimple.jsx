@@ -7,8 +7,8 @@ export default function GameSimple() {
     const url = process.env.NODE_ENV === 'production' ? "/royaka-2025-fe/" : "/";
     const navigate = useNavigate();
     const { sendMessage, subscribe } = useWebSocketContext();
-    const damageTimeoutRef = useRef(false);
-    const healTimeoutRef = useRef(false);
+    const damageTimeoutRef = useRef(null);
+    const healTimeoutRef = useRef(null);
     const hasLeftGameRef = useRef(false);
 
     const [user, setUser] = useState({});
@@ -281,45 +281,18 @@ export default function GameSimple() {
         const isMe = attacker.user.username === localStorage.getItem("username");
         const targetId = (isMe ? "opponent-" : "player-") + target;
 
-        console.log("[Popup Trigger] incoming", { targetId, damage, isMe, isCrit, turn });
-        if (!damageTimeoutRef.current) {
-            console.log("[Popup Trigger] accepted");
-            damageTimeoutRef.current = true;
+        // Set turn
+        setGame(prev => ({
+            ...prev,
+            playerTurn: turn
+        }));
 
-
-            setDamagePopup({
-                targetId,
-                amount: damage,
-                isOpponent: isMe,
-                visible: true,
-                crit: isCrit,
-            });
-
-            setTimeout(() => {
-                setDamagePopup(prev => ({ ...prev, visible: false }));
-
-                setTimeout(() => {
-                    setGame(prev => ({
-                        ...prev,
-                        playerTurn: turn
-                    }));
-
-                    setShowLargeAnimation(true);
-
-                    setTimeout(() => {
-                        setShowLargeAnimation(false);
-                        damageTimeoutRef.current = false;
-                    }, 2000);
-                }, 300);
-            }, 1500);
+        if (damageTimeoutRef.current) {
+            clearTimeout(damageTimeoutRef.current);
+            damageTimeoutRef.current = null;
+            // Hide the current popup
+            setDamagePopup(prev => ({ ...prev, visible: false }));
         }
-
-        // if (damageTimeoutRef.current) {
-        //     clearTimeout(damageTimeoutRef.current);
-        //     damageTimeoutRef.current = null;
-        //     // Hide the current popup
-        //     setDamagePopup(prev => ({ ...prev, visible: false }));
-        // }
 
         setGame((prev) => {
             const newState = { ...prev };
@@ -339,39 +312,32 @@ export default function GameSimple() {
             return newState;
         });
 
-        // setTimeout(() => {
-        //     setDamagePopup({
-        //         targetId,
-        //         amount: damage,
-        //         isOpponent: isMe,
-        //         visible: true,
-        //         crit: isCrit,
-        //     });
+        setTimeout(() => {
+            setDamagePopup({
+                targetId,
+                amount: damage,
+                isOpponent: isMe,
+                visible: true,
+                crit: isCrit,
+            });
 
-        //     // Hide damage popup after 1.5 seconds
-        //     damageTimeoutRef.current = setTimeout(() => {
-        //         setDamagePopup(prev => ({ ...prev, visible: false }));
-        //         damageTimeoutRef.current = null;
+            // Hide damage popup after 1.5 seconds
+            damageTimeoutRef.current = setTimeout(() => {
+                setDamagePopup(prev => ({ ...prev, visible: false }));
+                damageTimeoutRef.current = null;
 
-        //         // AFTER damage popup is hidden, update turn and show turn animation
-        //         setTimeout(() => {
-        //             // Update the turn
-        //             setGame(prev => ({
-        //                 ...prev,
-        //                 playerTurn: turn
-        //             }));
+                // AFTER damage popup is hidden, update turn and show turn animation
+                setTimeout(() => {
+                    // Only show turn animation if it's the player's turn now
+                    setShowLargeAnimation(true);
 
-        //             // Only show turn animation if it's the player's turn now
-        //             setShowLargeAnimation(true);
-
-        //             // Hide turn animation after 2 seconds
-        //             setTimeout(() => {
-        //                 setShowLargeAnimation(false);
-        //             }, 2000);
-        //         }, 300); // Small delay after damage popup disappears
-
-        //     }, 1500);
-        // }, 50);
+                    // Hide turn animation after 2 seconds
+                    setTimeout(() => {
+                        setShowLargeAnimation(false);
+                    }, 2000);
+                }, 0); // Small delay after damage popup disappears
+            }, 1000);
+        }, 50);
 
         if (isDestroyed) showNotification(`Tower ${target} has been destroyed!`);
     };
@@ -382,44 +348,13 @@ export default function GameSimple() {
         const isMe = player.user.username === localStorage.getItem("username");
         const targetId = (isMe ? "player-" : "opponent-") + healedTower.type;
 
-        console.log("[Popup Trigger] incoming", { targetId, healAmount, isMe, turn });
-        if (!healTimeoutRef.current) {
-            console.log("[Popup Trigger] accepted");
-            healTimeoutRef.current = true;
 
-
-            setHealPopup({
-                targetId,
-                amount: healAmount,
-                isOpponent: isMe,
-                visible: true,
-            });
-
-            setTimeout(() => {
-                setHealPopup(prev => ({ ...prev, visible: false }));
-
-                setTimeout(() => {
-                    setGame(prev => ({
-                        ...prev,
-                        playerTurn: turn
-                    }));
-
-                    setShowLargeAnimation(true);
-
-                    setTimeout(() => {
-                        setShowLargeAnimation(false);
-                        healTimeoutRef.current = false;
-                    }, 2000);
-                }, 300);
-            }, 1500);
+        if (healTimeoutRef.current) {
+            clearTimeout(healTimeoutRef.current);
+            healTimeoutRef.current = null;
+            // Hide the current popup
+            setHealPopup(prev => ({ ...prev, visible: false }));
         }
-
-        // if (healTimeoutRef.current) {
-        //     clearTimeout(healTimeoutRef.current);
-        //     healTimeoutRef.current = null;
-        //     // Hide the current popup
-        //     setHealPopup(prev => ({ ...prev, visible: false }));
-        // }
 
 
         setGame((prev) => {
@@ -441,38 +376,38 @@ export default function GameSimple() {
 
         });
 
-        // setTimeout(() => {
-        //     setHealPopup({
-        //         targetId,
-        //         amount: healAmount,
-        //         isOpponent: !isMe,
-        //         visible: true,
-        //     });
+        setTimeout(() => {
+            setHealPopup({
+                targetId,
+                amount: healAmount,
+                isOpponent: !isMe,
+                visible: true,
+            });
 
-        //     // Hide damage popup after 1.5 seconds
-        //     healTimeoutRef.current = setTimeout(() => {
-        //         setHealPopup(prev => ({ ...prev, visible: false }));
-        //         healTimeoutRef.current = null;
+            // Hide damage popup after 1.5 seconds
+            healTimeoutRef.current = setTimeout(() => {
+                setHealPopup(prev => ({ ...prev, visible: false }));
+                healTimeoutRef.current = null;
 
-        //         // AFTER damage popup is hidden, update turn and show turn animation
-        //         setTimeout(() => {
-        //             // Update the turn
-        //             setGame(prev => ({
-        //                 ...prev,
-        //                 playerTurn: turn
-        //             }));
+                // AFTER damage popup is hidden, update turn and show turn animation
+                setTimeout(() => {
+                    // Update the turn
+                    setGame(prev => ({
+                        ...prev,
+                        playerTurn: turn
+                    }));
 
-        //             // Only show turn animation if it's the player's turn now
-        //             setShowLargeAnimation(true);
+                    // Only show turn animation if it's the player's turn now
+                    setShowLargeAnimation(true);
 
-        //             // Hide turn animation after 2 seconds
-        //             setTimeout(() => {
-        //                 setShowLargeAnimation(false);
-        //             }, 2000);
-        //         }, 300); // Small delay after damage popup disappears
+                    // Hide turn animation after 2 seconds
+                    setTimeout(() => {
+                        setShowLargeAnimation(false);
+                    }, 2000);
+                }, 0); // Small delay after damage popup disappears
 
-        //     }, 1500);
-        // }, 50);
+            }, 1000);
+        }, 50);
     };
 
     // === Handle Skip Turn Response
@@ -526,6 +461,10 @@ export default function GameSimple() {
         const towerImage = type === "king"
             ? (isOpponent ? `${url}assets/King_Tower_Red.png` : `${url}assets/King_Tower_Blue.png`)
             : (isOpponent ? `${url}assets/Guard_Tower_Red.png` : `${url}assets/Guard_Tower_Blue.png`);
+
+        if (damagePopup?.visible) {
+            console.log("Render damage popup for", id, damagePopup.amount);
+        }
 
         return (
             <div

@@ -39,10 +39,10 @@ func (g *Game) PlayTurnSimple(player *model.Player, troop *model.Troop, tower st
 		if player.Mana > 10 {
 			player.Mana = 10
 		}
+		// g.TurnTimerCancel()
+		g.StartTurnTimer()
 	} else {
-		if g.TurnTimerCancel != nil {
-			g.TurnTimerCancel()
-		}
+		// g.TurnTimerCancel()
 		g.SwitchTurn()
 	}
 
@@ -77,6 +77,7 @@ func (g *Game) HealTower(player *model.Player, troop *model.Troop) (int, *model.
 	}
 
 	player.Turn++
+	// g.TurnTimerCancel()
 	g.SwitchTurn()
 
 	return int(healAmount), lowest, message
