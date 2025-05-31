@@ -18,9 +18,8 @@
 ## Tech Stack
 
 * **Backend**: Go, Gorilla WebSocket, native HTTP server
-* **Frontend**: React, TailwindCSS, Zustand, Lucide Icons
+* **Frontend**: React, Vite, TailwindCSS
 * **Storage**: JSON files (for users and sessions)
-* **Optional**: Canvas or Pixi.js for visualizing troop movement
 
 ## Project Structure
 
