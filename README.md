@@ -49,7 +49,7 @@ royaka/
 
 ```bash
 git clone https://github.com/trmzaiu/royaka-clash-royale.git
-cd royaka
+cd royaka-clash-royale
 ```
 
 ### 2. Start the Go Backend
