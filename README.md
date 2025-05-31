@@ -2,6 +2,11 @@
 
 **Royaka** is a turn-based multiplayer tower battle game inspired by *Clash Royale*. Built with Go and React, it features strategic troop deployment, dynamic movement logic, and WebSocket-powered real-time gameplay.
 
+**Play Now – No Download Needed!**  
+👉 [https://storage.googleapis.com/royaka-2025-fe/index.html](https://storage.googleapis.com/royaka-2025-fe/index.html)
+
+---
+
 ## Features
 
 * **1v1 Multiplayer Matches** via WebSocket
