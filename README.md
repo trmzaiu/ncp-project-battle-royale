@@ -1,4 +1,7 @@
 # 🏰 Royaka
+[![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?logo=go&logoColor=white)](https://golang.org)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)](https://nodejs.org)
+[![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react&logoColor=black)](https://reactjs.org)
 
 **Royaka** is a turn-based multiplayer tower battle game inspired by *Clash Royale*. Built with Go and React, it features strategic troop deployment, dynamic movement logic, and WebSocket-powered real-time gameplay.
 
