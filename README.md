@@ -2,27 +2,27 @@
 
 **Royaka** is a turn-based multiplayer tower battle game inspired by *Clash Royale*. Built with Go and React, it features strategic troop deployment, dynamic movement logic, and WebSocket-powered real-time gameplay.
 
-## 🎮 Features
+## Features
 
-* 🢑 **1v1 Multiplayer Matches** via WebSocket
-* ♻️ **Turn-Based Gameplay** with attack, heal, and skip mechanics
-* ⚔️ **Two Game Modes**
+* **1v1 Multiplayer Matches** via WebSocket
+* **Turn-Based Gameplay** with attack, heal, and skip mechanics
+* **Two Game Modes**
 
   * **Simple Mode**: Basic strategic combat
   * **Enhanced Mode**: Adds MANA, EXP, leveling, and critical hits
-* 🃏 **Troop Collection** with tanks, healers, and damage dealers
-* 🧠 **Smart Troop Behavior** (e.g., river crossing only at bridges)
-* 🔐 **User Authentication** (registration, login, and persistent stats)
-* 📂 **File-Based Persistence** (JSON)
+* **Troop Collection** with tanks, healers, and damage dealers
+* **Smart Troop Behavior** (e.g., river crossing only at bridges)
+* **User Authentication** (registration, login, and persistent stats)
+* **File-Based Persistence** (JSON)
 
-## 🧱 Tech Stack
+## Tech Stack
 
 * **Backend**: Go, Gorilla WebSocket, native HTTP server
 * **Frontend**: React, TailwindCSS, Zustand, Lucide Icons
 * **Storage**: JSON files (for users and sessions)
 * **Optional**: Canvas or Pixi.js for visualizing troop movement
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 royaka/
@@ -43,7 +43,7 @@ royaka/
 │   └── main.go             # Backend entry point
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Clone the Repository
 
@@ -73,7 +73,7 @@ npm run dev
 
 * Runs on `http://localhost:5173`
 
-## 🕹️ Gameplay Overview
+## Gameplay Overview
 
 ### 1. Turn-Based Mode
 - Players take turns (Player 1 → Player 2).
@@ -89,7 +89,7 @@ npm run dev
 - Matches last 3 minutes with fast-paced, continuous action.
 - Victory conditions remain the same: eliminate both Guard Towers before accessing the King Tower.
 
-## 🔐 Authentication System
+## Authentication System
 
 * Users register and log in via HTTP
 * Passwords hashed using bcrypt
